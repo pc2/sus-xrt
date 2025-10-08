@@ -1,0 +1,445 @@
+
+
+/// CTRL REGS is 0x000000
+/// Input regs start at 0x000010 and increment 0X000008 every time
+/// Output regs start at end of input regs
+///
+/// XRT imposes a 64K (16bit) address range limitation. 
+/// See https://docs.amd.com/r/2023.2-English/ug1393-vitis-application-acceleration/Kernel-Interface-Requirements
+module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH) {
+    domain aclk
+    input bool aresetn
+
+    gen int DATA_WIDTH = 32
+    gen int REG_STRIDE = clog2#(V: DATA_WIDTH)
+    gen int ATO = pow2#(E: ADDR_WIDTH)
+    assert#(C: ADDR_WIDTH <= 16)
+    assert#(C: (NUM_INPUT_REGS + NUM_OUTPUT_REGS + 2) * REG_STRIDE <= pow2#(E: ADDR_WIDTH))
+    gen bool[2] RESP_OKAY = [false, false]
+    gen bool[2] RESP_SLVERR = [false, true]
+
+    // AXI signals
+    input int#(FROM: 0, TO: ATO) awaddr
+    input bool awvalid
+    output bool awready = false
+    input bool[DATA_WIDTH] wdata
+    input bool[DATA_WIDTH / 8] wstrb
+    input bool wvalid
+    output bool wready = false
+    output bool[2] bresp
+    output bool bvalid = false
+    input bool bready
+    input int#(FROM: 0, TO: ATO) araddr
+    input bool arvalid
+    output bool arready = false
+    output bool[DATA_WIDTH] rdata
+    output bool[2] rresp
+    output bool rvalid = false
+    input bool rready
+
+
+    state bool[32][NUM_OUTPUT_REGS] stored_output_regs
+    output state bool[32][NUM_INPUT_REGS] input_regs
+    trigger start
+
+
+    gen int CTRL_REG = 0
+
+
+    // control register bits
+    state bool reg_ctrl_ap_idle
+    state bool reg_ctrl_ap_done
+    bool reg_ctrl_ap_ready = reg_ctrl_ap_done    // copy ap_done because there's no pausing
+    state bool reg_ctrl_ap_start
+
+    // registers write state machine
+    gen int WR_IDLE  = 0
+    gen int WR_DATA  = 1
+    gen int WR_RESP  = 2
+    gen int WR_RESET = 3
+    
+    state int wr_stored_addr
+    state int wstate
+    state bool[2] last_werr
+    
+    when wstate == WR_IDLE {
+        awready = true
+        when awvalid {
+            wr_stored_addr = awaddr / REG_STRIDE
+            wstate = WR_DATA
+        }
+    } else when wstate == WR_DATA {
+        wready = true
+        when wvalid {
+            // Control Write
+            last_werr = RESP_SLVERR
+            when wr_stored_addr == CTRL_REG {
+                when wstrb[0] & wdata[0] {
+                    reg_ctrl_ap_start = true
+                    reg_ctrl_ap_idle = false
+                    start()
+                }
+                last_werr = RESP_OKAY
+            }
+            // Data Write
+            when (wr_stored_addr >= 2) & (wr_stored_addr < 2 + NUM_INPUT_REGS) {
+                int write_idx = unsafe_int_cast#(FROM: 2, TO: 2 + NUM_INPUT_REGS)(araddr / REG_STRIDE) - 2
+                for int strbi in 0..4 {
+                    when wstrb[strbi] {
+                        input_regs[write_idx][strbi*8 +: 8] = wdata[strbi*8 +: 8]
+                    }
+                }
+                last_werr = RESP_OKAY
+            }
+            wstate = WR_RESP
+        }
+    } else when wstate == WR_RESP {
+        bvalid = true
+        bresp = last_werr
+        when bready {
+            wstate = WR_IDLE
+        }
+    } else {
+        wstate = WR_IDLE
+    }
+
+
+    // registers read state machine
+    gen int RD_IDLE  = 0
+    gen int RD_DATA  = 1
+    gen int RD_RESET = 2
+    
+    state int rstate
+    state bool[32] last_rdata
+    state bool[2] last_rerr
+
+    bool[32][NUM_INPUT_REGS + NUM_OUTPUT_REGS] regs_read_multiplexer
+    regs_read_multiplexer[:NUM_INPUT_REGS] = input_regs
+    regs_read_multiplexer[NUM_INPUT_REGS:] = stored_output_regs
+
+    when rstate == RD_IDLE {
+        arready = true
+        when arvalid {
+            // Control Read
+            last_rerr = RESP_SLVERR
+            when araddr == CTRL_REG {
+                last_rdata[0] = reg_ctrl_ap_start
+                last_rdata[1] = reg_ctrl_ap_done
+                last_rdata[2] = reg_ctrl_ap_idle
+                last_rdata[3] = reg_ctrl_ap_ready
+                last_rdata[4:] = Repeat(false)
+                reg_ctrl_ap_done = false // clear on read
+                last_rerr = RESP_OKAY
+            }
+            // Data Read
+            when (araddr >= 2) & (araddr < 2 + NUM_INPUT_REGS + NUM_OUTPUT_REGS) {
+                int read_idx = unsafe_int_cast#(FROM: 2, TO: 2 + NUM_INPUT_REGS + NUM_OUTPUT_REGS)(araddr) - 2
+                last_rdata = regs_read_multiplexer[read_idx]
+                last_rerr = RESP_OKAY
+            }
+            rstate = RD_DATA
+        }
+    } else when rstate == RD_DATA {
+        rvalid = true
+        rdata = last_rdata
+        rresp = last_rerr
+        when rready {
+            rstate = RD_IDLE
+        }
+    } else {
+        rstate = RD_IDLE
+    }
+
+    action finish : bool[32][NUM_OUTPUT_REGS] output_regs {
+        stored_output_regs = output_regs
+        reg_ctrl_ap_done = true
+        reg_ctrl_ap_start = false
+        reg_ctrl_ap_idle = false
+    }
+
+    when !aresetn {
+        wstate = WR_RESET
+        rstate = RD_RESET
+        reg_ctrl_ap_idle = true
+        reg_ctrl_ap_start = false
+        reg_ctrl_ap_done = false
+
+        input_regs = Repeat(Repeat(false))
+        stored_output_regs = Repeat(Repeat(false))
+    }
+}
+
+
+module axi_ctrl_slave_example {
+    domain aclk
+    input bool aresetn
+
+    gen int ADDR_WIDTH = 12
+    gen int ATO = pow2#(E: ADDR_WIDTH)
+    gen int DATA_WIDTH = 32
+
+    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH) axi_control
+    axi_control.aresetn = aresetn
+
+    // Export AXI4-Lite interface
+    input  int#(FROM: 0, TO: ATO) s_axi_control_awaddr
+    input  bool                   s_axi_control_awvalid
+    output bool                   s_axi_control_awready = axi_control.awready
+    input  bool[DATA_WIDTH]       s_axi_control_wdata
+    input  bool[DATA_WIDTH / 8]   s_axi_control_wstrb
+    input  bool                   s_axi_control_wvalid
+    output bool                   s_axi_control_wready  = axi_control.wready
+    output bool[2]                s_axi_control_bresp   = axi_control.bresp
+    output bool                   s_axi_control_bvalid  = axi_control.bvalid
+    input  bool                   s_axi_control_bready
+    input  int#(FROM: 0, TO: ATO) s_axi_control_araddr
+    input  bool                   s_axi_control_arvalid
+    output bool                   s_axi_control_arready = axi_control.arready
+    output bool[DATA_WIDTH]       s_axi_control_rdata   = axi_control.rdata
+    output bool[2]                s_axi_control_rresp   = axi_control.rresp
+    output bool                   s_axi_control_rvalid  = axi_control.rvalid
+    input  bool                   s_axi_control_rready
+    axi_control.awaddr  = s_axi_control_awaddr
+    axi_control.awvalid = s_axi_control_awvalid
+    axi_control.wdata   = s_axi_control_wdata
+    axi_control.wstrb   = s_axi_control_wstrb
+    axi_control.wvalid  = s_axi_control_wvalid
+    axi_control.bready  = s_axi_control_bready
+    axi_control.araddr  = s_axi_control_araddr
+    axi_control.arvalid = s_axi_control_arvalid
+    axi_control.rready  = s_axi_control_rready
+
+
+    // Actual logic
+    when axi_control.start {
+        int a = BitsToUInt(axi_control.input_regs[0])
+        int b = BitsToUInt(axi_control.input_regs[1])
+
+        int c = (a + b) % pow2#(E: 32)
+
+        axi_control.finish([UIntToBits(c)])
+    }
+}
+
+
+module axi_memory_reader #(T) {
+    domain aclk
+
+    input bool aresetn'0
+
+    gen int ADDR_WIDTH = 64
+    gen int ATO = pow2#(E: ADDR_WIDTH)
+    gen int AXI_WIDTH = 32
+    gen int MAX_ARLEN = 255
+
+    gen int NUM_TRANSFERS
+    if sizeof#(T) < AXI_WIDTH {
+        NUM_TRANSFERS = 1
+    } else {
+        // Actually this code is fine even if it's not a multiple
+        // assert#(C: sizeof#(T) % AXI_WIDTH == 0) // sizeof#(T) must be a multiple of AXI_WIDTH
+        assert#(C: sizeof#(T) <= MAX_ARLEN * AXI_WIDTH) // T is too big!
+        NUM_TRANSFERS = sizeof#(T) / AXI_WIDTH
+        assert#(C: NUM_TRANSFERS < MAX_ARLEN) // T is too big!
+    }
+    
+    // axi mm master
+    // write channels
+    /*output bool         m_axi_awvalid
+    input  bool         m_axi_awready
+    output int#(FROM: 0, TO: ATO)  m_axi_awaddr
+    output bool [7:0]   m_axi_awlen
+    output bool         m_axi_wvalid
+    input  bool         m_axi_wready
+    output bool [31:0]  m_axi_wdata
+    output bool [3:0]   m_axi_wstrb
+    output bool         m_axi_wlast
+    input  bool         m_axi_bvalid
+    output bool         m_axi_bready*/
+
+    // read channel
+    output bool                     m_axi_arvalid'0
+    input  bool                     m_axi_arready'0
+    output int#(FROM: 0, TO: ATO)   m_axi_araddr'0
+    output int#(FROM: 0, TO: 256)   m_axi_arlen'0
+    input  bool                     m_axi_rvalid'0
+    output bool                     m_axi_rready'0
+    input  bool[AXI_WIDTH]          m_axi_rdata'0
+    input  bool                     m_axi_rlast'0
+
+
+
+    // control signals
+    // Returns "true" if the request was 
+    action request : int#(FROM: 0, TO: ATO) addr -> bool fire {
+        m_axi_arvalid = true
+        m_axi_araddr = addr
+        m_axi_arlen = NUM_TRANSFERS
+        fire = m_axi_arready
+    } else {
+        m_axi_arvalid = false
+    }
+
+    bool do_read
+    bool do_read_was_valid
+    bool[sizeof#(T)] do_read_data
+
+    if sizeof#(T) <= AXI_WIDTH {
+        // m_axi_rlast should be true
+        m_axi_rready = do_read
+        do_read_was_valid = m_axi_rvalid
+        do_read_data = m_axi_rdata[:sizeof#(T)]
+    } else if sizeof#(T) > AXI_WIDTH {
+        state int#(FROM: 0, TO: NUM_TRANSFERS) stored_part_idx
+        state bool[AXI_WIDTH][NUM_TRANSFERS - 1] stored_parts
+
+        m_axi_rready = false
+        when stored_part_idx < NUM_TRANSFERS - 1 {
+            m_axi_rready = true
+            when m_axi_rvalid {
+                int idx = unsafe_int_cast#(FROM: 0, TO: NUM_TRANSFERS - 1)(stored_part_idx)
+                stored_parts[idx] = m_axi_rdata
+                stored_part_idx = idx + 1
+            }
+        } else {
+            m_axi_rready = do_read
+            when m_axi_rready & m_axi_rvalid {
+                // m_axi_rlast should be true
+                stored_part_idx = 0
+                for int i in 0..NUM_TRANSFERS-1 {
+                    do_read_data[i * AXI_WIDTH +: AXI_WIDTH] = stored_parts[i]
+                }
+                do_read_data[(NUM_TRANSFERS - 1) * AXI_WIDTH +: AXI_WIDTH] = m_axi_rdata
+            }
+        }
+        when !aresetn {
+            stored_part_idx = 0
+        }
+    }
+
+    action read'0 : -> bool read_valid'0, T data'0 {
+        do_read = true
+        read_valid = do_read_was_valid
+        when m_axi_rvalid {
+            data = transmute_from_bits(do_read_data)
+        }
+    } else {
+        do_read = false
+    }
+}
+
+
+module test_axi_memory_reader {
+    axi_memory_reader#(T: type float) read_A
+    axi_memory_reader#(T: type float[4]) read_B
+    axi_memory_reader#(T: type int#(FROM: 0, TO: 3)) read_C
+}
+
+module combined_axi_ctrl_plus_reader {
+    domain aclk
+    input bool aresetn
+
+    gen int ADDR_WIDTH = 12
+    gen int ATO = pow2#(E: ADDR_WIDTH)
+    gen int MTO = pow2#(E: 64)
+    gen int AXI_WIDTH = 32
+
+    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 1, ADDR_WIDTH) axi_control
+    axi_control.aresetn = aresetn
+
+    // Export AXI4-Lite interface
+    input  int#(FROM: 0, TO: ATO) s_axi_control_awaddr
+    input  bool                   s_axi_control_awvalid
+    output bool                   s_axi_control_awready = axi_control.awready
+    input  bool[AXI_WIDTH]        s_axi_control_wdata
+    input  bool[AXI_WIDTH / 8]    s_axi_control_wstrb
+    input  bool                   s_axi_control_wvalid
+    output bool                   s_axi_control_wready  = axi_control.wready
+    output bool[2]                s_axi_control_bresp   = axi_control.bresp
+    output bool                   s_axi_control_bvalid  = axi_control.bvalid
+    input  bool                   s_axi_control_bready
+    input  int#(FROM: 0, TO: ATO) s_axi_control_araddr
+    input  bool                   s_axi_control_arvalid
+    output bool                   s_axi_control_arready = axi_control.arready
+    output bool[AXI_WIDTH]        s_axi_control_rdata   = axi_control.rdata
+    output bool[2]                s_axi_control_rresp   = axi_control.rresp
+    output bool                   s_axi_control_rvalid  = axi_control.rvalid
+    input  bool                   s_axi_control_rready
+    axi_control.awaddr  =         s_axi_control_awaddr
+    axi_control.awvalid =         s_axi_control_awvalid
+    axi_control.wdata   =         s_axi_control_wdata
+    axi_control.wstrb   =         s_axi_control_wstrb
+    axi_control.wvalid  =         s_axi_control_wvalid
+    axi_control.bready  =         s_axi_control_bready
+    axi_control.araddr  =         s_axi_control_araddr
+    axi_control.arvalid =         s_axi_control_arvalid
+    axi_control.rready  =         s_axi_control_rready
+
+    axi_memory_reader#(T: type int#(FROM: 0, TO: pow2#(E: 32))) reader
+    reader.aresetn = aresetn
+
+    output bool                     m_axi_arvalid = reader.m_axi_arvalid
+    input  bool                     m_axi_arready
+    output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.m_axi_araddr
+    output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.m_axi_arlen
+    input  bool                     m_axi_rvalid
+    output bool                     m_axi_rready = reader.m_axi_rready
+    input  bool[AXI_WIDTH]          m_axi_rdata
+    input  bool                     m_axi_rlast
+    reader.m_axi_arready =          m_axi_arready
+    reader.m_axi_rvalid =           m_axi_rvalid
+    reader.m_axi_rdata =            m_axi_rdata
+    reader.m_axi_rlast =            m_axi_rlast
+
+    // Actual logic
+
+    gen int STM_IDLE  = 0
+    gen int STM_GET_A = 1
+    gen int STM_GET_B = 2
+
+    state int addr_state
+
+    state int data_state
+
+    when addr_state == STM_GET_A {
+        bool[64] addr_a_bits
+        addr_a_bits[:32] = axi_control.input_regs[0]
+        addr_a_bits[32:] = axi_control.input_regs[1]
+        when reader.request(BitsToUInt(addr_a_bits)) {
+            addr_state = STM_GET_B
+        }
+    } else when addr_state == STM_GET_B {
+        bool[64] addr_b_bits
+        addr_b_bits[:32] = axi_control.input_regs[2]
+        addr_b_bits[32:] = axi_control.input_regs[3]
+        when reader.request(BitsToUInt(addr_b_bits)) {
+            addr_state = STM_IDLE
+        }
+    }
+
+    state int stored_a
+    when data_state == STM_GET_A {
+        bool success, int data = reader.read()
+        when success {
+            stored_a = data
+            data_state = STM_GET_B
+        }
+    } else when data_state == STM_GET_B {
+        bool success, int b = reader.read()
+        when success {
+            int c = (stored_a + b) % pow2#(E: 32)
+            axi_control.finish([UIntToBits(c)])
+            data_state = STM_IDLE
+        }
+    }
+
+    when axi_control.start {
+        addr_state = STM_GET_A
+        data_state = STM_GET_A
+    }
+
+    when !aresetn {
+        addr_state = STM_IDLE
+        data_state = STM_IDLE
+    }
+}
