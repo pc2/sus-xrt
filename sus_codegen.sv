@@ -1,4 +1,4 @@
-// THIS IS A GENERATED FILE (Generated at 2025-10-08T21:37:05+02:00)
+// THIS IS A GENERATED FILE (Generated at 2025-10-08T23:52:46+02:00)
 // This file was generated with SUS Compiler 0.3.2 (c03e217393468a2bbaddabb4691db9b59a788351) built at 2025-10-08T21:34:20+02:00
 // axi_ctrl_slave_example #()
 module axi_ctrl_slave_example(
@@ -62,7 +62,7 @@ wire[31:0] _26[0:0];
 assign _26[0] = _UIntToBits_bits;
 /*mux_wire*/ logic _axi_control_finish;
 /*mux_wire*/ logic[31:0] _axi_control_output_regs[0:0];
-axi_ctrl_slave__NUM_INPUT_REGS2_NUM_OUTPUT_REGS1_ADDR_WIDTH12 axi_control(
+axi_ctrl_slave__NUM_INPUT_REGS2_NUM_OUTPUT_REGS1_ADDR_WIDTH12_AXI_WIDTH32 axi_control(
 	.aclk(aclk),
 	.aresetn(_axi_control_aresetn),
 	.awaddr(_axi_control_awaddr),
@@ -237,8 +237,8 @@ end
 end
 endmodule
 
-// axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12)
-module axi_ctrl_slave__NUM_INPUT_REGS2_NUM_OUTPUT_REGS1_ADDR_WIDTH12(
+// axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12, AXI_WIDTH: 32)
+module axi_ctrl_slave__NUM_INPUT_REGS2_NUM_OUTPUT_REGS1_ADDR_WIDTH12_AXI_WIDTH32(
 	input aclk,
 	input wire aresetn,
 	input wire[11:0] awaddr,
@@ -270,96 +270,110 @@ genvar _g0;
 /*state*/ logic reg_ctrl_ap_done;
 /*mux_wire*/ logic reg_ctrl_ap_ready;
 /*state*/ logic reg_ctrl_ap_start;
-/*state*/ logic[9:0] wr_stored_addr;
-/*state*/ logic[1:0] wstate;
-/*state*/ logic[1:0] last_werr;
+/*state*/ logic[9:0] stored_addr;
+/*state*/ logic stored_addr_valid;
+/*state*/ logic[1:0] last_bresp;
+/*state*/ logic last_werr_valid;
 wire _4;
-assign _4 = wstate == 1'd0;
-wire[9:0] _7;
-assign _7 = awaddr / 3'd5;
+assign _4 = !stored_addr_valid;
+wire _6;
+assign _6 = _4 & aresetn;
 wire _9;
-assign _9 = wstate == 1'd1;
-localparam[1:0] RESP_SLVERR = 2'b10;
-wire _12;
-assign _12 = wr_stored_addr == 1'd0;
-wire _13 = wstrb[0];
-wire _14 = wdata[0];
+assign _9 = !last_werr_valid;
+wire _10;
+assign _10 = stored_addr_valid & _9;
 wire _15;
-assign _15 = _13 & _14;
-localparam[1:0] RESP_OKAY = 2'b00;
-wire _19;
-assign _19 = wr_stored_addr >= 2'd2;
+assign _15 = awready & awvalid;
+wire[9:0] _17;
+assign _17 = awaddr / 3'd4;
+wire _20;
+assign _20 = wready & wvalid;
+localparam[1:0] RESP_SLVERR = 2'b10;
 wire _22;
-assign _22 = wr_stored_addr < 3'd4;
-wire _23;
-assign _23 = _19 & _22;
+assign _22 = stored_addr == 1'd0;
+wire _23 = wstrb[0];
+wire _24 = wdata[0];
+wire _25;
+assign _25 = _23 & _24;
+localparam[1:0] RESP_OKAY = 2'b00;
+wire _28;
+assign _28 = stored_addr >= 3'd4;
+wire _31;
+assign _31 = stored_addr < 3'd6;
+wire _32;
+assign _32 = _28 & _31;
 /*mux_wire*/ logic[0:0] write_idx;
-wire[9:0] _25;
-assign _25 = araddr / 3'd5;
 /*mux_wire*/ logic[9:0] _unsafe_int_cast_in;
-wire[1:0] _unsafe_int_cast_out;
-wire[0:0] _27;
-assign _27 = _unsafe_int_cast_out - 2'd2;
-wire _28 = wstrb[0];
-wire[7:0] _30;
+wire[2:0] _unsafe_int_cast_out;
+wire[0:0] _34;
+assign _34 = _unsafe_int_cast_out - 3'd4;
+wire _35 = wstrb[0];
+wire[7:0] _37;
 generate
 for(_g0 = 0; _g0 < 8; _g0 = _g0 + 1) begin
-assign _30[_g0] = wdata[_g0];
+assign _37[_g0] = wdata[_g0];
 end
 endgenerate
-wire _31 = wstrb[1];
-wire[7:0] _33;
+wire _38 = wstrb[1];
+wire[7:0] _40;
 generate
 for(_g0 = 0; _g0 < 8; _g0 = _g0 + 1) begin
-assign _33[_g0] = wdata[8 + _g0];
+assign _40[_g0] = wdata[8 + _g0];
 end
 endgenerate
-wire _34 = wstrb[2];
-wire[7:0] _36;
+wire _41 = wstrb[2];
+wire[7:0] _43;
 generate
 for(_g0 = 0; _g0 < 8; _g0 = _g0 + 1) begin
-assign _36[_g0] = wdata[16 + _g0];
+assign _43[_g0] = wdata[16 + _g0];
 end
 endgenerate
-wire _37 = wstrb[3];
-wire[7:0] _39;
+wire _44 = wstrb[3];
+wire[7:0] _46;
 generate
 for(_g0 = 0; _g0 < 8; _g0 = _g0 + 1) begin
-assign _39[_g0] = wdata[24 + _g0];
+assign _46[_g0] = wdata[24 + _g0];
 end
 endgenerate
 localparam[1:0] RESP_OKAY_2 = 2'b00;
-wire _41;
-assign _41 = wstate == 2'd2;
-/*state*/ logic[1:0] rstate;
+wire _49;
+assign _49 = bready & bvalid;
+/*state*/ logic last_rdata_valid;
 /*state*/ logic[31:0] last_rdata;
-/*state*/ logic[1:0] last_rerr;
+/*state*/ logic[1:0] last_rresp;
 /*mux_wire*/ logic[31:0] regs_read_multiplexer[2:0];
-wire _47;
-assign _47 = rstate == 1'd0;
+wire _55;
+assign _55 = !last_rdata_valid;
+wire _57;
+assign _57 = _55 & aresetn;
+wire _61;
+assign _61 = arready & arvalid;
 localparam[1:0] RESP_SLVERR_2 = 2'b10;
-wire _50;
-assign _50 = araddr == 1'd0;
+/*mux_wire*/ logic[9:0] read_addr;
+wire[9:0] _63;
+assign _63 = araddr / 3'd4;
+wire _65;
+assign _65 = read_addr == 1'd0;
 /*mux_wire*/ logic _Repeat_v;
 wire[27:0] _Repeat_result;
 localparam[1:0] RESP_OKAY_3 = 2'b00;
-wire _57;
-assign _57 = araddr >= 2'd2;
-wire _60;
-assign _60 = araddr < 3'd5;
-wire _61;
-assign _61 = _57 & _60;
-/*mux_wire*/ logic[1:0] read_idx;
-/*mux_wire*/ logic[11:0] _unsafe_int_cast_2_in;
-wire[2:0] _unsafe_int_cast_2_out;
-wire[1:0] _64;
-assign _64 = _unsafe_int_cast_2_out - 2'd2;
-wire[31:0] _66 = regs_read_multiplexer[read_idx];
-localparam[1:0] RESP_OKAY_4 = 2'b00;
-wire _68;
-assign _68 = rstate == 1'd1;
+wire _71;
+assign _71 = read_addr >= 3'd4;
 wire _74;
-assign _74 = !aresetn;
+assign _74 = read_addr < 3'd7;
+wire _75;
+assign _75 = _71 & _74;
+/*mux_wire*/ logic[1:0] read_idx;
+/*mux_wire*/ logic[9:0] _unsafe_int_cast_2_in;
+wire[2:0] _unsafe_int_cast_2_out;
+wire[1:0] _77;
+assign _77 = _unsafe_int_cast_2_out - 3'd4;
+wire[31:0] _79 = regs_read_multiplexer[read_idx];
+localparam[1:0] RESP_OKAY_4 = 2'b00;
+wire _82;
+assign _82 = rready & rvalid;
+wire _85;
+assign _85 = !aresetn;
 /*mux_wire*/ logic _Repeat_2_v;
 wire[31:0] _Repeat_2_result;
 /*mux_wire*/ logic[31:0] _Repeat_3_v;
@@ -368,7 +382,7 @@ wire[31:0] _Repeat_3_result[1:0];
 wire[31:0] _Repeat_4_result;
 /*mux_wire*/ logic[31:0] _Repeat_5_v;
 wire[31:0] _Repeat_5_result[0:0];
-unsafe_int_cast__FROM_I0_TO_I820_FROM2_TO4 unsafe_int_cast(
+unsafe_int_cast__FROM_I0_TO_I1024_FROM4_TO6 unsafe_int_cast(
 	.clk(aclk),
 	.in(_unsafe_int_cast_in),
 	.out(_unsafe_int_cast_out)
@@ -378,7 +392,7 @@ Repeat__Ttypebool____SIZE28 Repeat(
 	.v(_Repeat_v),
 	.result(_Repeat_result)
 );
-unsafe_int_cast__FROM_I0_TO_I4096_FROM2_TO5 unsafe_int_cast_2(
+unsafe_int_cast__FROM_I0_TO_I1024_FROM4_TO7 unsafe_int_cast_2(
 	.clk(aclk),
 	.in(_unsafe_int_cast_2_in),
 	.out(_unsafe_int_cast_2_out)
@@ -407,87 +421,87 @@ always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	awready = 1'bx;
 	awready = 1'b0;
-	if(_4) awready = 1'b1;
+	awready = _6;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	wready = 1'bx;
 	wready = 1'b0;
-	if(!_4) if(_9) wready = 1'b1;
+	wready = _10;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	bresp = 2'bxx;
-	if(!_4) if(!_9) if(_41) bresp = last_werr;
+	bresp = last_bresp;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	bvalid = 1'bx;
 	bvalid = 1'b0;
-	if(!_4) if(!_9) if(_41) bvalid = 1'b1;
+	bvalid = last_werr_valid;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	arready = 1'bx;
 	arready = 1'b0;
-	if(_47) arready = 1'b1;
+	arready = _57;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	rdata = 32'bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx;
-	if(!_47) if(_68) rdata = last_rdata;
+	rdata = last_rdata;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	rresp = 2'bxx;
-	if(!_47) if(_68) rresp = last_rerr;
+	rresp = last_rresp;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	rvalid = 1'bx;
 	rvalid = 1'b0;
-	if(!_47) if(_68) rvalid = 1'b1;
+	rvalid = last_rdata_valid;
 end
 always_ff @(posedge aclk) begin
 	for(int _v0 = 0; _v0 < 1; _v0 = _v0 + 1) begin
 if(finish) stored_output_regs[_v0] <= output_regs[_v0];
 end
 	for(int _v0 = 0; _v0 < 1; _v0 = _v0 + 1) begin
-if(_74) stored_output_regs[_v0] <= _Repeat_5_result[_v0];
+if(_85) stored_output_regs[_v0] <= _Repeat_5_result[_v0];
 end
 end
 always_ff @(posedge aclk) begin
 	for(int _v0 = 0; _v0 < 8; _v0 = _v0 + 1) begin
-if(!_4) if(_9) if(wvalid) if(_23) if(_28) input_regs[write_idx][_v0] <= _30[_v0];
+if(_20) if(_32) if(_35) input_regs[write_idx][_v0] <= _37[_v0];
 end
 	for(int _v0 = 0; _v0 < 8; _v0 = _v0 + 1) begin
-if(!_4) if(_9) if(wvalid) if(_23) if(_31) input_regs[write_idx][8 + _v0] <= _33[_v0];
+if(_20) if(_32) if(_38) input_regs[write_idx][8 + _v0] <= _40[_v0];
 end
 	for(int _v0 = 0; _v0 < 8; _v0 = _v0 + 1) begin
-if(!_4) if(_9) if(wvalid) if(_23) if(_34) input_regs[write_idx][16 + _v0] <= _36[_v0];
+if(_20) if(_32) if(_41) input_regs[write_idx][16 + _v0] <= _43[_v0];
 end
 	for(int _v0 = 0; _v0 < 8; _v0 = _v0 + 1) begin
-if(!_4) if(_9) if(wvalid) if(_23) if(_37) input_regs[write_idx][24 + _v0] <= _39[_v0];
+if(_20) if(_32) if(_44) input_regs[write_idx][24 + _v0] <= _46[_v0];
 end
 	for(int _v0 = 0; _v0 < 2; _v0 = _v0 + 1) begin
-if(_74) input_regs[_v0] <= _Repeat_3_result[_v0];
+if(_85) input_regs[_v0] <= _Repeat_3_result[_v0];
 end
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	start = 1'bx;
 	start = 1'b0;
-	if(!_4) if(_9) if(wvalid) if(_12) if(_15) start = 1'b1;
+	if(_20) if(_22) if(_25) start = 1'b1;
 end
 always_ff @(posedge aclk) begin
-	if(!_4) if(_9) if(wvalid) if(_12) if(_15) reg_ctrl_ap_idle <= 1'b0;
+	if(_20) if(_22) if(_25) reg_ctrl_ap_idle <= 1'b0;
 	if(finish) reg_ctrl_ap_idle <= 1'b0;
-	if(_74) reg_ctrl_ap_idle <= 1'b1;
+	if(_85) reg_ctrl_ap_idle <= 1'b1;
 end
 always_ff @(posedge aclk) begin
-	if(_47) if(arvalid) if(_50) reg_ctrl_ap_done <= 1'b0;
+	if(_61) if(_65) reg_ctrl_ap_done <= 1'b0;
 	if(finish) reg_ctrl_ap_done <= 1'b1;
-	if(_74) reg_ctrl_ap_done <= 1'b0;
+	if(_85) reg_ctrl_ap_done <= 1'b0;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
@@ -495,55 +509,57 @@ always_comb begin
 	reg_ctrl_ap_ready = reg_ctrl_ap_done;
 end
 always_ff @(posedge aclk) begin
-	if(!_4) if(_9) if(wvalid) if(_12) if(_15) reg_ctrl_ap_start <= 1'b1;
+	if(_20) if(_22) if(_25) reg_ctrl_ap_start <= 1'b1;
 	if(finish) reg_ctrl_ap_start <= 1'b0;
-	if(_74) reg_ctrl_ap_start <= 1'b0;
+	if(_85) reg_ctrl_ap_start <= 1'b0;
 end
 always_ff @(posedge aclk) begin
-	if(_4) if(awvalid) wr_stored_addr <= _7;
+	if(_15) stored_addr <= _17;
 end
 always_ff @(posedge aclk) begin
-	if(_4) if(awvalid) wstate <= 1'd1;
-	if(!_4) if(_9) if(wvalid) wstate <= 2'd2;
-	if(!_4) if(!_9) if(_41) if(bready) wstate <= 1'd0;
-	if(!_4) if(!_9) if(!_41) wstate <= 1'd0;
-	if(_74) wstate <= 2'd3;
+	if(_15) stored_addr_valid <= 1'b1;
+	if(_20) stored_addr_valid <= 1'b0;
+	if(_85) stored_addr_valid <= 1'b0;
 end
 always_ff @(posedge aclk) begin
-	if(!_4) if(_9) if(wvalid) last_werr <= RESP_SLVERR;
-	if(!_4) if(_9) if(wvalid) if(_12) last_werr <= RESP_OKAY;
-	if(!_4) if(_9) if(wvalid) if(_23) last_werr <= RESP_OKAY_2;
+	if(_20) last_bresp <= RESP_SLVERR;
+	if(_20) if(_22) last_bresp <= RESP_OKAY;
+	if(_20) if(_32) last_bresp <= RESP_OKAY_2;
+end
+always_ff @(posedge aclk) begin
+	if(_20) last_werr_valid <= 1'b1;
+	if(_49) last_werr_valid <= 1'b0;
+	if(_85) last_werr_valid <= 1'b0;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	write_idx = 1'dx;
-	if(!_4) if(_9) if(wvalid) if(_23) write_idx = _27;
+	if(_20) if(_32) write_idx = _34;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_unsafe_int_cast_in = 10'dx;
-	if(!_4) if(_9) if(wvalid) if(_23) _unsafe_int_cast_in = _25;
+	if(_20) if(_32) _unsafe_int_cast_in = stored_addr;
 end
 always_ff @(posedge aclk) begin
-	if(_47) if(arvalid) rstate <= 1'd1;
-	if(!_47) if(_68) if(rready) rstate <= 1'd0;
-	if(!_47) if(!_68) rstate <= 1'd0;
-	if(_74) rstate <= 2'd2;
+	if(_61) last_rdata_valid <= 1'b1;
+	if(_82) last_rdata_valid <= 1'b0;
+	if(_85) last_rdata_valid <= 1'b0;
 end
 always_ff @(posedge aclk) begin
-	if(_47) if(arvalid) if(_50) last_rdata[0] <= reg_ctrl_ap_start;
-	if(_47) if(arvalid) if(_50) last_rdata[1] <= reg_ctrl_ap_done;
-	if(_47) if(arvalid) if(_50) last_rdata[2] <= reg_ctrl_ap_idle;
-	if(_47) if(arvalid) if(_50) last_rdata[3] <= reg_ctrl_ap_ready;
+	if(_61) if(_65) last_rdata[0] <= reg_ctrl_ap_start;
+	if(_61) if(_65) last_rdata[1] <= reg_ctrl_ap_done;
+	if(_61) if(_65) last_rdata[2] <= reg_ctrl_ap_idle;
+	if(_61) if(_65) last_rdata[3] <= reg_ctrl_ap_ready;
 	for(int _v0 = 0; _v0 < 28; _v0 = _v0 + 1) begin
-if(_47) if(arvalid) if(_50) last_rdata[4 + _v0] <= _Repeat_result[_v0];
+if(_61) if(_65) last_rdata[4 + _v0] <= _Repeat_result[_v0];
 end
-	if(_47) if(arvalid) if(_61) last_rdata <= _66;
+	if(_61) if(_75) last_rdata <= _79;
 end
 always_ff @(posedge aclk) begin
-	if(_47) if(arvalid) last_rerr <= RESP_SLVERR_2;
-	if(_47) if(arvalid) if(_50) last_rerr <= RESP_OKAY_3;
-	if(_47) if(arvalid) if(_61) last_rerr <= RESP_OKAY_4;
+	if(_61) last_rresp <= RESP_SLVERR_2;
+	if(_61) if(_65) last_rresp <= RESP_OKAY_3;
+	if(_61) if(_75) last_rresp <= RESP_OKAY_4;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
@@ -557,38 +573,43 @@ end
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
+	read_addr = 10'dx;
+	if(_61) read_addr = _63;
+end
+always_comb begin
+	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_Repeat_v = 1'bx;
-	if(_47) if(arvalid) if(_50) _Repeat_v = 1'b0;
+	if(_61) if(_65) _Repeat_v = 1'b0;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	read_idx = 2'dx;
-	if(_47) if(arvalid) if(_61) read_idx = _64;
+	if(_61) if(_75) read_idx = _77;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
-	_unsafe_int_cast_2_in = 12'dx;
-	if(_47) if(arvalid) if(_61) _unsafe_int_cast_2_in = araddr;
+	_unsafe_int_cast_2_in = 10'dx;
+	if(_61) if(_75) _unsafe_int_cast_2_in = read_addr;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_Repeat_2_v = 1'bx;
-	if(_74) _Repeat_2_v = 1'b0;
+	if(_85) _Repeat_2_v = 1'b0;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_Repeat_3_v = 32'bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx;
-	if(_74) _Repeat_3_v = _Repeat_2_result;
+	if(_85) _Repeat_3_v = _Repeat_2_result;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_Repeat_4_v = 1'bx;
-	if(_74) _Repeat_4_v = 1'b0;
+	if(_85) _Repeat_4_v = 1'b0;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_Repeat_5_v = 32'bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx;
-	if(_74) _Repeat_5_v = _Repeat_4_result;
+	if(_85) _Repeat_5_v = _Repeat_4_result;
 end
 endmodule
 
@@ -612,11 +633,11 @@ module UIntToBits__NUM_BITS32(
 	assign bits = value;
 endmodule
 
-// unsafe_int_cast #(FROM_I: 0, TO_I: 820, FROM: 2, TO: 4)
-module unsafe_int_cast__FROM_I0_TO_I820_FROM2_TO4(
+// unsafe_int_cast #(FROM_I: 0, TO_I: 1024, FROM: 4, TO: 6)
+module unsafe_int_cast__FROM_I0_TO_I1024_FROM4_TO6(
 	input clk,
 	input wire[9:0] in,
-	output /*mux_wire*/ logic[1:0] out
+	output /*mux_wire*/ logic[2:0] out
 );
 
 	assign out = in;
@@ -663,10 +684,10 @@ always_comb begin
 end
 endmodule
 
-// unsafe_int_cast #(FROM_I: 0, TO_I: 4096, FROM: 2, TO: 5)
-module unsafe_int_cast__FROM_I0_TO_I4096_FROM2_TO5(
+// unsafe_int_cast #(FROM_I: 0, TO_I: 1024, FROM: 4, TO: 7)
+module unsafe_int_cast__FROM_I0_TO_I1024_FROM4_TO7(
 	input clk,
-	input wire[11:0] in,
+	input wire[9:0] in,
 	output /*mux_wire*/ logic[2:0] out
 );
 

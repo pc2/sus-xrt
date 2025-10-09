@@ -6,15 +6,22 @@
 ///
 /// XRT imposes a 64K (16bit) address range limitation. 
 /// See https://docs.amd.com/r/2023.2-English/ug1393-vitis-application-acceleration/Kernel-Interface-Requirements
-module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH) {
+///
+/// It also appears that ADDR_WIDTH must be >= 12, because the address mapping requires blocks of size 4096
+module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH, int AXI_WIDTH) {
     domain aclk
     input bool aresetn
 
-    gen int DATA_WIDTH = 32
-    gen int REG_STRIDE = clog2#(V: DATA_WIDTH)
+    gen int DATA_STARTS_AT_ADDR = 16 // 0x010
+    gen int REG_STRIDE = AXI_WIDTH / 8
+    gen int CTRL_REG = 0
+    gen int FIRST_REG = DATA_STARTS_AT_ADDR / REG_STRIDE
+    assert#(C: DATA_STARTS_AT_ADDR % REG_STRIDE == 0)
     gen int ATO = pow2#(E: ADDR_WIDTH)
+    assert#(C: ADDR_WIDTH >= 12)
     assert#(C: ADDR_WIDTH <= 16)
-    assert#(C: (NUM_INPUT_REGS + NUM_OUTPUT_REGS + 2) * REG_STRIDE <= pow2#(E: ADDR_WIDTH))
+    // Max number of regs
+    assert#(C: (FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS) * REG_STRIDE <= pow2#(E: ADDR_WIDTH))
     gen bool[2] RESP_OKAY = [false, false]
     gen bool[2] RESP_SLVERR = [false, true]
 
@@ -22,8 +29,8 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH)
     input int#(FROM: 0, TO: ATO) awaddr
     input bool awvalid
     output bool awready = false
-    input bool[DATA_WIDTH] wdata
-    input bool[DATA_WIDTH / 8] wstrb
+    input bool[AXI_WIDTH] wdata
+    input bool[AXI_WIDTH / 8] wstrb
     input bool wvalid
     output bool wready = false
     output bool[2] bresp
@@ -32,7 +39,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH)
     input int#(FROM: 0, TO: ATO) araddr
     input bool arvalid
     output bool arready = false
-    output bool[DATA_WIDTH] rdata
+    output bool[AXI_WIDTH] rdata
     output bool[2] rresp
     output bool rvalid = false
     input bool rready
@@ -42,112 +49,93 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH)
     output state bool[32][NUM_INPUT_REGS] input_regs
     trigger start
 
-
-    gen int CTRL_REG = 0
-
-
     // control register bits
     state bool reg_ctrl_ap_idle
     state bool reg_ctrl_ap_done
     bool reg_ctrl_ap_ready = reg_ctrl_ap_done    // copy ap_done because there's no pausing
     state bool reg_ctrl_ap_start
 
-    // registers write state machine
-    gen int WR_IDLE  = 0
-    gen int WR_DATA  = 1
-    gen int WR_RESP  = 2
-    gen int WR_RESET = 3
+    // Write transaction
+    state int stored_addr
+    state bool stored_addr_valid
+    state bool[2] last_bresp
+    state bool last_werr_valid
     
-    state int wr_stored_addr
-    state int wstate
-    state bool[2] last_werr
-    
-    when wstate == WR_IDLE {
-        awready = true
-        when awvalid {
-            wr_stored_addr = awaddr / REG_STRIDE
-            wstate = WR_DATA
-        }
-    } else when wstate == WR_DATA {
-        wready = true
-        when wvalid {
-            // Control Write
-            last_werr = RESP_SLVERR
-            when wr_stored_addr == CTRL_REG {
-                when wstrb[0] & wdata[0] {
-                    reg_ctrl_ap_start = true
-                    reg_ctrl_ap_idle = false
-                    start()
-                }
-                last_werr = RESP_OKAY
+    awready = !stored_addr_valid & aresetn // Force low on reset
+    wready = stored_addr_valid & !last_werr_valid // Already low by reset
+    bvalid = last_werr_valid
+    bresp = last_bresp
+
+    when awready & awvalid {
+        stored_addr_valid = true
+        stored_addr = awaddr / REG_STRIDE
+    }
+    when wready & wvalid {
+        stored_addr_valid = false
+        last_werr_valid = true
+
+        last_bresp = RESP_SLVERR
+        when stored_addr == CTRL_REG {
+            when wstrb[0] & wdata[0] {
+                reg_ctrl_ap_start = true
+                reg_ctrl_ap_idle = false
+                start()
             }
-            // Data Write
-            when (wr_stored_addr >= 2) & (wr_stored_addr < 2 + NUM_INPUT_REGS) {
-                int write_idx = unsafe_int_cast#(FROM: 2, TO: 2 + NUM_INPUT_REGS)(araddr / REG_STRIDE) - 2
-                for int strbi in 0..4 {
-                    when wstrb[strbi] {
-                        input_regs[write_idx][strbi*8 +: 8] = wdata[strbi*8 +: 8]
-                    }
+            last_bresp = RESP_OKAY
+        }
+        // Data Write
+        when (stored_addr >= FIRST_REG) & (stored_addr < FIRST_REG + NUM_INPUT_REGS) {
+            int write_idx = unsafe_int_cast#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS)(stored_addr) - FIRST_REG
+            for int strbi in 0..4 {
+                when wstrb[strbi] {
+                    input_regs[write_idx][strbi*8 +: 8] = wdata[strbi*8 +: 8]
                 }
-                last_werr = RESP_OKAY
             }
-            wstate = WR_RESP
+            last_bresp = RESP_OKAY
         }
-    } else when wstate == WR_RESP {
-        bvalid = true
-        bresp = last_werr
-        when bready {
-            wstate = WR_IDLE
-        }
-    } else {
-        wstate = WR_IDLE
+    }
+    when bready & bvalid {
+        last_werr_valid = false
     }
 
-
-    // registers read state machine
-    gen int RD_IDLE  = 0
-    gen int RD_DATA  = 1
-    gen int RD_RESET = 2
-    
-    state int rstate
+    // Read transaction
+    state bool last_rdata_valid
     state bool[32] last_rdata
-    state bool[2] last_rerr
+    rdata = last_rdata
+    state bool[2] last_rresp
+    rresp = last_rresp
 
     bool[32][NUM_INPUT_REGS + NUM_OUTPUT_REGS] regs_read_multiplexer
     regs_read_multiplexer[:NUM_INPUT_REGS] = input_regs
     regs_read_multiplexer[NUM_INPUT_REGS:] = stored_output_regs
 
-    when rstate == RD_IDLE {
-        arready = true
-        when arvalid {
-            // Control Read
-            last_rerr = RESP_SLVERR
-            when araddr == CTRL_REG {
-                last_rdata[0] = reg_ctrl_ap_start
-                last_rdata[1] = reg_ctrl_ap_done
-                last_rdata[2] = reg_ctrl_ap_idle
-                last_rdata[3] = reg_ctrl_ap_ready
-                last_rdata[4:] = Repeat(false)
-                reg_ctrl_ap_done = false // clear on read
-                last_rerr = RESP_OKAY
-            }
-            // Data Read
-            when (araddr >= 2) & (araddr < 2 + NUM_INPUT_REGS + NUM_OUTPUT_REGS) {
-                int read_idx = unsafe_int_cast#(FROM: 2, TO: 2 + NUM_INPUT_REGS + NUM_OUTPUT_REGS)(araddr) - 2
-                last_rdata = regs_read_multiplexer[read_idx]
-                last_rerr = RESP_OKAY
-            }
-            rstate = RD_DATA
+    arready = !last_rdata_valid & aresetn // Force low on reset
+    rvalid = last_rdata_valid // Already low by reset
+
+    when arready & arvalid {
+        last_rdata_valid = true
+        
+        // Control Read
+        last_rresp = RESP_SLVERR
+        int read_addr = araddr / REG_STRIDE
+        when read_addr == CTRL_REG {
+            last_rdata[0] = reg_ctrl_ap_start
+            last_rdata[1] = reg_ctrl_ap_done
+            last_rdata[2] = reg_ctrl_ap_idle
+            last_rdata[3] = reg_ctrl_ap_ready
+            last_rdata[4:] = Repeat(false)
+            reg_ctrl_ap_done = false // clear on read
+            last_rresp = RESP_OKAY
         }
-    } else when rstate == RD_DATA {
-        rvalid = true
-        rdata = last_rdata
-        rresp = last_rerr
-        when rready {
-            rstate = RD_IDLE
+        // Data Read
+        when (read_addr >= FIRST_REG) & (read_addr < FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS) {
+            int read_idx = unsafe_int_cast#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS)(read_addr) - FIRST_REG
+            last_rdata = regs_read_multiplexer[read_idx]
+            last_rresp = RESP_OKAY
         }
-    } else {
-        rstate = RD_IDLE
+    }
+    when rready & rvalid {
+        last_rdata_valid = false
     }
 
     action finish : bool[32][NUM_OUTPUT_REGS] output_regs {
@@ -158,8 +146,11 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH)
     }
 
     when !aresetn {
-        wstate = WR_RESET
-        rstate = RD_RESET
+        stored_addr_valid = false
+        last_werr_valid = false
+
+        last_rdata_valid = false
+
         reg_ctrl_ap_idle = true
         reg_ctrl_ap_start = false
         reg_ctrl_ap_done = false

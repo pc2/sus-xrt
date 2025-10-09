@@ -1,24 +1,3 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 10/08/2025 06:19:41 PM
-// Design Name: 
-// Module Name: sim_control
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 `timescale 1ns/1ps
 
 module tb_axi_ctrl_slave_example;
@@ -73,6 +52,8 @@ module tb_axi_ctrl_slave_example;
     .s_axi_control_rready(s_axi_control_rready)
   );
 
+    logic[31:0] read_data;
+    
   // Clock generation
   initial aclk = 0;
   always #5 aclk = ~aclk; // 100 MHz
@@ -106,6 +87,7 @@ module tb_axi_ctrl_slave_example;
     wait (s_axi_control_bvalid);
     @(posedge aclk);
     s_axi_control_bready = 0;
+    $display("[%0t] Wrote 0x%08X to address 0x%03X. Error? 0b%02B", $time, data, addr, s_axi_control_bresp);
   end
   endtask
 
@@ -123,13 +105,23 @@ module tb_axi_ctrl_slave_example;
 
     // Wait for RVALID
     wait (s_axi_control_rvalid);
-    data_out = s_axi_control_rdata;
     @(posedge aclk);
+    data_out = s_axi_control_rdata;
     s_axi_control_rready = 0;
+    $display("[%0t] Read  0x%08X from address 0x%03X Error? 0b%02B", $time, data_out, addr, s_axi_control_rresp);
   end
   endtask
 
-    logic[31:0] read_data;
+  // Simple AXI read task
+  task xrt_wait_until_finish();
+  begin
+    read_data = 0;
+    while(!read_data[1]) begin
+      axi_read(12'h000, read_data);
+    end
+  end
+  endtask
+  
   // Main test sequence
   initial begin
     // Initialize signals
@@ -149,13 +141,16 @@ module tb_axi_ctrl_slave_example;
     @(posedge aclk);
     @(posedge aclk);
 
-    // Write to address 0x010
-    axi_write(12'h010, 32'hDEADBEEF);
-    $display("[%0t] Wrote 0x%08X to address 0x%03X", $time, 32'hDEADBEEF, 12'h010);
-    
-    // Read from address
+    axi_write(12'h010, 42);
+    axi_write(12'h014, 50);
     axi_read(12'h010, read_data);
-    $display("[%0t] Read  0x%08X from address 0x%03X", $time, read_data, 12'h010);
+    axi_read(12'h000, read_data);
+    
+    // Start the "accelerator"
+    axi_write(12'h000, 32'h00000001);
+    xrt_wait_until_finish();
+    
+    axi_read(12'h018, read_data);
 
     // Finish simulation
     repeat(10) @(posedge aclk);
