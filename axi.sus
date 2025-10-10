@@ -190,6 +190,11 @@ module axi_ctrl_slave_example {
     output bool[2]                s_axi_control_rresp   = axi_control.rresp
     output bool                   s_axi_control_rvalid  = axi_control.rvalid
     input  bool                   s_axi_control_rready
+
+    output bool[DATA_WIDTH]       outstream_tdata
+    output bool                   outstream_tvalid
+    input  bool                   outstream_tready
+
     axi_control.awaddr  = s_axi_control_awaddr
     axi_control.awvalid = s_axi_control_awvalid
     axi_control.wdata   = s_axi_control_wdata
@@ -209,6 +214,7 @@ module axi_ctrl_slave_example {
         int c = (a + b) % pow2#(E: 32)
 
         axi_control.finish([UIntToBits(c)])
+        
     }
 }
 
