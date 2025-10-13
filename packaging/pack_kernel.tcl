@@ -42,11 +42,11 @@ set_property address_offset {0x10}            [ipx::get_registers IN_A -of_objec
 set_property size           {32}              [ipx::get_registers IN_A -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 
 set_property description    {Input B}         [ipx::get_registers IN_B -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
-set_property address_offset {0x18}            [ipx::get_registers IN_B -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property address_offset {0x14}            [ipx::get_registers IN_B -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 set_property size           {32}              [ipx::get_registers IN_B -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 
 set_property description    {Output C}        [ipx::get_registers OUT_C -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
-set_property address_offset {0x20}            [ipx::get_registers OUT_C -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property address_offset {0x18}            [ipx::get_registers OUT_C -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 set_property size           {32}              [ipx::get_registers OUT_C -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 
 set_property core_revision 2 [ipx::current_core]

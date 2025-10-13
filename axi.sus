@@ -124,6 +124,9 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
             last_rdata[2] = reg_ctrl_ap_idle
             last_rdata[3] = reg_ctrl_ap_ready
             last_rdata[4:] = Repeat(false)
+            when reg_ctrl_ap_done {
+                reg_ctrl_ap_idle = true
+            }
             reg_ctrl_ap_done = false // clear on read
             last_rresp = RESP_OKAY
         }
@@ -169,7 +172,7 @@ module axi_ctrl_slave_example {
     gen int ATO = pow2#(E: ADDR_WIDTH)
     gen int DATA_WIDTH = 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH) axi_control
+    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 500, ADDR_WIDTH) axi_control
     axi_control.aresetn = aresetn
 
     // Export AXI4-Lite interface
@@ -190,11 +193,6 @@ module axi_ctrl_slave_example {
     output bool[2]                s_axi_control_rresp   = axi_control.rresp
     output bool                   s_axi_control_rvalid  = axi_control.rvalid
     input  bool                   s_axi_control_rready
-
-    output state bool[DATA_WIDTH] outstream_tdata
-    output state bool             outstream_tvalid
-    input  bool                   outstream_tready
-
     axi_control.awaddr  = s_axi_control_awaddr
     axi_control.awvalid = s_axi_control_awvalid
     axi_control.wdata   = s_axi_control_wdata
@@ -204,7 +202,33 @@ module axi_ctrl_slave_example {
     axi_control.araddr  = s_axi_control_araddr
     axi_control.arvalid = s_axi_control_arvalid
     axi_control.rready  = s_axi_control_rready
+    
+    output state bool[DATA_WIDTH] outstream_tdata
+    output state bool             outstream_tvalid
+    input  bool                   outstream_tready
 
+    state int#(FROM: 0, TO: pow2#(E: 32)) wait_count
+
+    /*when wait_count != 0 {
+        when wait_count == 1 {
+            axi_control.finish([UIntToBits(20000)])
+        }
+        wait_count = unsafe_int_cast#(FROM: 1, TO: pow2#(E: 32))(wait_count) - 1
+    }*/
+    
+    //state bool[32] bits_to_transmit
+
+    state bool[32][500] writes_shift_reg
+
+    when s_axi_control_awvalid & s_axi_control_awready {
+        bool[32] new_bits = UIntToBits(s_axi_control_awaddr)
+
+        for int i in 1..500 {
+            writes_shift_reg[i] = writes_shift_reg[i-1]
+        }
+        writes_shift_reg[0] = new_bits
+    }
+    
 
     // Actual logic
     when axi_control.start {
@@ -213,7 +237,10 @@ module axi_ctrl_slave_example {
 
         int c = (a + b) % pow2#(E: 32)
 
-        axi_control.finish([UIntToBits(c)])
+        //wait_count = a
+
+        
+        axi_control.finish(writes_shift_reg)
 
         outstream_tvalid = true
         outstream_tdata = UIntToBits(c)
@@ -225,6 +252,7 @@ module axi_ctrl_slave_example {
 
     when !aresetn {
         outstream_tvalid = false 
+        //bits_to_transmit = Repeat(true)
     }
 }
 
