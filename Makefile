@@ -1,14 +1,17 @@
+TARGET := hw_emu
 PART := xcvc1902-vsvd1760-2MP-e-S
 PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
 
+all: hw/overlay_$(TARGET).xclbin
+
 packaging/axi_stream_example.xo: packaging/pack_kernel.tcl sus_codegen.sv
-	make -C packaging axi_stream_example.xo PART=$(PART) PLATFORM=$(PLATFORM)
+	make -C packaging axi_stream_example.xo PART=$(PART) PLATFORM=$(PLATFORM) TARGET=$(TARGET)
 
-hls/output_kernel.xo: hls/output_kernel.cpp
-	make -C hls output_kernel.xo PART=$(PART) PLATFORM=$(PLATFORM)
+hls/output_kernel_$(TARGET).xo: hls/output_kernel.cpp
+	make -C hls output_kernel_$(TARGET).xo PART=$(PART) PLATFORM=$(PLATFORM) TARGET=$(TARGET)
 
-hw/overlay.xclbin: hls/output_kernel.xo packaging/axi_stream_example.xo
-	make -C hw overlay.xclbin PART=$(PART) PLATFORM=$(PLATFORM)
+hw/overlay_$(TARGET).xclbin: hls/output_kernel_$(TARGET).xo packaging/axi_stream_example.xo
+	make -C hw overlay_$(TARGET).xclbin PART=$(PART) PLATFORM=$(PLATFORM) TARGET=$(TARGET)
 
 sw/main.x: sw/main.cpp
 	make -C sw main.x
