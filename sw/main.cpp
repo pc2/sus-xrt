@@ -11,9 +11,10 @@
 
 int main()
 {
-    std::string xclbin_name = "hw/overlay.xclbin";
+    std::string xclbin_name = "hw/overlay_hw_emu.xclbin";
     
-    xrt::device vck5000 = xrt::device("0000:e1:00.1");
+    //xrt::device vck5000 = xrt::device("0000:e1:00.1");
+    xrt::device vck5000 = xrt::device(0); // For hw_emu
     std::cout << "Got VCK5000" << std::endl;
 
     std::cout << "device name:     " << vck5000.get_info<xrt::info::device::name>() << "\n";
@@ -33,13 +34,23 @@ int main()
     xrt::run run_output_kernel = output_kernel(output_buffer);
     
     std::cout << "Starting RTL kernel" << std::endl;
-    xrt::kernel axi_stream_example(vck5000, xclbin_handle, "axi_stream_example:{axi_stream_example0}");
-    xrt::run run_axi_stream_example = axi_stream_example(25, 26, 27);
+    xrt::kernel sus_kernel(vck5000, xclbin_handle, "sus_kernel:{sus_kernel0}");
+
+    auto input_buffer_bankid = output_kernel.group_id(0);
+    xrt::bo sus_kernel_buffer = xrt::bo(vck5000, 32, input_buffer_bankid);
+
+    uint32_t values[8] = {123456, 10, 100, 1000, 10000, 100000, 1000000, 10000000};
+    sus_kernel_buffer.write(&values, 32, 0);
+    sus_kernel_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+    xrt::run run_sus_kernel = sus_kernel(sus_kernel_buffer, sus_kernel_buffer);
     std::cout << "Waiting RTL kernel" << std::endl;
-    run_axi_stream_example.wait();
+    run_sus_kernel.wait();
     std::cout << "Waiting HLS kernel" << std::endl;
     run_output_kernel.wait();
     //usleep(1000 * 1000);
+
+
 
     uint32_t c = 0;
     output_buffer.sync(XCL_BO_SYNC_BO_FROM_DEVICE);

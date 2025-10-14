@@ -4,7 +4,4 @@
 #SBATCH -p hacc
 
 source ~/get_vck.sh
-# make packaging/axi_stream_example.xo
-make clean
-make hw/overlay.xclbin
-make sw/main.x
+make
