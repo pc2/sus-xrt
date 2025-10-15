@@ -64,6 +64,16 @@ set_property description    {buffer addr B }    [ipx::get_registers ADDR_B  -of_
 set_property address_offset {0x018}             [ipx::get_registers ADDR_B  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 set_property size           {64}                [ipx::get_registers ADDR_B  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 
+ipx::add_register ADDR_C [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]
+set_property description    {buffer addr C }    [ipx::get_registers ADDR_C  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property address_offset {0x020}             [ipx::get_registers ADDR_C  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property size           {64}                [ipx::get_registers ADDR_C  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+
+ipx::add_register ADDR_D [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]
+set_property description    {buffer addr D }    [ipx::get_registers ADDR_D  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property address_offset {0x028}             [ipx::get_registers ADDR_D  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property size           {64}                [ipx::get_registers ADDR_D  -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+
 
 ipx::add_register_parameter ASSOCIATED_BUSIF [ipx::get_registers ADDR_A -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
 set_property value          {m_axi}          [ipx::get_register_parameters ASSOCIATED_BUSIF     \
@@ -78,6 +88,21 @@ set_property value          {m_axi}          [ipx::get_register_parameters ASSOC
                                     -of_objects [ipx::get_address_blocks reg0                      \
                                     -of_objects [ipx::get_memory_maps s_axi_control                 \
                                     -of_objects [ipx::current_core]]]]]
+
+ipx::add_register_parameter ASSOCIATED_BUSIF [ipx::get_registers ADDR_C -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property value          {m_axi}          [ipx::get_register_parameters ASSOCIATED_BUSIF     \
+                                    -of_objects [ipx::get_registers ADDR_C                      \
+                                    -of_objects [ipx::get_address_blocks reg0                      \
+                                    -of_objects [ipx::get_memory_maps s_axi_control                 \
+                                    -of_objects [ipx::current_core]]]]]
+
+ipx::add_register_parameter ASSOCIATED_BUSIF [ipx::get_registers ADDR_D -of_objects [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]]
+set_property value          {m_axi}          [ipx::get_register_parameters ASSOCIATED_BUSIF     \
+                                    -of_objects [ipx::get_registers ADDR_D                      \
+                                    -of_objects [ipx::get_address_blocks reg0                      \
+                                    -of_objects [ipx::get_memory_maps s_axi_control                 \
+                                    -of_objects [ipx::current_core]]]]]
+
 
 ipx::add_bus_parameter DATA_WIDTH [ipx::get_bus_interfaces m_axi -of_objects [ipx::current_core]]
 set_property value           {32} [ipx::get_bus_parameters DATA_WIDTH -of_objects [ipx::get_bus_interfaces m_axi -of_objects [ipx::current_core]]]
