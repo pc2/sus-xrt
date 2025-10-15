@@ -1,4 +1,79 @@
 
+module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
+    input bool aresetn'0
+
+    input bool tready'0
+    output bool tvalid'0
+    output bool[sizeof#(T)] tdata'0
+
+    /// Basically the same as a FWFT XPM FIFO, just that we can't yet instantiate that one without an extra SV file. (#131)
+    state T[DEPTH] memory
+    state int#(FROM: 0, TO: DEPTH) wr_addr
+    state int#(FROM: 0, TO: DEPTH) rd_addr
+    
+    bool do_read = !tvalid | tready & tvalid
+
+    gen int NUM_PIPELINE_STAGES
+    if DEPTH <= 64 {
+        NUM_PIPELINE_STAGES = 1
+    } else {
+        NUM_PIPELINE_STAGES = 2
+    }
+    state T[NUM_PIPELINE_STAGES] memory_read_pipeline_stages
+    state bool[NUM_PIPELINE_STAGES] memory_read_pipeline_stages_valids
+    when do_read {
+        for int i in 1..NUM_PIPELINE_STAGES {
+            memory_read_pipeline_stages[i] = memory_read_pipeline_stages[i-1]
+            memory_read_pipeline_stages_valids[i] = memory_read_pipeline_stages_valids[i-1]
+        }
+        bool read_from_mem_is_valid = rd_addr != wr_addr
+        memory_read_pipeline_stages_valids[0] = read_from_mem_is_valid
+        when read_from_mem_is_valid {
+            memory_read_pipeline_stages[0] = memory[rd_addr]
+            rd_addr = (rd_addr + 1) % DEPTH
+        }
+    }
+
+    tdata = transmute_to_bits(memory_read_pipeline_stages[NUM_PIPELINE_STAGES - 1])
+    tvalid = memory_read_pipeline_stages_valids[NUM_PIPELINE_STAGES - 1]
+
+    int free_space = (rd_addr - wr_addr - 1) % DEPTH
+
+    output bool may_push'-MAY_PUSH_LATENCY
+    may_push = LatencyOffset#(OFFSET: -MAY_PUSH_LATENCY)(free_space >= MAY_PUSH_LATENCY)
+    action push'0: T data'0 {
+        memory[wr_addr] = data
+        wr_addr = (wr_addr + 1) % DEPTH
+    }
+
+    when !aresetn {
+        wr_addr = 0
+        rd_addr = 0
+
+        for int i in 0..NUM_PIPELINE_STAGES {
+            memory_read_pipeline_stages_valids[i] = false
+        }
+    }
+}
+
+module axis_master_fifo_example {
+    input bool aresetn
+
+    input bool axis_tready
+    output bool axis_tvalid
+    output bool[sizeof#(T: type float)] axis_tdata
+
+    axis_master_fifo#(DEPTH: 32) my_fifo
+    my_fifo.aresetn = aresetn
+    my_fifo.tready = axis_tready
+    axis_tvalid = my_fifo.tvalid
+    axis_tdata = my_fifo.tdata
+
+    output bool may_push'-10 = my_fifo.may_push
+    action push'0 : float data'0 {
+        my_fifo.push(data)
+    }
+}
 
 /// CTRL REGS is 0x000000
 /// Input regs start at 0x000010 and increment 0X000008 every time
