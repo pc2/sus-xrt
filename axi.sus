@@ -494,7 +494,7 @@ module axi_memory_writer #(T) {
         awburst = 2'b01 // BURST_INC
         awaddr = addr
         awvalid = !writing_data_valid & (num_outstanding_writes < OUTSTANDING_WRITES_CAPACITY - 1)
-        write_success = awready
+        write_success = awvalid & awready
 
         when awvalid & awready {
             writing_data = transmute_to_bits(data)
@@ -515,3 +515,4 @@ module axi_memory_writer #(T) {
         num_outstanding_writes = 0
     }
 }
+

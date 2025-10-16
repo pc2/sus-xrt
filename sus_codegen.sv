@@ -1,4 +1,4 @@
-// THIS IS A GENERATED FILE (Generated at 2025-10-15T19:18:46+02:00)
+// THIS IS A GENERATED FILE (Generated at 2025-10-16T15:36:16+02:00)
 // This file was generated with SUS Compiler 0.3.4 () built at 2025-10-15_01:40:37 
 // combined_axi_ctrl_reader_writer #()
 module combined_axi_ctrl_reader_writer(
@@ -900,36 +900,38 @@ wire _40;
 assign _40 = num_outstanding_writes < 8'd255;
 wire _41;
 assign _41 = _37 & _40;
-wire _45;
-assign _45 = awvalid & awready;
+wire _44;
+assign _44 = awvalid & awready;
+wire _47;
+assign _47 = awvalid & awready;
 /*mux_wire*/ logic[31:0] _transmute_to_bits_value[7:0];
 wire[255:0] _transmute_to_bits_bits;
-wire _49;
-assign _49 = awvalid & awready;
-wire _52;
-assign _52 = bvalid & bready;
-wire _53;
-assign _53 = !_52;
+wire _51;
+assign _51 = awvalid & awready;
 wire _54;
-assign _54 = _49 & _53;
+assign _54 = bvalid & bready;
+wire _55;
+assign _55 = !_54;
+wire _56;
+assign _56 = _51 & _55;
 /*mux_wire*/ logic[7:0] _unsafe_int_cast_2_in;
 wire[7:0] _unsafe_int_cast_2_out;
-wire[7:0] _57;
-assign _57 = _unsafe_int_cast_2_out + 1'd1;
-wire _60;
-assign _60 = bvalid & bready;
-wire _63;
-assign _63 = awvalid & awready;
-wire _64;
-assign _64 = !_63;
+wire[7:0] _59;
+assign _59 = _unsafe_int_cast_2_out + 1'd1;
+wire _62;
+assign _62 = bvalid & bready;
 wire _65;
-assign _65 = _60 & _64;
+assign _65 = awvalid & awready;
+wire _66;
+assign _66 = !_65;
+wire _67;
+assign _67 = _62 & _66;
 /*mux_wire*/ logic[7:0] _unsafe_int_cast_3_in;
 wire[7:0] _unsafe_int_cast_3_out;
-wire[7:0] _68;
-assign _68 = _unsafe_int_cast_3_out - 1'd1;
-wire _70;
-assign _70 = !aresetn;
+wire[7:0] _70;
+assign _70 = _unsafe_int_cast_3_out - 1'd1;
+wire _72;
+assign _72 = !aresetn;
 unsafe_int_cast_FROM_I_1_TO_I_9_FROM_0_TO_7 unsafe_int_cast(
 	.clk(aclk),
 	.in(_unsafe_int_cast_in),
@@ -1005,17 +1007,17 @@ always_comb begin
 	bready = bready;
 end
 always_ff @(posedge aclk) begin
-	if(write) if(_45) writing_data <= _transmute_to_bits_bits;
+	if(write) if(_47) writing_data <= _transmute_to_bits_bits;
 end
 always_ff @(posedge aclk) begin
 	if(_22) if(!_24) writing_data_valid <= 1'b0;
-	if(write) if(_45) writing_data_valid <= 1'b1;
-	if(_70) writing_data_valid <= 1'b0;
+	if(write) if(_47) writing_data_valid <= 1'b1;
+	if(_72) writing_data_valid <= 1'b0;
 end
 always_ff @(posedge aclk) begin
-	if(_54) num_outstanding_writes <= _57;
-	if(!_54) if(_65) num_outstanding_writes <= _68;
-	if(_70) num_outstanding_writes <= 1'd0;
+	if(_56) num_outstanding_writes <= _59;
+	if(!_56) if(_67) num_outstanding_writes <= _70;
+	if(_72) num_outstanding_writes <= 1'd0;
 end
 always_ff @(posedge aclk) begin
 	if(_22) if(_24) cur_data_chunk <= _unsafe_int_cast_out;
@@ -1048,7 +1050,7 @@ end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	write_success = 1'bx;
-	if(write) write_success = awready;
+	if(write) write_success = _44;
 	// PATCH Vivado 23.1 Simulator Bug: 1-bit Conditional Assigns become don't care
 	write_success = write_success;
 end
@@ -1056,18 +1058,18 @@ always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_transmute_to_bits_value = '{32'dx, 32'dx, 32'dx, 32'dx, 32'dx, 32'dx, 32'dx, 32'dx};
 	for(int _v0 = 0; _v0 < 8; _v0 = _v0 + 1) begin
-if(write) if(_45) _transmute_to_bits_value[_v0] = data[_v0];
+if(write) if(_47) _transmute_to_bits_value[_v0] = data[_v0];
 end
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_unsafe_int_cast_2_in = 8'dx;
-	if(_54) _unsafe_int_cast_2_in = num_outstanding_writes;
+	if(_56) _unsafe_int_cast_2_in = num_outstanding_writes;
 end
 always_comb begin
 	// Combinatorial wires are not defined when not valid. This is just so that the synthesis tool doesn't generate latches
 	_unsafe_int_cast_3_in = 8'dx;
-	if(!_54) if(_65) _unsafe_int_cast_3_in = num_outstanding_writes;
+	if(!_56) if(_67) _unsafe_int_cast_3_in = num_outstanding_writes;
 end
 endmodule
 
