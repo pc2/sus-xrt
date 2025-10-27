@@ -503,142 +503,23 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
     }
 }
 
-/// Splits the given integer. The upper [LOWER_BITS:] bits are returned as upper, the lower [:LOWER_BITS] bits are returned in lower
-/// See also [BitwiseIntConcat]
-module BitwiseIntSplit #(int TO, int LOWER_BITS) {
-    gen int UPPER_TO = (TO-1) / pow2#(E: LOWER_BITS) + 1
-    interface BitwiseIntSplit :
-        int#(FROM: 0, TO) v ->
-        int#(FROM: 0, TO: UPPER_TO) upper,
-        int#(FROM: 0, TO: pow2#(E: LOWER_BITS)) lower
-
-    bool[clog2#(V: TO)] v_bits = UIntToBits(v)
-
-    lower = BitsToUInt(v_bits[:LOWER_BITS])
-    upper = transmute_from_bits#(T: type int#(FROM: 0, TO: UPPER_TO))(v_bits[LOWER_BITS:])
-}
-
-/// Recombines a lower and upper integer parts. 
-/// See also [BitwiseIntSplit]
-module BitwiseIntConcat #(int UPPER_TO, int LOWER_BITS) {
-    interface BitwiseIntConcat :
-        int#(FROM: 0, TO: UPPER_TO) upper,
-        int#(FROM: 0, TO: pow2#(E: LOWER_BITS)) lower ->
-        int#(FROM: 0, TO: UPPER_TO * pow2#(E: LOWER_BITS)) v
-
-    bool[clog2#(V: UPPER_TO) + LOWER_BITS] v_bits
-    v_bits[:LOWER_BITS] = UIntToBits(lower)
-    v_bits[LOWER_BITS:] = UIntToBits(upper)
-    v = transmute_from_bits#(T: type int#(FROM: 0, TO: UPPER_TO * pow2#(E: LOWER_BITS)))(v_bits)
-}
-
-/// Sets the lower [:LOWER_BITS] bits to false, thus aligning the value
-/// Works for unsigned and signed integers alike
-module AlignToPow2 #(int FROM, int TO, int LOWER_BITS) {
-    gen int ALIGNED_FROM = FROM - FROM % clog2#(V: LOWER_BITS)
-    gen int ALIGNED_TO = TO - (TO + 1) % clog2#(V: LOWER_BITS)
-    interface AlignToPow2 :
-        int#(FROM, TO) i ->
-        int#(FROM: ALIGNED_FROM, TO: ALIGNED_TO) o
-
-    bool[sizeof#(T: type int#(FROM, TO))] bits = transmute_to_bits(i)
-    bool[sizeof#(T: type int#(FROM, TO))] aligned_bits
-    aligned_bits[:LOWER_BITS] = Repeat(false)
-    aligned_bits[LOWER_BITS:] = bits[LOWER_BITS:]
-    o = transmute_from_bits#(T: type int#(FROM: ALIGNED_FROM, TO: ALIGNED_TO))(aligned_bits)
-}
-
-/// Allows us to update a blob of state with a pipelined update function
-/// update() may only be called if may_update, upon which may_update goes low for UPDATE_PIPELINE_DEPTH cycles
-module SlowState #(T, T RESET_TO, int OLD_DELAY, int NEW_DELAY) {
-    assert#(C: OLD_DELAY >= 0)
-    gen int UPDATE_TOTAL_DEPTH = max#(A: OLD_DELAY, B: OLD_DELAY + NEW_DELAY)
-    domain clk
-    input bool rst
-    CrossDomain cross_rst
-    cross_rst.in = rst
-
-    domain data
-    output state T old'-OLD_DELAY
-
-    T new_s'NEW_DELAY
-    bool update_s'0
-
-    bool update_old'-OLD_DELAY = LatencyOffset#(OFFSET: -UPDATE_TOTAL_DEPTH)(update_s) // Despite their differing absolute latency, they of course need to be set back by the same amount, potentially introducing a pipeline stage
-    T new_old'-OLD_DELAY = LatencyOffset#(OFFSET: -UPDATE_TOTAL_DEPTH)(new_s)
-    when cross_rst.out {
-        old = RESET_TO
-    } else when update_old {
-        old = new_old
-    }
-
-    output bool may_update'0
-    action update'0 : T new'NEW_DELAY {
-        update_s = true
-        new_s = new
-    } else {
-        update_s = false
-    }
-
-    if UPDATE_TOTAL_DEPTH != 0 {
-        state bool[UPDATE_TOTAL_DEPTH] cooldown
-        may_update = cooldown[0]
-        when update_s | cross_rst.out { // Importantly, there are no pipeline registers on update for the cooldown. Otherwise it could be called twice rapidly in a row
-            cooldown = Repeat(false)
-        } else {
-            cooldown[0:UPDATE_TOTAL_DEPTH - 1] = cooldown[1:]
-            cooldown[UPDATE_TOTAL_DEPTH - 1] = true
-        }
-    } else {
-        may_update = true
-    }
-}
-
-module IntToBool {
-    interface IntToBool : int#(FROM: 0, TO: 2) i -> bool o
-
-    o = i == 1
-}
-module BoolToInt {
-    interface BoolToInt : bool i -> int#(FROM: 0, TO: 2) o
-
-    when i {
-        o = 1
-    } else {
-        o = 0
-    }
-}
-module Ternary #(T) {
-    interface Ternary : bool cond, T a, T b -> T o
-
-    when cond {
-        o = a
-    } else {
-        o = b
-    }
-}
-
 module MakeStrobe #(int STROBE_WIDTH) {
-    interface MakeStrobe : int#(FROM: 0, TO: STROBE_WIDTH) chunk_offset, int#(FROM: 1, TO: STROBE_WIDTH+1) chunk_length -> bool[STROBE_WIDTH] strobe
+    interface MakeStrobe : int#(FROM: 0, TO: STROBE_WIDTH) chunk_offset'0, int#(FROM: 0, TO: STROBE_WIDTH+1) chunk_length'0 -> bool[STROBE_WIDTH] strobe
 
-    bool[STROBE_WIDTH*2-1] chunk_bits
-    chunk_bits[0] = true
-    for int i in 1..STROBE_WIDTH {
-        when chunk_length > i {
-            chunk_bits[i] = true
+    bool[STROBE_WIDTH] chunk_bits
+    for int I in 0..STROBE_WIDTH {
+        when chunk_length > I {
+            chunk_bits[I] = true
         } else {
-            chunk_bits[i] = false
+            chunk_bits[I] = false
         }
     }
-    for int i in STROBE_WIDTH..STROBE_WIDTH-1 {
-        chunk_bits[i] = false
-    }
 
-    strobe = chunk_bits[chunk_offset +: 8]
+    strobe = RotateRight(chunk_bits, chunk_offset)
 }
 
 /*
-Vivado Utiliziation report for axi_memory_burst_reader#(ElemT: type bool[32], AXI_WIDTH: 512, COUNT_TO: pow2#(E: 16))
+Vivado Utiliziation report for axi_array_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64))
 +-------------------------+------+-------+------------+-----------+-------+
 |        Site Type        | Used | Fixed | Prohibited | Available | Util% |
 +-------------------------+------+-------+------------+-----------+-------+
@@ -651,12 +532,16 @@ Vivado Utiliziation report for axi_memory_burst_reader#(ElemT: type bool[32], AX
 | LOOKAHEAD8              |   12 |     0 |          0 |    112480 |  0.01 |
 +-------------------------+------+-------+------------+-----------+-------+
 */
-/// This core assumes UnitT elements are aligned to sizeof#(T: type UnitT)
-/// This implies the element size must be a power of two
-/// element - sizeof#(T: type ElemT) / 8 is minimum data alignment. It is also the resolution of count
-/// chunk - one AXI transfer. Contains AXI_WIDTH / sizeof#(T: type ElemT) elements
-/// burst - 1-256 chunks. Should not be visible outside of module
-module axi_memory_burst_reader #(ElemT, int AXI_WIDTH, int COUNT_TO) {
+/// A Bursting AXI reader. It spends as little logic as possible, so aligning and backpressure are up to the user. 
+///
+/// Alignment is not handled by this module. Chunks are delivered on element_packet_valid with a size and valid chunk count. Data is not necessarily aligned to the start of the chunk. For alignment see [axi_burst_reader]
+///
+/// Very coarse backpressure is provided in the form of the `is_ready_to_receive_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
+/// 
+/// element: size is ADDR_ALIGN * 8. It is also the resolution of count
+/// chunk: one AXI transfer. Contains AXI_WIDTH / (ADDR_ALIGN * 8) elements
+/// burst: 1-256 chunks. The module handles converting the user's large bitwidth element `count` into a sequence of 4K page aligned bursts. `last` is only asserted at the end of the whole read
+module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int ATO) {
     domain aclk
     input bool aresetn'0
 
@@ -671,9 +556,6 @@ module axi_memory_burst_reader #(ElemT, int AXI_WIDTH, int COUNT_TO) {
     /// For XRT: Supported AXI_WIDTH ranges from 32-512
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
 
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
-
     gen int MAX_AXI_ALIGNMENT = pow2#(E: 12)
     gen int MAX_BURST = MAX_AXI_ALIGNMENT / AXI_WIDTH_BYTES
 
@@ -683,16 +565,15 @@ module axi_memory_burst_reader #(ElemT, int AXI_WIDTH, int COUNT_TO) {
 
     gen int MAX_CHUNKS_IN_FLIGHT = MAX_BURST + 128 // 128 cycles is the estimated max DDR latency, and we need MAX_BURST capacity 
 
-    gen int ELEMENT_SIZE = sizeof#(T: type ElemT)
-    gen int ELEMENT_BYTE_SIZE = ELEMENT_SIZE / 8
-    /// The element size is a power of two
-    assert#(C: pow2#(E: clog2#(V: ELEMENT_SIZE)) == ELEMENT_SIZE)
-    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_SIZE
-    assert#(C: AXI_WIDTH % ELEMENT_SIZE == 0)
+    gen int ELEMENT_BITWIDTH = ADDR_ALIGN * 8
+    /// The alignment is a power of two
+    assert#(C: pow2#(E: clog2#(V: ADDR_ALIGN)) == ADDR_ALIGN)
+    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
+    assert#(C: AXI_WIDTH % ELEMENT_BITWIDTH == 0)
     gen int CHUNK_BYTE_SIZE = AXI_WIDTH / 8
     gen int CHUNKS_TO = (COUNT_TO + NUM_PARALLEL_ELEMENTS) / NUM_PARALLEL_ELEMENTS + 2
 
-    // read channel
+    // axi interface
     output bool                     arvalid'0
     input  bool                     arready'0
     output int#(FROM: 0, TO: ATO)   araddr'0
@@ -702,11 +583,12 @@ module axi_memory_burst_reader #(ElemT, int AXI_WIDTH, int COUNT_TO) {
     output bool                     rready'0
     input  bool[AXI_WIDTH]          rdata'0
     input  bool                     rlast'0
+    bool _ = rlast
     arburst = 2'b01 // BURST
 
     // User ports
     input bool is_ready_to_receive_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
-    trigger element_packet_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
+    trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
     SlowState#(T: type int#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE), RESET_TO: 0) cur_start_chunk_addr
@@ -750,7 +632,10 @@ module axi_memory_burst_reader #(ElemT, int AXI_WIDTH, int COUNT_TO) {
     state int final_chunk_align
     state int cur_chunk_align // Only different from 0 on the first chunk
     when rvalid { // & true, due to rready being always true
-        ElemT[NUM_PARALLEL_ELEMENTS] elements = transmute_from_bits#(T: type ElemT[NUM_PARALLEL_ELEMENTS])(rdata)
+        bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
+        for int ELEMENT_I in 0..NUM_PARALLEL_ELEMENTS {
+            elements[ELEMENT_I] = rdata[ELEMENT_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
+        }
         int num_chunk_elements
         bool is_last = chunks_left == 1
         when is_last {
@@ -767,7 +652,7 @@ module axi_memory_burst_reader #(ElemT, int AXI_WIDTH, int COUNT_TO) {
 
     output bool may_request_new_burst'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
     action request_new_burst'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0 {
-        int chunk_addr, int element_in_chunk_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(start_addr / ELEMENT_BYTE_SIZE)
+        int chunk_addr, int element_in_chunk_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(start_addr / ADDR_ALIGN)
         
         int chunk_count_bits, int final_alignment = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(count + element_in_chunk_align)
         int num_chunks
@@ -793,7 +678,100 @@ module axi_memory_burst_reader #(ElemT, int AXI_WIDTH, int COUNT_TO) {
     }
 }
 
+/// A Bursting and aligning AXI reader.
+/// 
+/// As 
+/// 
+/// Very coarse backpressure is provided in the form of the `is_ready_to_receive_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
+/// 
+/// `last` is asserted for the last value
+module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int ATO) {
+    domain aclk
+    input bool aresetn
+
+    assert#(C: sizeof#(T) % (ADDR_ALIGN * 8) == 0)
+    gen int ELEMENT_BITWIDTH = ADDR_ALIGN * 8
+    gen int NUM_ELEMENTS_PER_VALUE = sizeof#(T) / ELEMENT_BITWIDTH
+    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
+    // When T is bigger than AXI_WIDTH, multiple output cycles would be needed per input transfer. But with this AXI reader, we cannot provide backpressure (without a FIFO that is, of course)
+    assert#(C: AXI_WIDTH <= sizeof#(T))
+    axi_array_burst_reader #(AXI_WIDTH, ADDR_ALIGN, ATO, COUNT_TO: COUNT_TO * NUM_ELEMENTS_PER_VALUE) parent
+    parent.aresetn = aresetn
+
+    // export axi interface
+    output bool                     arvalid = parent.arvalid
+    input  bool                     arready
+    output int#(FROM: 0, TO: ATO)   araddr  = parent.araddr
+    output int#(FROM: 0, TO: 256)   arlen   = parent.arlen
+    output bool[2]                  arburst = parent.arburst
+    input  bool                     rvalid
+    output bool                     rready  = parent.rready
+    input  bool[AXI_WIDTH]          rdata
+    input  bool                     rlast
+    parent.arready = arready
+    parent.rvalid  = rvalid
+    parent.rdata   = rdata
+    parent.rlast   = rlast
+
+    output bool may_request_new_burst = parent.may_request_new_burst
+    action request_new_burst'0 : int#(FROM: 0, TO: ATO) start_addr, int#(FROM: 1, TO: COUNT_TO) count {
+        parent.request_new_burst(start_addr, count * NUM_ELEMENTS_PER_VALUE)
+    }
+
+    input bool is_ready_to_receive_lots_of_data
+    parent.is_ready_to_receive_lots_of_data = is_ready_to_receive_lots_of_data
+
+    trigger value_valid: T value, bool last
+
+    state bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE-1] stored_elements
+    state int#(FROM: 0, TO: NUM_ELEMENTS_PER_VALUE) cur_element_store_align
+    when parent.element_packet_valid : bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, bool last {
+        bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] elements_extended
+        elements_extended[:NUM_PARALLEL_ELEMENTS] = elements
+        bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] rotated_elements = RotateRight(elements_extended, (cur_element_store_align - chunk_offset) % NUM_ELEMENTS_PER_VALUE)
+        bool[NUM_ELEMENTS_PER_VALUE] rotated_strobe = MakeStrobe(cur_element_store_align, chunk_length)
+
+        int end_of_element = cur_element_store_align + chunk_length
+
+        when end_of_element >= NUM_ELEMENTS_PER_VALUE {
+            bool[sizeof#(T)] resulting_value_bits
+            gen int MUXES_START_FROM = NUM_ELEMENTS_PER_VALUE - NUM_PARALLEL_ELEMENTS
+            for int ELEM_I in 0..NUM_ELEMENTS_PER_VALUE {
+                if ELEM_I < MUXES_START_FROM {
+                    resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = stored_elements[ELEM_I]
+                } else if ELEM_I == NUM_ELEMENTS_PER_VALUE - 1 {
+                    resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = rotated_elements[ELEM_I]
+                } else {
+                    when cur_element_store_align > ELEM_I {
+                        resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = stored_elements[ELEM_I]
+                    } else {
+                        resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = rotated_elements[ELEM_I]
+                    }
+                }
+            }
+            value_valid(transmute_from_bits(resulting_value_bits), last)
+        }
+        cur_element_store_align = end_of_element % NUM_ELEMENTS_PER_VALUE
+        for int ELEM_I in 0..NUM_ELEMENTS_PER_VALUE-1 {
+            when rotated_strobe[ELEM_I] {
+                stored_elements[ELEM_I] = rotated_elements[ELEM_I]
+            }
+        }
+    }
+
+    when !aresetn {
+        cur_element_store_align = 0
+    }
+}
+
 module test_burst_reader {
-    axi_memory_burst_reader #(ElemT: type bool[16], AXI_WIDTH: 64, COUNT_TO: pow2#(E: 16)) reader
-    axi_memory_burst_reader #(ElemT: type bool[32], AXI_WIDTH: 512, COUNT_TO: pow2#(E: 16)) fullFatReader
+    axi_array_burst_reader #(AXI_WIDTH: 64, ADDR_ALIGN: 2, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader
+    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) fullFatReader
+    //axi_realigning_burst_reader #(T: type float[17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) bigSingleObjectReader
+    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
+    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
+    axi_realigning_burst_reader #(T: type bool[32][16], AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
+    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
+    //axi_array_burst_writer #(AXI_WIDTH: 512, ADDR_ALIGN: 4) fullFatWriter
+    
 }
