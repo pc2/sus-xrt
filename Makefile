@@ -1,4 +1,4 @@
-TARGET := hw_emu
+TARGET := hw
 PART := xcvc1902-vsvd1760-2MP-e-S
 PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
 
@@ -16,8 +16,8 @@ hw/overlay_$(TARGET).xclbin: packaging/sus_kernel.xo  #hls/output_kernel_$(TARGE
 sw/main.x: sw/main.cpp
 	make -C sw main.x
 
-sus_codegen.sv: axi.sus
-	sus_compiler axi.sus axi_example.sus -o sus_codegen.sv --top combined_axi_ctrl_reader_writer --top test_burst_reader
+sus_codegen.sv: axi.sus axi_example.sus
+	sus_compiler axi.sus axi_example.sus -o sus_codegen.sv --top combined_axi_ctrl_reader_writer --top test_burst_reader --top all_benchmarks
 
 clean:
 	rm -f sus_codegen.sv
