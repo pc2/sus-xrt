@@ -132,15 +132,15 @@ module combined_axi_ctrl_plus_reader {
     output bool[2]                s_axi_control_rresp   = ctrl.rresp
     output bool                   s_axi_control_rvalid  = ctrl.rvalid
     input  bool                   s_axi_control_rready
-    ctrl.awaddr  =         s_axi_control_awaddr
-    ctrl.awvalid =         s_axi_control_awvalid
-    ctrl.wdata   =         s_axi_control_wdata
-    ctrl.wstrb   =         s_axi_control_wstrb
-    ctrl.wvalid  =         s_axi_control_wvalid
-    ctrl.bready  =         s_axi_control_bready
-    ctrl.araddr  =         s_axi_control_araddr
-    ctrl.arvalid =         s_axi_control_arvalid
-    ctrl.rready  =         s_axi_control_rready
+    ctrl.awaddr  =                s_axi_control_awaddr
+    ctrl.awvalid =                s_axi_control_awvalid
+    ctrl.wdata   =                s_axi_control_wdata
+    ctrl.wstrb   =                s_axi_control_wstrb
+    ctrl.wvalid  =                s_axi_control_wvalid
+    ctrl.bready  =                s_axi_control_bready
+    ctrl.araddr  =                s_axi_control_araddr
+    ctrl.arvalid =                s_axi_control_arvalid
+    ctrl.rready  =                s_axi_control_rready
 
     axi_memory_reader#(T: type int#(FROM: 0, TO: pow2#(E: 32))) reader
     reader.aresetn = aresetn
@@ -152,7 +152,13 @@ module combined_axi_ctrl_plus_reader {
     input  bool                     m_axi_awready
     output int#(FROM: 0, TO: MTO)   m_axi_awaddr = writer.awaddr
     output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
+    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
+    output bool[3]                  m_axi_awprot = writer.awprot
+    output bool[4]                  m_axi_awcache = writer.awcache
+    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    output bool                     m_axi_awlock = writer.awlock
+    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
     output bool                     m_axi_wvalid = writer.wvalid
     input  bool                     m_axi_wready
     output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
@@ -160,21 +166,31 @@ module combined_axi_ctrl_plus_reader {
     output bool                     m_axi_wlast = writer.wlast
     input  bool                     m_axi_bvalid
     output bool                     m_axi_bready = writer.bready
+    input  bool[2]                  m_axi_bresp
     writer.awready =                m_axi_awready
     writer.wready =                 m_axi_wready
     writer.bvalid =                 m_axi_bvalid
+    writer.bresp =                  m_axi_bresp
     output bool                     m_axi_arvalid = reader.arvalid
     input  bool                     m_axi_arready
     output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
     output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
+    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
+    output bool[3]                  m_axi_arprot = reader.arprot
+    output bool[4]                  m_axi_arcache = reader.arcache
+    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    output bool                     m_axi_arlock = reader.arlock
+    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
     input  bool                     m_axi_rvalid
     output bool                     m_axi_rready = reader.rready
     input  bool[AXI_WIDTH]          m_axi_rdata
+    input  bool[2]                  m_axi_rresp
     input  bool                     m_axi_rlast
     reader.arready =                m_axi_arready
     reader.rvalid =                 m_axi_rvalid
     reader.rdata =                  m_axi_rdata
+    reader.rresp =                  m_axi_rresp
     reader.rlast =                  m_axi_rlast
 
     /// Output axi
@@ -297,7 +313,13 @@ module combined_axi_ctrl_reader_writer {
     input  bool                     m_axi_awready
     output int#(FROM: 0, TO: MTO)   m_axi_awaddr = writer.awaddr
     output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
+    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
+    output bool[3]                  m_axi_awprot = writer.awprot
+    output bool[4]                  m_axi_awcache = writer.awcache
+    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    output bool                     m_axi_awlock = writer.awlock
+    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
     output bool                     m_axi_wvalid = writer.wvalid
     input  bool                     m_axi_wready
     output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
@@ -305,21 +327,31 @@ module combined_axi_ctrl_reader_writer {
     output bool                     m_axi_wlast = writer.wlast
     input  bool                     m_axi_bvalid
     output bool                     m_axi_bready = writer.bready
+    input  bool[2]                  m_axi_bresp
     writer.awready =                m_axi_awready
     writer.wready =                 m_axi_wready
     writer.bvalid =                 m_axi_bvalid
+    writer.bresp =                  m_axi_bresp
     output bool                     m_axi_arvalid = reader.arvalid
     input  bool                     m_axi_arready
     output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
     output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
+    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
+    output bool[3]                  m_axi_arprot = reader.arprot
+    output bool[4]                  m_axi_arcache = reader.arcache
+    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    output bool                     m_axi_arlock = reader.arlock
+    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
     input  bool                     m_axi_rvalid
     output bool                     m_axi_rready = reader.rready
     input  bool[AXI_WIDTH]          m_axi_rdata
+    input  bool[2]                  m_axi_rresp
     input  bool                     m_axi_rlast
     reader.arready =                m_axi_arready
     reader.rvalid =                 m_axi_rvalid
     reader.rdata =                  m_axi_rdata
+    reader.rresp =                  m_axi_rresp
     reader.rlast =                  m_axi_rlast
 
     // Actual logic
@@ -457,7 +489,13 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     input  bool                     m_axi_awready
     output int#(FROM: 0, TO: MTO)   m_axi_awaddr = writer.awaddr
     output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
+    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
+    output bool[3]                  m_axi_awprot = writer.awprot
+    output bool[4]                  m_axi_awcache = writer.awcache
+    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    output bool                     m_axi_awlock = writer.awlock
+    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
     output bool                     m_axi_wvalid = writer.wvalid
     input  bool                     m_axi_wready
     output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
@@ -465,21 +503,31 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     output bool                     m_axi_wlast = writer.wlast
     input  bool                     m_axi_bvalid
     output bool                     m_axi_bready = writer.bready
+    input  bool[2]                  m_axi_bresp
     writer.awready =                m_axi_awready
     writer.wready =                 m_axi_wready
     writer.bvalid =                 m_axi_bvalid
+    writer.bresp =                  m_axi_bresp
     output bool                     m_axi_arvalid = reader.arvalid
     input  bool                     m_axi_arready
     output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
     output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
+    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
+    output bool[3]                  m_axi_arprot = reader.arprot
+    output bool[4]                  m_axi_arcache = reader.arcache
+    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    output bool                     m_axi_arlock = reader.arlock
+    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
     input  bool                     m_axi_rvalid
     output bool                     m_axi_rready = reader.rready
     input  bool[AXI_WIDTH]          m_axi_rdata
+    input  bool[2]                  m_axi_rresp
     input  bool                     m_axi_rlast
     reader.arready =                m_axi_arready
     reader.rvalid =                 m_axi_rvalid
     reader.rdata =                  m_axi_rdata
+    reader.rresp =                  m_axi_rresp
     reader.rlast =                  m_axi_rlast
 
 

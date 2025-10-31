@@ -1,6 +1,6 @@
-create_project sus_bench_burst${AXI_WIDTH} ./sus_bench_burst${AXI_WIDTH} -part [lindex $argv 0]
-
 set AXI_WIDTH [lindex $argv 1]
+
+create_project sus_bench_burst${AXI_WIDTH} ./sus_bench_burst${AXI_WIDTH} -part [lindex $argv 0]
 
 add_files -norecurse \
 {

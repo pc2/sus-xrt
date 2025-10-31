@@ -25,7 +25,7 @@ hw/cfg/
 hw/sim/
 hw/launch_hw_emu.sh
 sw/.run/
-packaging/pack_prj/
+packaging/pack_prj*/
 RemoteSystemsTempFiles/
 emconfig.json
 my_own_testing/
