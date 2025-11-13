@@ -1,4 +1,5 @@
 TARGET := hw
+# TARGET := hw
 PART := xcvc1902-vsvd1760-2MP-e-S
 PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
 
@@ -10,14 +11,14 @@ packaging/all: packaging/pack_kernel.tcl sus_codegen.sv
 # hls/output_kernel_$(TARGET).xo: hls/output_kernel.cpp
 # 	make -C hls output_kernel_$(TARGET).xo PART=$(PART) PLATFORM=$(PLATFORM) TARGET=$(TARGET)
 
-hw/overlay_$(TARGET).xclbin: packaging/all  #hls/output_kernel_$(TARGET).xo 
+hw/overlay_$(TARGET).xclbin: packaging/all  #hls/output_kernel_$(TARGET).xo
 	make -C hw overlay_$(TARGET).xclbin PART=$(PART) PLATFORM=$(PLATFORM) TARGET=$(TARGET)
 
 sw/main.x: sw/main.cpp
 	make -C sw main.x
 
 sus_codegen.sv: axi.sus axi_example.sus
-	/pc2/users/l/lennartv/.cargo/bin/sus_compiler axi.sus axi_example.sus -o sus_codegen.sv --top combined_axi_ctrl_reader_writer --top test_burst_reader --top all_benchmarks
+	sus_compiler axi.sus axi_example.sus -o sus_codegen.sv --top combined_axi_ctrl_reader_writer --top test_burst_reader --top all_benchmarks
 
 clean:
 	rm -f sus_codegen.sv

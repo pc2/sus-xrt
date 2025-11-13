@@ -30,20 +30,20 @@ module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
         memory_read_pipeline_stages_valids[0] = read_from_mem_is_valid
         when read_from_mem_is_valid {
             memory_read_pipeline_stages[0] = memory[rd_addr]
-            rd_addr = (rd_addr + 1) % DEPTH
+            rd_addr = rd_addr + 1 mod DEPTH
         }
     }
 
-    tdata = transmute_to_bits(memory_read_pipeline_stages[NUM_PIPELINE_STAGES - 1])
+    tdata = ToBits(memory_read_pipeline_stages[NUM_PIPELINE_STAGES - 1])
     tvalid = memory_read_pipeline_stages_valids[NUM_PIPELINE_STAGES - 1]
 
-    int free_space = (rd_addr - wr_addr - 1) % DEPTH
+    int free_space = rd_addr - wr_addr - 1 mod DEPTH
 
     output bool may_push'-MAY_PUSH_LATENCY
     may_push = LatencyOffset#(OFFSET: -MAY_PUSH_LATENCY)(free_space >= MAY_PUSH_LATENCY)
     action push'0: T data'0 {
         memory[wr_addr] = data
-        wr_addr = (wr_addr + 1) % DEPTH
+        wr_addr = wr_addr + 1 mod DEPTH
     }
 
     when !aresetn {
@@ -75,7 +75,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     gen int REG_STRIDE = AXI_WIDTH / 8
     gen int CTRL_REG = 0
     gen int FIRST_REG = DATA_STARTS_AT_ADDR / REG_STRIDE
-    assert#(C: DATA_STARTS_AT_ADDR % REG_STRIDE == 0)
+    assert#(C: DATA_STARTS_AT_ADDR mod REG_STRIDE == 0)
     gen int ATO = pow2#(E: ADDR_WIDTH)
     assert#(C: ADDR_WIDTH >= 12)
     assert#(C: ADDR_WIDTH <= 16)
@@ -144,7 +144,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         }
         // Data Write
         when (stored_addr >= FIRST_REG) & (stored_addr < FIRST_REG + NUM_INPUT_REGS) {
-            int write_idx = unsafe_int_cast#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS)(stored_addr) - FIRST_REG
+            int write_idx = IntNarrow#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS)(stored_addr) - FIRST_REG
             for int strbi in 0..4 {
                 when wstrb[strbi] {
                     input_regs[write_idx][strbi*8 +: 8] = wdata[strbi*8 +: 8]
@@ -191,7 +191,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         }
         // Data Read
         when (read_addr >= FIRST_REG) & (read_addr < FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS) {
-            int read_idx = unsafe_int_cast#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS)(read_addr) - FIRST_REG
+            int read_idx = IntNarrow#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS)(read_addr) - FIRST_REG
             last_rdata = regs_read_multiplexer[read_idx]
             last_rresp = RESP_OKAY
         }
@@ -200,8 +200,13 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         last_rdata_valid = false
     }
 
-    action finish : bool[32][NUM_OUTPUT_REGS] output_regs {
-        stored_output_regs = output_regs
+    domain finish_dom
+    CrossAction cross_finish
+    action finish'0 : bool[32][NUM_OUTPUT_REGS] output_regs'0 {
+        cross_finish.in(output_regs)
+    }
+    when cross_finish.out : bool[32][NUM_OUTPUT_REGS] output_regs_vs {
+        stored_output_regs = output_regs_vs
         reg_ctrl_ap_done = true
         reg_ctrl_ap_start = false
         reg_ctrl_ap_idle = false
@@ -296,14 +301,14 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
     gen int NUM_TRANSFERS
     if sizeof#(T) <= AXI_WIDTH {
         NUM_TRANSFERS = 1
-        assert#(C: sizeof#(T) % 8 == 0)
+        assert#(C: sizeof#(T) mod 8 == 0)
     } else {
         // Actually this code is fine even if it's not a multiple
-        // assert#(C: sizeof#(T) % AXI_WIDTH == 0) // sizeof#(T) must be a multiple of AXI_WIDTH
+        // assert#(C: sizeof#(T) mod AXI_WIDTH == 0) // sizeof#(T) must be a multiple of AXI_WIDTH
         assert#(C: sizeof#(T) <= MAX_BURST * AXI_WIDTH) // T is too big!
         NUM_TRANSFERS = sizeof#(T) / AXI_WIDTH
         assert#(C: NUM_TRANSFERS < MAX_BURST) // T is too big!
-        assert#(C: sizeof#(T) % AXI_WIDTH == 0)
+        assert#(C: sizeof#(T) mod AXI_WIDTH == 0)
     }
 
     // read channel
@@ -353,7 +358,7 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
             do_read_was_valid = false
             rready = true
             when rvalid {
-                int idx = unsafe_int_cast#(FROM: 0, TO: NUM_TRANSFERS - 1)(stored_part_idx)
+                int idx = IntNarrow#(FROM: 0, TO: NUM_TRANSFERS - 1)(stored_part_idx)
                 stored_parts[idx] = rdata
                 stored_part_idx = idx + 1
             }
@@ -378,7 +383,7 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
         do_read = true
         read_valid = do_read_was_valid
         when do_read_was_valid {
-            data = transmute_from_bits(do_read_data)
+            data = FromBits(do_read_data)
         }
     } else {
         do_read = false
@@ -403,14 +408,14 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
     gen int NUM_TRANSFERS
     if sizeof#(T) <= AXI_WIDTH {
         NUM_TRANSFERS = 1
-        assert#(C: sizeof#(T) % 8 == 0)
+        assert#(C: sizeof#(T) mod 8 == 0)
     } else {
         // Actually this code is fine even if it's not a multiple
-        // assert#(C: sizeof#(T) % AXI_WIDTH == 0) // sizeof#(T) must be a multiple of AXI_WIDTH
+        // assert#(C: sizeof#(T) mod AXI_WIDTH == 0) // sizeof#(T) must be a multiple of AXI_WIDTH
         assert#(C: sizeof#(T) <= MAX_BURST * AXI_WIDTH) // T is too big!
         NUM_TRANSFERS = sizeof#(T) / AXI_WIDTH
         assert#(C: NUM_TRANSFERS < MAX_BURST) // T is too big!
-        assert#(C: sizeof#(T) % AXI_WIDTH == 0)
+        assert#(C: sizeof#(T) mod AXI_WIDTH == 0)
     }
 
 
@@ -472,7 +477,7 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
         when wvalid & wready {
             // fire!
             when !wlast {
-                cur_data_chunk = unsafe_int_cast#(FROM: 0, TO: NUM_TRANSFERS - 1)(cur_data_chunk + 1)
+                cur_data_chunk = IntNarrow#(FROM: 0, TO: NUM_TRANSFERS - 1)(cur_data_chunk + 1)
             } else {
                 writing_data_valid = false
             }
@@ -493,7 +498,7 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
         write_success = awvalid & awready
 
         when awvalid & awready {
-            writing_data = transmute_to_bits(data)
+            writing_data = ToBits(data)
             writing_data_valid = true
         }
     } else {
@@ -501,9 +506,9 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
     }
 
     when awvalid & awready & !(bvalid & bready) {
-        num_outstanding_writes = unsafe_int_cast#(FROM: 0, TO: OUTSTANDING_WRITES_CAPACITY - 1)(num_outstanding_writes) + 1
+        num_outstanding_writes = IntNarrow#(FROM: 0, TO: OUTSTANDING_WRITES_CAPACITY - 1)(num_outstanding_writes) + 1
     } else when bvalid & bready & !(awvalid & awready) {
-        num_outstanding_writes = unsafe_int_cast#(FROM: 1, TO: OUTSTANDING_WRITES_CAPACITY)(num_outstanding_writes) - 1
+        num_outstanding_writes = IntNarrow#(FROM: 1, TO: OUTSTANDING_WRITES_CAPACITY)(num_outstanding_writes) - 1
     }
 
     when !aresetn {
@@ -578,7 +583,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
     /// The alignment is a power of two
     assert#(C: pow2#(E: clog2#(V: ADDR_ALIGN)) == ADDR_ALIGN)
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
-    assert#(C: AXI_WIDTH % ELEMENT_BITWIDTH == 0)
+    assert#(C: AXI_WIDTH mod ELEMENT_BITWIDTH == 0)
     gen int CHUNK_BYTE_SIZE = AXI_WIDTH / 8
     gen int CHUNKS_TO = (COUNT_TO + NUM_PARALLEL_ELEMENTS) / NUM_PARALLEL_ELEMENTS + 2
 
@@ -608,7 +613,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
 
     SlowState#(T: type int#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE), RESET_TO: 0) cur_start_chunk_addr
     SlowState#(T: type int#(FROM: 0, TO: CHUNKS_TO), RESET_TO: 0) num_chunks_left // When == 0 we're not transmitting
-    state int#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT) num_in_flight
+    state int#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT + 3000) num_in_flight
 
     // araddr is always aligned to AxSIZE
     araddr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: CHUNK_BYTE_SIZE))(cur_start_chunk_addr.old, 0)
@@ -621,27 +626,29 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
     when chunks_are_left {
         int max_chunks_in_this_burst = MAX_BURST - cur_align
         when num_chunks_left.old <= max_chunks_in_this_burst {
-            reg this_burst_size = unsafe_int_cast#(FROM: 1, TO: MAX_BURST+1)(num_chunks_left.old)
+            reg this_burst_size = IntNarrow#(FROM: 1, TO: MAX_BURST+1)(num_chunks_left.old)
         } else {
             reg this_burst_size = max_chunks_in_this_burst
         }
+        arlen = this_burst_size - 1
     }
-    arlen = this_burst_size - 1
 
-    arvalid = chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update & LatencyOffset#(OFFSET: MAX_CHUNKS_IN_FLIGHT)(is_ready_to_receive_lots_of_data) & (num_in_flight < MAX_CHUNKS_IN_FLIGHT - MAX_BURST)
+    //arvalid = chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update & LatencyOffset#(OFFSET: MAX_CHUNKS_IN_FLIGHT)(is_ready_to_receive_lots_of_data) & (num_in_flight < MAX_CHUNKS_IN_FLIGHT - MAX_BURST)
+    input int#(FROM: 0, TO: 2048) max_in_flight
+    arvalid = chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update & LatencyOffset#(OFFSET: MAX_CHUNKS_IN_FLIGHT)(is_ready_to_receive_lots_of_data) & (num_in_flight < max_in_flight - MAX_BURST)
 
     when arready & arvalid {
         reg int next_burst_addr = cur_burst_addr + 1
-        cur_start_chunk_addr.update(unsafe_int_cast#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE)(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_BURST))(next_burst_addr, 0)))
+        cur_start_chunk_addr.update(IntNarrow#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE)(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_BURST))(next_burst_addr, 0)))
         // SAFETY: we will never take off more chunks than are in num_chunks_left, of course
-        int next_num_chunks_left = unsafe_int_cast#(FROM: 0, TO: CHUNKS_TO)(num_chunks_left.old - this_burst_size)
+        int next_num_chunks_left = IntNarrow#(FROM: 0, TO: CHUNKS_TO)(num_chunks_left.old - this_burst_size)
         num_chunks_left.update(next_num_chunks_left)
     }
 
     // We're always ready to send data
     rready = aresetn
     
-    num_in_flight = unsafe_int_cast#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT)(num_in_flight - BoolToInt(rvalid) + Ternary(arready & arvalid, this_burst_size, 0))
+    num_in_flight = IntNarrow#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT+3000)(num_in_flight - BoolToInt(rvalid) + Ternary(arready & arvalid, this_burst_size, 0))
     
     state int#(FROM: 0, TO: CHUNKS_TO) chunks_left
     state int final_chunk_align
@@ -654,14 +661,14 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
         int num_chunk_elements
         bool is_last = chunks_left == 1
         when is_last {
-            num_chunk_elements = unsafe_int_cast#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS + 1)(final_chunk_align - cur_chunk_align)
+            num_chunk_elements = IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS + 1)(final_chunk_align - cur_chunk_align)
         } else {
             num_chunk_elements = NUM_PARALLEL_ELEMENTS - cur_chunk_align
         }
         
         element_packet_valid(elements, cur_chunk_align, num_chunk_elements, is_last)
         cur_chunk_align = 0
-        chunks_left = unsafe_int_cast#(FROM: 0, TO: CHUNKS_TO)(chunks_left - 1)
+        chunks_left = IntNarrow#(FROM: 0, TO: CHUNKS_TO)(chunks_left - 1)
     }
 
 
@@ -704,7 +711,7 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
     domain aclk
     input bool aresetn
 
-    assert#(C: sizeof#(T) % (ADDR_ALIGN * 8) == 0)
+    assert#(C: sizeof#(T) mod ADDR_ALIGN * 8 == 0)
     gen int ELEMENT_BITWIDTH = ADDR_ALIGN * 8
     gen int NUM_ELEMENTS_PER_VALUE = sizeof#(T) / ELEMENT_BITWIDTH
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
@@ -736,8 +743,11 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
     parent.rresp   = rresp
     parent.rlast   = rlast
 
+    input int#(FROM: 0, TO: 2048) max_in_flight
+    parent.max_in_flight = max_in_flight
+
     output bool may_request_new_burst = parent.may_request_new_burst
-    action request_new_burst'0 : int#(FROM: 0, TO: ATO) start_addr, int#(FROM: 1, TO: COUNT_TO) count {
+    action request_new_burst : int#(FROM: 0, TO: ATO) start_addr, int#(FROM: 1, TO: COUNT_TO) count {
         parent.request_new_burst(start_addr, count * NUM_ELEMENTS_PER_VALUE)
     }
 
@@ -751,7 +761,7 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
     when parent.element_packet_valid : bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, bool last {
         bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] elements_extended
         elements_extended[:NUM_PARALLEL_ELEMENTS] = elements
-        bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] rotated_elements = RotateRight(elements_extended, (cur_element_store_align - chunk_offset) % NUM_ELEMENTS_PER_VALUE)
+        bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] rotated_elements = RotateRight(elements_extended, cur_element_store_align - chunk_offset mod NUM_ELEMENTS_PER_VALUE)
         bool[NUM_ELEMENTS_PER_VALUE] rotated_strobe = MakeStrobe(cur_element_store_align, chunk_length)
 
         int end_of_element = cur_element_store_align + chunk_length
@@ -772,9 +782,10 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
                     }
                 }
             }
-            value_valid(transmute_from_bits(resulting_value_bits), last)
+            // bool[sizeof#(T)] pipelined_resulting_value_bits'((clog2#(V: NUM_ELEMENTS_PER_VALUE) + 1) / 2) // Estimate 1 MUX4 per stage
+            value_valid(FromBits(resulting_value_bits), last)
         }
-        cur_element_store_align = end_of_element % NUM_ELEMENTS_PER_VALUE
+        cur_element_store_align = end_of_element mod NUM_ELEMENTS_PER_VALUE
         for int ELEM_I in 0..NUM_ELEMENTS_PER_VALUE-1 {
             when rotated_strobe[ELEM_I] {
                 stored_elements[ELEM_I] = rotated_elements[ELEM_I]
@@ -819,7 +830,7 @@ module axi_array_burst_writer#(int AXI_WIDTH, int ADDR_ALIGN) {
     /// The alignment is a power of two
     assert#(C: pow2#(E: clog2#(V: ADDR_ALIGN)) == ADDR_ALIGN)
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
-    assert#(C: AXI_WIDTH % ELEMENT_BITWIDTH == 0)
+    assert#(C: AXI_WIDTH mod ELEMENT_BITWIDTH == 0)
 
     output bool                     awvalid'0
     input  bool                     awready'0
@@ -866,10 +877,10 @@ module axi_array_burst_writer#(int AXI_WIDTH, int ADDR_ALIGN) {
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0,
         bool last'0 {
 
-        ElemT[NUM_PARALLEL_ELEMENTS] rotated_chunk = RotateRight(chunk, (chunk_offset - fifo_write_align) % NUM_PARALLEL_ELEMENTS) // Most expensive line in the whole writer!
+        ElemT[NUM_PARALLEL_ELEMENTS] rotated_chunk = RotateRight(chunk, chunk_offset - fifo_write_align mod NUM_PARALLEL_ELEMENTS) // Most expensive line in the whole writer!
         bool[NUM_PARALLEL_ELEMENTS] write_strobe = MakeStrobe(fifo_write_align, chunk_length)
         
-        int new_fifo_write_addr = (fifo_write_addr + chunk_length) % (FIFO_DEPTH * NUM_PARALLEL_ELEMENTS)
+        int new_fifo_write_addr = fifo_write_addr + chunk_length mod FIFO_DEPTH * NUM_PARALLEL_ELEMENTS
         when last {
 
         } else {

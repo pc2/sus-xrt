@@ -80,7 +80,7 @@ module axi_ctrl_slave_example {
         int a = BitsToUInt(ctrl.input_regs[0])
         int b = BitsToUInt(ctrl.input_regs[1])
 
-        int c = (a + b) % pow2#(E: 32)
+        int c = a + b mod pow2#(E: 32)
 
         //wait_count = a
 
@@ -233,7 +233,7 @@ module combined_axi_ctrl_plus_reader {
     } else when data_state == STM_GET_B {
         bool success, int b = reader.read()
         when success {
-            int c = (stored_a + b) % pow2#(E: 32)
+            int c = stored_a + b mod pow2#(E: 32)
             bool[32] c_as_bits = UIntToBits(c)
             ctrl.finish([c_as_bits])
             data_state = STM_IDLE
@@ -395,8 +395,8 @@ module combined_axi_ctrl_reader_writer {
     int[NUM_VALUES] c
     int[NUM_VALUES] d
     for int i in 0..NUM_VALUES {
-        c[i] = (stored_a[i] + stored_b[i]) % pow2#(E: 32)
-        d[i] = (stored_a[i] * stored_b[i]) % pow2#(E: 32)
+        c[i] = stored_a[i] + stored_b[i] mod pow2#(E: 32)
+        d[i] = stored_a[i] * stored_b[i] mod pow2#(E: 32)
     }
     when data_state == STM_GET_A {
         bool success, int[NUM_VALUES] data = reader.read()
@@ -448,7 +448,7 @@ module benchmark_burst_read#(int AXI_WIDTH) {
 
     gen int NUM_ELEMS = AXI_WIDTH / 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 3, NUM_OUTPUT_REGS: 2, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 2, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
     ctrl.aresetn = aresetn
 
     // Export AXI4-Lite interface
@@ -489,13 +489,13 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     input  bool                     m_axi_awready
     output int#(FROM: 0, TO: MTO)   m_axi_awaddr = writer.awaddr
     output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
-    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
+    //output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
-    output bool[3]                  m_axi_awprot = writer.awprot
+    //output bool[3]                  m_axi_awprot = writer.awprot
     output bool[4]                  m_axi_awcache = writer.awcache
-    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
-    output bool                     m_axi_awlock = writer.awlock
-    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
+    //output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    //output bool                     m_axi_awlock = writer.awlock
+    //output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
     output bool                     m_axi_wvalid = writer.wvalid
     input  bool                     m_axi_wready
     output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
@@ -512,13 +512,13 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     input  bool                     m_axi_arready
     output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
     output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
-    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
+    //output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
-    output bool[3]                  m_axi_arprot = reader.arprot
-    output bool[4]                  m_axi_arcache = reader.arcache
-    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
-    output bool                     m_axi_arlock = reader.arlock
-    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
+    //output bool[3]                  m_axi_arprot = reader.arprot
+    //output bool[4]                  m_axi_arcache = reader.arcache
+    //output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    //output bool                     m_axi_arlock = reader.arlock
+    //output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
     input  bool                     m_axi_rvalid
     output bool                     m_axi_rready = reader.rready
     input  bool[AXI_WIDTH]          m_axi_rdata
@@ -536,7 +536,20 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     addr_a_bits[32:] = ctrl.input_regs[1]
 
     int start_addr = BitsToUInt(addr_a_bits)
-    int num_to_transfer = unsafe_int_cast#(FROM: 1, TO: pow2#(E: 32))(BitsToUInt(ctrl.input_regs[2]))
+    int num_to_transfer = IntNarrow#(FROM: 1, TO: pow2#(E: 32))(BitsToUInt(ctrl.input_regs[2]))
+
+    bool[32] config_bits = ctrl.input_regs[3]
+
+    //output int#(FROM: 0, TO: 8)     m_axi_arsize  = BitsToUInt(config_bits[0:3])
+    //output bool[2]                  m_axi_arburst = config_bits[3:5]
+    output bool[3]                  m_axi_arprot = config_bits[5:8]
+    output bool[4]                  m_axi_arcache = config_bits[8:12]
+    output int#(FROM: 0, TO: 16)    m_axi_arqos = BitsToUInt(config_bits[12:16])
+    output bool                     m_axi_arlock = config_bits[16]
+    output int#(FROM: 0, TO: 16)    m_axi_arregion = BitsToUInt(config_bits[17:21])
+
+    reader.max_in_flight = BitsToUInt(config_bits[21:32])
+    
 
     state bool running
     state int num_cycles_running
@@ -545,17 +558,18 @@ module benchmark_burst_read#(int AXI_WIDTH) {
         reader.request_new_burst(start_addr, num_to_transfer)
         running = true
         num_cycles_running = 0
+        hash = 32'h00000000
     }
 
     when running {
-        num_cycles_running = (num_cycles_running + 1) % pow2#(E: 32)
+        num_cycles_running = num_cycles_running + 1 mod pow2#(E: 32)
     }
 
     reader.is_ready_to_receive_lots_of_data = true
     when reader.value_valid: bool[32][NUM_ELEMS] value, bool last {
         bool[32] new_hash_contrib
         for int i in 0..32 {
-            new_hash_contrib[i] = ^(value[:][i])
+            reg reg new_hash_contrib[i] = ^(value[:][i])
         }
         bool[32] new_hash = hash ^ new_hash_contrib
         when last {

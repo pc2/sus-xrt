@@ -573,16 +573,6 @@ initial begin
 end
 endmodule
 
-
-module test_modulo;
-    logic signed[10:0] a = -5;
-    logic[10:0] modulus = 7;
-    
-    logic[10:0] result = a % 7;
-    logic[10:0] result_mod = a % modulus;
-endmodule
-
-
 module RotateRight_tb;
 
 logic clk = 1;

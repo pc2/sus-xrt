@@ -19,13 +19,16 @@
 .analytics
 .metadata/
 .vscode/
-hw/_x/
+hw/_x*/
+hw/.ipcache/
 hw/emulation_data/
 hw/cfg/
 hw/sim/
 hw/launch_hw_emu.sh
+hw/overlay_hw.ltx
 sw/.run/
 packaging/pack_prj*/
+packaging/testing_pack_proj/
 RemoteSystemsTempFiles/
 emconfig.json
 my_own_testing/
