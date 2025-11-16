@@ -24,6 +24,7 @@ The startup latency (so latency between a read request being made, and the first
 
 #### Multi-reader bandwidth
 (Combined from 512-bit@320MHz and 256-bit@348MHz benchmarks)
+
 | #parallel | 512-bit BW (GB/s) | 256-bit BW (GB/s) |
 | --- | --- | --- |
 | 1   | 13.5623 | 10.4925 |
@@ -50,6 +51,7 @@ The startup latency (so latency between a read request being made, and the first
 | 22  | 51.6131 |   N/A   |
 | 23  | 52.3697 |   N/A   |
 | 24  | 47.9105 |   N/A   |
+
 (we're simply starting from kernel #1, and adding kernels sequentially)
 
 Total bandwidth does tend to increase with more readers, but some conflicts seem to cut the bandwidth significantly (Such as 256-bit/11 parallel). 
@@ -64,9 +66,9 @@ It appears that NoC interfaces on the same Vertical NoC conflict. Worse - NoC in
 #### Number of hard-logic NoC connection points: 23
 If more memory masters than this are instantiated, programmable logic "virtual" NoC switches are instantiated. Single-interface bandwidth appears maintained, but multi-interface bandwidth on the same virtual NoC suffers tremendously. Recommendation: **Don't exceed 23 Interfaces**
 
-![Programmable Logic NoC](measurements/24x512_noc.png) (Observe the NoC endpoint isn't directly connected to the two pink kernels - Kernel 1 and 24 - the worst pairing in the conflicts benchmark)
+![Programmable Logic NoC](measurements/24x512_noc.png)
+Observe the NoC endpoint isn't directly connected to the two pink kernels - Kernel 1 and 24 - the worst pairing in the conflicts benchmark. Instead, the large blob of orange logic is the virtual extension to the NoC, which both kernels then connect to. 
 
 ### Misc
-#### Around 460MHz 256-bit AXI readers attain identical bandwidth to 512-bit readers. 
-
-#### ArCACHE[1] bit does not seem to have an effect
+- **Around 460MHz 256-bit AXI readers attain identical bandwidth to 512-bit readers**
+- **ArCACHE[1] bit does not seem to have an effect**
