@@ -571,6 +571,8 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
 
     gen int MAX_AXI_ALIGNMENT = pow2#(E: 12)
+    // DOES NOT WORK :(
+    //gen int MAX_AXI_ALIGNMENT = pow2#(E: 14) // BREAKING AXI SPEC - 8KB pages for 256, 16KB for 512. Result = Higher BW? 
     gen int MAX_BURST = MAX_AXI_ALIGNMENT / AXI_WIDTH_BYTES
 
     if MAX_BURST > 256 { // Limited to 256 for BURST_INCR - AXI4. (16 if AXI3, but we only support AXI4)

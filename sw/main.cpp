@@ -43,7 +43,9 @@ void printConfig(AXIConfig config) {
 xrt::device vck5000;
 std::unique_ptr<xrt::uuid>   xclbin_handle_ptr;
 
-double clock_freq = 355.2 * 1000000; // In Hz
+constexpr size_t NUM_KERNELS = 20;
+
+double clock_freq = 348 * 1000000; // In Hz
 size_t num_buffer_elems = 100000000*8;
 uint32_t expected_hash;
 xrt::bo bench_buffer;
@@ -62,7 +64,7 @@ void printKernelRegs(const char* kernel_name) {
 }
 
 
-const char* kernel_names[28]{
+/*const char* kernel_names[28]{
     "sus_bench_burst32:{sus_bench_burst32_1}",
     "sus_bench_burst32:{sus_bench_burst32_2}",
     "sus_bench_burst32:{sus_bench_burst32_3}",
@@ -98,7 +100,39 @@ const int sizes[28]{
     128, 128, 128, 128, 
     256, 256, 256, 256, 256, 256, 256, 256, 
     512, 512, 512, 512, 512, 512, 512, 512, 
+};*/
+
+const char* kernel_names[NUM_KERNELS]{
+    "sus_bench_burst256:{sus_bench_burst256_1}",
+    "sus_bench_burst256:{sus_bench_burst256_2}",
+    "sus_bench_burst256:{sus_bench_burst256_3}",
+    "sus_bench_burst256:{sus_bench_burst256_4}",
+    "sus_bench_burst256:{sus_bench_burst256_5}",
+    "sus_bench_burst256:{sus_bench_burst256_6}",
+    "sus_bench_burst256:{sus_bench_burst256_7}",
+    "sus_bench_burst256:{sus_bench_burst256_8}",
+    "sus_bench_burst256:{sus_bench_burst256_9}",
+    "sus_bench_burst256:{sus_bench_burst256_10}",
+    "sus_bench_burst256:{sus_bench_burst256_11}",
+    "sus_bench_burst256:{sus_bench_burst256_12}",
+    "sus_bench_burst256:{sus_bench_burst256_13}",
+    "sus_bench_burst256:{sus_bench_burst256_14}",
+    "sus_bench_burst256:{sus_bench_burst256_15}",
+    "sus_bench_burst256:{sus_bench_burst256_16}",
+    "sus_bench_burst256:{sus_bench_burst256_17}",
+    "sus_bench_burst256:{sus_bench_burst256_18}",
+    "sus_bench_burst256:{sus_bench_burst256_19}",
+    "sus_bench_burst256:{sus_bench_burst256_20}",
 };
+const int sizes[NUM_KERNELS]{
+    256,256,256,256,256,
+    256,256,256,256,256,
+    256,256,256,256,256,
+    256,256,256,256,256,
+};
+
+double co_run_bandwidths[NUM_KERNELS][NUM_KERNELS];
+double co_run_cycle_efficiencies[NUM_KERNELS][NUM_KERNELS];
 
 void run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig config) {
     uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
@@ -142,6 +176,7 @@ void run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
     runs.clear();
     kernels.clear();
 
+    double totalEffective = 0.0;
     for(size_t ki : kernel_indices) {
         const char* kernel_name = kernel_names[ki];
         
@@ -154,11 +189,19 @@ void run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
         uint32_t reg_cycles = user_manage.read_register(0x020);
         uint32_t reg_result = user_manage.read_register(0x024);
 
-        std::cout << "    " << kernel_name << " took " << reg_cycles << " cycles for " << reg_count << " transfers. " << (double(reg_count) / reg_cycles) << " effective." << std::endl;
+        double effective = double(reg_count) / reg_cycles;
+        std::cout << "    " << kernel_name << " took " << reg_cycles << " cycles for " << reg_count << " transfers. " << effective << " effective." << std::endl;
+        totalEffective += effective;
         if(reg_result != expected_hash) {
             std::cout << "INCORRECT HASH! Found " << reg_result << " instead of " << expected_hash << std::endl;
             throw "BAD";
         }
+    }
+    if(kernel_indices.size() == 2) {
+        co_run_bandwidths[kernel_indices[0]][kernel_indices[1]] = read_bw;
+    }
+    if(kernel_indices.size() == 2) {
+        co_run_cycle_efficiencies[kernel_indices[0]][kernel_indices[1]] = totalEffective / 2;
     }
 }
 
@@ -226,7 +269,7 @@ int main(int argc, const char** argv)
         .arsize = 0,
         .arburst = 0,
         .arprot = 0,
-        .arcache = 0,
+        .arcache = 2,
         .arqos = 0,
         .arlock = 0,
         .arregion = 0,
@@ -312,16 +355,16 @@ int main(int argc, const char** argv)
 
 
     std::cout << "Starting Kernels" << std::endl;
-    for(size_t kernel_id = 0; kernel_id < 28; kernel_id++) {
+    for(size_t kernel_id = 0; kernel_id < NUM_KERNELS; kernel_id++) {
         run_parallel_kernels(std::vector<size_t>{kernel_id}, config);
     }
 
     std::cout << "Starting 4x Parallel Kernels" << std::endl;
-    for(size_t kernel_group = 0; kernel_group < 6; kernel_group++) {
+    for(size_t kernel_group = 0; kernel_group < NUM_KERNELS / 4; kernel_group++) {
         run_parallel_kernels(std::vector<size_t>{kernel_group*4, kernel_group*4+1, kernel_group*4+2, kernel_group*4+3}, config);
     }
 
-    std::cout << "Starting 1x-8x Parallel Kernels 256-bit" << std::endl;
+    /*std::cout << "Starting 1x-8x Parallel Kernels 256-bit" << std::endl;
     std::vector<size_t> kernel_ids;
     for(int num_kernels = 0; num_kernels < 8; num_kernels++) {
         kernel_ids.push_back(12+num_kernels); // for 256-bit
@@ -338,19 +381,40 @@ int main(int argc, const char** argv)
     for(int kernel_id = 0; kernel_id < 8; kernel_id++) {
         kernel_ids.push_back(12+kernel_id); // for 256-bit
         kernel_ids.push_back(20+kernel_id); // for 512-bit
+    }*/
+    std::cout << "Starting 1x-" << NUM_KERNELS << "x Parallel Kernels 512-bit" << std::endl;
+    std::vector<size_t> kernel_ids;
+    for(int num_kernels = 0; num_kernels < NUM_KERNELS; num_kernels++) {
+        kernel_ids.push_back(num_kernels); // for 512-bit
+        run_parallel_kernels(kernel_ids, config);
     }
+    kernel_ids.clear();
     run_parallel_kernels(kernel_ids, config);
     std::cout << "ALL KERNELS" << std::endl;
     kernel_ids.clear();
-    for(int kernel_id = 0; kernel_id < 28; kernel_id++) {
+    for(int kernel_id = 0; kernel_id < NUM_KERNELS; kernel_id++) {
         kernel_ids.push_back(kernel_id);
     }
     run_parallel_kernels(kernel_ids, config);
     std::cout << "ALL 512-bit PAIRS" << std::endl;
-    for(int kernel_id_a = 0; kernel_id_a < 8; kernel_id_a++) {
-        for(int kernel_id_b = kernel_id_a + 1; kernel_id_b < 8; kernel_id_b++) {
-            run_parallel_kernels(std::vector<size_t>{kernel_id_a + 20, kernel_id_b + 20}, config);
+    for(int kernel_id_a = 0; kernel_id_a < NUM_KERNELS; kernel_id_a++) {
+        for(int kernel_id_b = 0; kernel_id_b < NUM_KERNELS; kernel_id_b++) {
+            run_parallel_kernels(std::vector<size_t>{kernel_id_a, kernel_id_b}, config);
         }
+    }
+    std::cout << "Summary Bandwidths:" << std::endl;
+    for(int i = 0; i < NUM_KERNELS; i++) {
+        for(int j = 0; j < NUM_KERNELS; j++) {
+            std::cout << co_run_bandwidths[i][j] << ",\t";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "Summary Efficiencies:" << std::endl;
+    for(int i = 0; i < NUM_KERNELS; i++) {
+        for(int j = 0; j < NUM_KERNELS; j++) {
+            std::cout << co_run_cycle_efficiencies[i][j] << ",\t";
+        }
+        std::cout << std::endl;
     }
     /*std::cout << "ALL 512-bit TRIPLES" << std::endl;
     for(int kernel_id_a = 0; kernel_id_a < 8; kernel_id_a++) {

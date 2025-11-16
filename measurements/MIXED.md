@@ -1,5 +1,36 @@
 # Memory reader benchmark 355.2MHz, 4x 32bit, 4x 64bit 4x 128bit 8x 256bit 8x 512bit   - CACHING FLAG ENABLED
 
+![Accelerator Die Shot](MIXED_die.png)
+```
+CONFLICTS WITH (x means lower total bandwidth)
+  1 2 3 4 5 6 7 8
+1   x x . . . . ?
+2     x . x . . .
+3       . . . . x
+4         . . . .
+5           x . .
+6             . .
+7               x
+```
+
+SECOND RUN:
+```
+CONFLICTS WITH(x means lower total bandwidth)
+  1 2 3 4 5 6 7 8
+1   x x x . . . ?
+2     x . . . . .
+3       ? . . . .
+4         . . . .
+5           x . .
+6             . .
+7               x
+```
+
+#### NOC doesn't directly connect to *all* accelerators? Perhaps too many NOC resources used? 
+
+![Noc Connectivity](MIXED_noc.png)
+
+
 ```
 [lennartv@n2hacc03 sw]$ make main.x && ./main.x e ./bench_accel3.xclbin
 g++ -g -std=c++17 -I/opt/software/FPGA/Xilinx/xrt/xrt_2.16/include -L/opt/software/FPGA/Xilinx/xrt/xrt_2.16/lib -lxrt_coreutil -pthread main.cpp -o main.x
@@ -720,32 +751,4 @@ ALL 512-bit PAIRS
     sus_bench_burst512:{sus_bench_burst512_7} took 134334869 cycles for 50000000 transfers. 0.372204 effective.
     sus_bench_burst512:{sus_bench_burst512_8} took 150312191 cycles for 50000000 transfers. 0.332641 effective.
 ALL MEMORY HASHES MATCHED CORRECT ANSWER 1078751232
-```
-
-### Apparent NOC conflicts? 
-
-![Accelerator Die Shot](BENCHMARK_RESULTS_ACCEL.png)
-```
-CONFLICTS WITH (x means lower total bandwidth)
-  1 2 3 4 5 6 7 8
-1   x x . . . . ?
-2     x . x . . .
-3       . . . . x
-4         . . . .
-5           x . .
-6             . .
-7               x
-```
-
-SECOND RUN:
-```
-CONFLICTS WITH(x means lower total bandwidth)
-  1 2 3 4 5 6 7 8
-1   x x x . . . ?
-2     x . . . . .
-3       ? . . . .
-4         . . . .
-5           x . .
-6             . .
-7               x
 ```
