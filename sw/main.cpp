@@ -134,7 +134,12 @@ const int sizes[NUM_KERNELS]{
 double co_run_bandwidths[NUM_KERNELS][NUM_KERNELS];
 double co_run_cycle_efficiencies[NUM_KERNELS][NUM_KERNELS];
 
-void run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig config) {
+struct Pair {
+    double totalBandwidth;
+    double averageEffective;
+};
+
+Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig config) {
     uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
 
     std::cout << kernel_indices.size() << " Parallel Kernels" << std::endl;
@@ -203,6 +208,10 @@ void run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
     if(kernel_indices.size() == 2) {
         co_run_cycle_efficiencies[kernel_indices[0]][kernel_indices[1]] = totalEffective / 2;
     }
+    Pair result;
+    result.totalBandwidth = read_bw;
+    result.averageEffective = totalEffective / kernel_indices.size();
+    return result;
 }
 
 int main(int argc, const char** argv)
@@ -245,6 +254,12 @@ int main(int argc, const char** argv)
     xclbin_handle_ptr = std::make_unique<xrt::uuid>(vck5000.load_xclbin(xclbin_file));
 
     std::cout << "Got XCLBIN" << std::endl;
+
+    for(const char* kernel_name : kernel_names) {
+        xrt::kernel k = xrt::kernel(vck5000, *xclbin_handle_ptr, kernel_name);
+        std::cout << "Kernel " << kernel_name << ": " << k.group_id(0) << std::endl;
+    }
+
 
     std::cout << "Making Buffer of " << num_buffer_elems << " elements" << std::endl;
     {
@@ -354,7 +369,7 @@ int main(int argc, const char** argv)
 
 
 
-    std::cout << "Starting Kernels" << std::endl;
+    /*std::cout << "Starting Kernels" << std::endl;
     for(size_t kernel_id = 0; kernel_id < NUM_KERNELS; kernel_id++) {
         run_parallel_kernels(std::vector<size_t>{kernel_id}, config);
     }
@@ -362,7 +377,7 @@ int main(int argc, const char** argv)
     std::cout << "Starting 4x Parallel Kernels" << std::endl;
     for(size_t kernel_group = 0; kernel_group < NUM_KERNELS / 4; kernel_group++) {
         run_parallel_kernels(std::vector<size_t>{kernel_group*4, kernel_group*4+1, kernel_group*4+2, kernel_group*4+3}, config);
-    }
+    }*/
 
     /*std::cout << "Starting 1x-8x Parallel Kernels 256-bit" << std::endl;
     std::vector<size_t> kernel_ids;
@@ -382,7 +397,7 @@ int main(int argc, const char** argv)
         kernel_ids.push_back(12+kernel_id); // for 256-bit
         kernel_ids.push_back(20+kernel_id); // for 512-bit
     }*/
-    std::cout << "Starting 1x-" << NUM_KERNELS << "x Parallel Kernels 512-bit" << std::endl;
+    /*std::cout << "Starting 1x-" << NUM_KERNELS << "x Parallel Kernels 512-bit" << std::endl;
     std::vector<size_t> kernel_ids;
     for(int num_kernels = 0; num_kernels < NUM_KERNELS; num_kernels++) {
         kernel_ids.push_back(num_kernels); // for 512-bit
@@ -415,7 +430,7 @@ int main(int argc, const char** argv)
             std::cout << co_run_cycle_efficiencies[i][j] << ",\t";
         }
         std::cout << std::endl;
-    }
+    }*/
     /*std::cout << "ALL 512-bit TRIPLES" << std::endl;
     for(int kernel_id_a = 0; kernel_id_a < 8; kernel_id_a++) {
         for(int kernel_id_b = kernel_id_a + 1; kernel_id_b < 8; kernel_id_b++) {
@@ -423,6 +438,111 @@ int main(int argc, const char** argv)
             run_parallel_kernels(std::vector<size_t>{kernel_id_a, kernel_id_b, kernel_id_c}, config);
         }
     }*/
+
+    std::cout << "Same VNoC:" << std::endl;
+    run_parallel_kernels(std::vector<size_t>{0, 1, 12, 14}, config);
+    run_parallel_kernels(std::vector<size_t>{5, 8, 13, 7}, config);
+    run_parallel_kernels(std::vector<size_t>{6, 9, 18, 10, 11, 19, 2}, config);
+    run_parallel_kernels(std::vector<size_t>{3, 4, 15, 16, 17}, config);
+
+    std::cout << "Same VNoC:" << std::endl;
+    run_parallel_kernels(std::vector<size_t>{3}, config);
+    run_parallel_kernels(std::vector<size_t>{3, 4}, config);
+    run_parallel_kernels(std::vector<size_t>{3, 4, 15}, config);
+    run_parallel_kernels(std::vector<size_t>{3, 4, 15, 16}, config);
+    run_parallel_kernels(std::vector<size_t>{3, 4, 15, 16, 17}, config);
+
+    std::cout << "Different VNoCs:" << std::endl;
+    run_parallel_kernels(std::vector<size_t>{0}, config);
+    run_parallel_kernels(std::vector<size_t>{0, 5}, config);
+    run_parallel_kernels(std::vector<size_t>{0, 5, 6}, config);
+    run_parallel_kernels(std::vector<size_t>{0, 5, 6, 3}, config);
+
+    std::vector<std::vector<size_t>> all_index_combinations{
+        /*std::vector<size_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+        std::vector<size_t>{0},
+        std::vector<size_t>{1},
+        std::vector<size_t>{2},
+        std::vector<size_t>{3},
+        std::vector<size_t>{4},
+        std::vector<size_t>{5},
+        std::vector<size_t>{6},
+        std::vector<size_t>{7},
+        std::vector<size_t>{8},
+        std::vector<size_t>{9},
+        std::vector<size_t>{10},
+        std::vector<size_t>{11},
+        std::vector<size_t>{12},
+        std::vector<size_t>{13},
+        std::vector<size_t>{14},
+        std::vector<size_t>{15},
+        std::vector<size_t>{16},
+        std::vector<size_t>{17},
+        std::vector<size_t>{18},
+        std::vector<size_t>{19},*/
+        /*std::vector<size_t>{0, 1, 12, 14},
+        std::vector<size_t>{5, 8, 13, 7},
+        std::vector<size_t>{6, 9, 18, 10, 11, 19, 2},
+        std::vector<size_t>{3, 4, 15, 16, 17},
+        std::vector<size_t>{3},
+        std::vector<size_t>{3, 4},
+        std::vector<size_t>{3, 4, 15},
+        std::vector<size_t>{3, 4, 15, 16},
+        std::vector<size_t>{3, 4, 15, 16, 17},
+        std::vector<size_t>{0},
+        std::vector<size_t>{0, 5},
+        std::vector<size_t>{0, 5, 6},
+        std::vector<size_t>{0, 5, 6, 3},*/
+    };
+
+    std::cout << "And now for data collection for :" << std::endl;
+    std::vector<std::vector<Pair>> allBenchmarkData;
+    std::vector<uint32_t> maxInFlightPoints;
+
+    for(int max_in_flight = 128; max_in_flight < 512 - 32;) {
+        maxInFlightPoints.push_back(max_in_flight);
+        if(max_in_flight < 256) {
+            max_in_flight += 4;
+        } else {
+            max_in_flight += 32;
+        }
+    }
+    for(std::vector<size_t>& indices : all_index_combinations) {
+        AXIConfig local_config = config;
+        std::stringstream write_str;
+
+        std::vector<Pair> curBenchmarkList;
+        for(uint32_t maxInFlight : maxInFlightPoints) {
+            local_config.max_in_flight = maxInFlight+1; // Was strict less than, should be less than or equal. Workaround
+            std::cout << "local_config.max_in_flight: " << local_config.max_in_flight << std::endl;
+
+            Pair bench = run_parallel_kernels(indices, local_config);
+            curBenchmarkList.push_back(bench);
+
+            write_str << "| " << maxInFlight << " | " << bench.totalBandwidth << " | " << bench.averageEffective << " |\n";
+        }
+
+        std::cout << "| Max In Flight | Bandwidth (GB/s) | cycle efficiency |\n" << write_str.str() << std::endl;
+        allBenchmarkData.push_back(curBenchmarkList);
+    }
+
+    std::cout << "MAX_IN_FLIGHT: BANDWIDTH (GB/s)..." << std::endl;
+    for(size_t row = 0; row < maxInFlightPoints.size(); row++) {
+        std::cout << maxInFlightPoints[row] << ": ";
+        for(std::vector<Pair>& bench_vec : allBenchmarkData) {
+            std::cout << bench_vec[row].totalBandwidth << ", ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "MAX_IN_FLIGHT: CYCLE EFFICIENCY..." << std::endl;
+    for(size_t row = 0; row < maxInFlightPoints.size(); row++) {
+        std::cout << maxInFlightPoints[row] << ": ";
+        for(std::vector<Pair>& bench_vec : allBenchmarkData) {
+            std::cout << bench_vec[row].averageEffective << ", ";
+        }
+        std::cout << std::endl;
+    }
+
     std::cout << "ALL MEMORY HASHES MATCHED CORRECT ANSWER " << expected_hash << std::endl;
     return 0;
     /*kernel_ids.clear();
