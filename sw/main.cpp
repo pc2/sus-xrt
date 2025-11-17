@@ -43,13 +43,17 @@ void printConfig(AXIConfig config) {
 xrt::device vck5000;
 std::unique_ptr<xrt::uuid>   xclbin_handle_ptr;
 
-constexpr size_t NUM_KERNELS = 20;
+constexpr size_t NUM_KERNELS = 24;
 
 double clock_freq = 348 * 1000000; // In Hz
-size_t num_buffer_elems = 100000000*8;
+size_t num_buffer_elems = 200000000 / 5;
 uint32_t expected_hash;
-xrt::bo bench_buffer;
 std::vector<uint32_t> host_buffer;
+
+std::vector<xrt::bo> buffers;
+double co_run_bandwidths[NUM_KERNELS][NUM_KERNELS];
+double co_run_cycle_efficiencies[NUM_KERNELS][NUM_KERNELS];
+
 
 void printKernelRegs(const char* kernel_name) {
     xrt::ip user_manage = xrt::ip(vck5000, *xclbin_handle_ptr, kernel_name);
@@ -103,36 +107,40 @@ const int sizes[28]{
 };*/
 
 const char* kernel_names[NUM_KERNELS]{
-    "sus_bench_burst256:{sus_bench_burst256_1}",
-    "sus_bench_burst256:{sus_bench_burst256_2}",
-    "sus_bench_burst256:{sus_bench_burst256_3}",
-    "sus_bench_burst256:{sus_bench_burst256_4}",
-    "sus_bench_burst256:{sus_bench_burst256_5}",
-    "sus_bench_burst256:{sus_bench_burst256_6}",
-    "sus_bench_burst256:{sus_bench_burst256_7}",
-    "sus_bench_burst256:{sus_bench_burst256_8}",
-    "sus_bench_burst256:{sus_bench_burst256_9}",
-    "sus_bench_burst256:{sus_bench_burst256_10}",
-    "sus_bench_burst256:{sus_bench_burst256_11}",
-    "sus_bench_burst256:{sus_bench_burst256_12}",
-    "sus_bench_burst256:{sus_bench_burst256_13}",
-    "sus_bench_burst256:{sus_bench_burst256_14}",
-    "sus_bench_burst256:{sus_bench_burst256_15}",
-    "sus_bench_burst256:{sus_bench_burst256_16}",
-    "sus_bench_burst256:{sus_bench_burst256_17}",
-    "sus_bench_burst256:{sus_bench_burst256_18}",
-    "sus_bench_burst256:{sus_bench_burst256_19}",
-    "sus_bench_burst256:{sus_bench_burst256_20}",
+    "sus_bench_burst512:{sus_bench_burst512_1}",
+    "sus_bench_burst512:{sus_bench_burst512_2}",
+    "sus_bench_burst512:{sus_bench_burst512_3}",
+    "sus_bench_burst512:{sus_bench_burst512_4}",
+    "sus_bench_burst512:{sus_bench_burst512_5}",
+    "sus_bench_burst512:{sus_bench_burst512_6}",
+    "sus_bench_burst512:{sus_bench_burst512_7}",
+    "sus_bench_burst512:{sus_bench_burst512_8}",
+    "sus_bench_burst512:{sus_bench_burst512_9}",
+    "sus_bench_burst512:{sus_bench_burst512_10}",
+    "sus_bench_burst512:{sus_bench_burst512_11}",
+    "sus_bench_burst512:{sus_bench_burst512_12}",
+    "sus_bench_burst512:{sus_bench_burst512_13}",
+    "sus_bench_burst512:{sus_bench_burst512_14}",
+    "sus_bench_burst512:{sus_bench_burst512_15}",
+    "sus_bench_burst512:{sus_bench_burst512_16}",
+    "sus_bench_burst512:{sus_bench_burst512_17}",
+    "sus_bench_burst512:{sus_bench_burst512_18}",
+    "sus_bench_burst512:{sus_bench_burst512_19}",
+    "sus_bench_burst512:{sus_bench_burst512_20}",
+    "sus_bench_burst512:{sus_bench_burst512_21}",
+    "sus_bench_burst512:{sus_bench_burst512_22}",
+    "sus_bench_burst512:{sus_bench_burst512_23}",
+    "sus_bench_burst512:{sus_bench_burst512_24}",
 };
 const int sizes[NUM_KERNELS]{
-    256,256,256,256,256,
-    256,256,256,256,256,
-    256,256,256,256,256,
-    256,256,256,256,256,
+    512,512,512,512,
+    512,512,512,512,
+    512,512,512,512,
+    512,512,512,512,
+    512,512,512,512,
+    512,512,512,512,
 };
 
-double co_run_bandwidths[NUM_KERNELS][NUM_KERNELS];
-double co_run_cycle_efficiencies[NUM_KERNELS][NUM_KERNELS];
 
 struct Pair {
     double totalBandwidth;
@@ -164,7 +172,7 @@ Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
             max_num_blocks = num_blocks;
         }
 
-        runs.push_back(k(bench_buffer, num_blocks, config_u32));
+        runs.push_back(k(buffers[i], num_blocks, config_u32));
     }
     for(xrt::run& r : runs) {
         r.wait();
@@ -261,24 +269,26 @@ int main(int argc, const char** argv)
     }
 
 
-    std::cout << "Making Buffer of " << num_buffer_elems << " elements" << std::endl;
-    {
-        xrt::kernel k = xrt::kernel(vck5000, *xclbin_handle_ptr, kernel_names[0]);
-        bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, k.group_id(0));
+    std::cout << "Making total buffer of " << num_buffer_elems << " elements..." << std::endl;
+    host_buffer.reserve(num_buffer_elems);
+    expected_hash = 0;
+    for(uint32_t i = 0; i < num_buffer_elems; i++) {
+        host_buffer.push_back(i * 13);
 
-        host_buffer.reserve(num_buffer_elems);
-        expected_hash = 0;
-        for(uint32_t i = 0; i < num_buffer_elems; i++) {
-            host_buffer.push_back(i * 13);
-
-            expected_hash ^= i * 13;
-        }
+        expected_hash ^= i * 13;
+    }
+    std::cout << "Expected hash is " << expected_hash << std::endl;
+    
+    for(const char* kernel_name: kernel_names) {
+        std::cout << "Copying Buffer for " << kernel_name << "..." << std::endl;
+        xrt::kernel k = xrt::kernel(vck5000, *xclbin_handle_ptr, kernel_name);
+        xrt::bo bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, k.group_id(0));
 
         bench_buffer.write(host_buffer.data(), sizeof(uint32_t) * num_buffer_elems, 0);
         bench_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    }
 
-    std::cout << "Expected hash is " << expected_hash << std::endl;
+        buffers.push_back(std::move(bench_buffer));
+    }
 
     AXIConfig config = AXIConfig{
         .arsize = 0,
@@ -439,7 +449,7 @@ int main(int argc, const char** argv)
         }
     }*/
 
-    std::cout << "Same VNoC:" << std::endl;
+    /*std::cout << "Same VNoC:" << std::endl;
     run_parallel_kernels(std::vector<size_t>{0, 1, 12, 14}, config);
     run_parallel_kernels(std::vector<size_t>{5, 8, 13, 7}, config);
     run_parallel_kernels(std::vector<size_t>{6, 9, 18, 10, 11, 19, 2}, config);
@@ -456,10 +466,10 @@ int main(int argc, const char** argv)
     run_parallel_kernels(std::vector<size_t>{0}, config);
     run_parallel_kernels(std::vector<size_t>{0, 5}, config);
     run_parallel_kernels(std::vector<size_t>{0, 5, 6}, config);
-    run_parallel_kernels(std::vector<size_t>{0, 5, 6, 3}, config);
+    run_parallel_kernels(std::vector<size_t>{0, 5, 6, 3}, config);*/
 
     std::vector<std::vector<size_t>> all_index_combinations{
-        /*std::vector<size_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+        std::vector<size_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
         std::vector<size_t>{0},
         std::vector<size_t>{1},
         std::vector<size_t>{2},
@@ -479,7 +489,11 @@ int main(int argc, const char** argv)
         std::vector<size_t>{16},
         std::vector<size_t>{17},
         std::vector<size_t>{18},
-        std::vector<size_t>{19},*/
+        std::vector<size_t>{19},
+        std::vector<size_t>{20},
+        std::vector<size_t>{21},
+        std::vector<size_t>{22},
+        std::vector<size_t>{23},
         /*std::vector<size_t>{0, 1, 12, 14},
         std::vector<size_t>{5, 8, 13, 7},
         std::vector<size_t>{6, 9, 18, 10, 11, 19, 2},
@@ -499,13 +513,9 @@ int main(int argc, const char** argv)
     std::vector<std::vector<Pair>> allBenchmarkData;
     std::vector<uint32_t> maxInFlightPoints;
 
-    for(int max_in_flight = 128; max_in_flight < 512 - 32;) {
+    for(int max_in_flight = 64; max_in_flight < 192;) {
         maxInFlightPoints.push_back(max_in_flight);
-        if(max_in_flight < 256) {
-            max_in_flight += 4;
-        } else {
-            max_in_flight += 32;
-        }
+        max_in_flight += 2;
     }
     for(std::vector<size_t>& indices : all_index_combinations) {
         AXIConfig local_config = config;
