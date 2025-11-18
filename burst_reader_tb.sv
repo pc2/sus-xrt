@@ -268,6 +268,7 @@ axi_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_T
     .rready(rready),
     .rdata(rdata),
     .rlast(rlast),
+    .rresp(2'b00),
 
     // User wires
     .is_ready_to_receive_lots_of_data(is_ready_to_receive_lots_of_data),
@@ -277,7 +278,9 @@ axi_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_T
     .may_request_new_burst(may_request_new_burst),
     .request_new_burst(request_new_burst),
     .start_addr(start_addr),
-    .count(count)
+    .count(count),
+    
+    .max_in_flight(320)
 );
 
 typedef struct {
@@ -312,8 +315,8 @@ initial forever begin
         rdata <= 'x;
         rlast <= 0;
         rvalid <= 0;
-        @(posedge clk);
     end
+    @(posedge clk);
 end
 
 always @(posedge clk) begin
@@ -381,6 +384,7 @@ initial begin
         end
     end
 
+    repeat(300) @(posedge clk);
     $finish;
 end
 endmodule

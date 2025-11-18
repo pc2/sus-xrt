@@ -448,7 +448,7 @@ module benchmark_burst_read#(int AXI_WIDTH) {
 
     gen int NUM_ELEMS = AXI_WIDTH / 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 2, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 6, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
     ctrl.aresetn = aresetn
 
     // Export AXI4-Lite interface
@@ -512,7 +512,7 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     input  bool                     m_axi_arready
     output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
     output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
-    //output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
+    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
     //output bool[3]                  m_axi_arprot = reader.arprot
     //output bool[4]                  m_axi_arcache = reader.arcache
@@ -550,6 +550,13 @@ module benchmark_burst_read#(int AXI_WIDTH) {
 
     reader.max_in_flight = BitsToUInt(config_bits[21:32])
     
+    state int cycles_since_reset
+    cycles_since_reset = cycles_since_reset + 1 mod pow2#(E: 64)
+
+    // Add a bunch of pipeline regs to pad out the big add
+    reg reg reg bool[64] cycles_since_reset_bits = UIntToBits(cycles_since_reset)
+
+    state bool[64] cycles_since_reset_at_start
 
     state bool running
     state int num_cycles_running
@@ -559,6 +566,7 @@ module benchmark_burst_read#(int AXI_WIDTH) {
         running = true
         num_cycles_running = 0
         hash = 32'h00000000
+        cycles_since_reset_at_start = cycles_since_reset_bits
     }
 
     when running {
@@ -574,7 +582,7 @@ module benchmark_burst_read#(int AXI_WIDTH) {
         bool[32] new_hash = hash ^ new_hash_contrib
         when last {
             running = false
-            ctrl.finish([UIntToBits(num_cycles_running), new_hash])
+            ctrl.finish([UIntToBits(num_cycles_running), new_hash, cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
         }
         hash = new_hash
     }
@@ -583,6 +591,7 @@ module benchmark_burst_read#(int AXI_WIDTH) {
         running = false
         num_cycles_running = 0
         hash = 32'h00000000
+        cycles_since_reset = 0
     }
 }
 
@@ -592,4 +601,5 @@ module all_benchmarks {
     benchmark_burst_read#(AXI_WIDTH: 128) burst128
     benchmark_burst_read#(AXI_WIDTH: 256) burst256
     benchmark_burst_read#(AXI_WIDTH: 512) burst512
+    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader_for_testbench
 }
