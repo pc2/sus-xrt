@@ -43,16 +43,11 @@ void printConfig(AXIConfig config) {
 xrt::device vck5000;
 std::unique_ptr<xrt::uuid>   xclbin_handle_ptr;
 
-constexpr size_t NUM_KERNELS = 24;
-
-double clock_freq = 348 * 1000000; // In Hz
-size_t num_buffer_elems = 200000000 / 5;
+size_t num_buffer_elems = 2500000000 / 10;
 uint32_t expected_hash;
 std::vector<uint32_t> host_buffer;
 
 std::vector<xrt::bo> buffers;
-double co_run_bandwidths[NUM_KERNELS][NUM_KERNELS];
-double co_run_cycle_efficiencies[NUM_KERNELS][NUM_KERNELS];
 
 
 void printKernelRegs(const char* kernel_name) {
@@ -106,39 +101,42 @@ const int sizes[28]{
     512, 512, 512, 512, 512, 512, 512, 512, 
 };*/
 
+
+constexpr size_t NUM_KERNELS = 1;
+double clock_freq = 422 * 1000000; // In Hz
 const char* kernel_names[NUM_KERNELS]{
-    "sus_bench_burst512:{sus_bench_burst512_1}",
-    "sus_bench_burst512:{sus_bench_burst512_2}",
-    "sus_bench_burst512:{sus_bench_burst512_3}",
-    "sus_bench_burst512:{sus_bench_burst512_4}",
-    "sus_bench_burst512:{sus_bench_burst512_5}",
-    "sus_bench_burst512:{sus_bench_burst512_6}",
-    "sus_bench_burst512:{sus_bench_burst512_7}",
-    "sus_bench_burst512:{sus_bench_burst512_8}",
-    "sus_bench_burst512:{sus_bench_burst512_9}",
-    "sus_bench_burst512:{sus_bench_burst512_10}",
-    "sus_bench_burst512:{sus_bench_burst512_11}",
-    "sus_bench_burst512:{sus_bench_burst512_12}",
-    "sus_bench_burst512:{sus_bench_burst512_13}",
-    "sus_bench_burst512:{sus_bench_burst512_14}",
-    "sus_bench_burst512:{sus_bench_burst512_15}",
-    "sus_bench_burst512:{sus_bench_burst512_16}",
-    "sus_bench_burst512:{sus_bench_burst512_17}",
-    "sus_bench_burst512:{sus_bench_burst512_18}",
-    "sus_bench_burst512:{sus_bench_burst512_19}",
-    "sus_bench_burst512:{sus_bench_burst512_20}",
-    "sus_bench_burst512:{sus_bench_burst512_21}",
-    "sus_bench_burst512:{sus_bench_burst512_22}",
-    "sus_bench_burst512:{sus_bench_burst512_23}",
-    "sus_bench_burst512:{sus_bench_burst512_24}",
+    "sus_bench_burst256:{sus_bench_burst256_1}",/*
+    "sus_bench_burst256:{sus_bench_burst256_2}",
+    "sus_bench_burst256:{sus_bench_burst256_3}",
+    "sus_bench_burst256:{sus_bench_burst256_4}",
+    "sus_bench_burst256:{sus_bench_burst256_5}",
+    "sus_bench_burst256:{sus_bench_burst256_6}",
+    "sus_bench_burst256:{sus_bench_burst256_7}",
+    "sus_bench_burst256:{sus_bench_burst256_8}",
+    "sus_bench_burst256:{sus_bench_burst256_9}",
+    "sus_bench_burst256:{sus_bench_burst256_10}",/*
+    "sus_bench_burst256:{sus_bench_burst256_11}",
+    "sus_bench_burst256:{sus_bench_burst256_12}",
+    "sus_bench_burst256:{sus_bench_burst256_13}",
+    "sus_bench_burst256:{sus_bench_burst256_14}",
+    "sus_bench_burst256:{sus_bench_burst256_15}",
+    "sus_bench_burst256:{sus_bench_burst256_16}",
+    "sus_bench_burst256:{sus_bench_burst256_17}",
+    "sus_bench_burst256:{sus_bench_burst256_18}",
+    "sus_bench_burst256:{sus_bench_burst256_19}",
+    "sus_bench_burst256:{sus_bench_burst256_20}",
+    "sus_bench_burst256:{sus_bench_burst256_21}",
+    "sus_bench_burst256:{sus_bench_burst256_22}",
+    "sus_bench_burst256:{sus_bench_burst256_23}",
+    "sus_bench_burst256:{sus_bench_burst256_24}",*/
 };
 const int sizes[NUM_KERNELS]{
-    512,512,512,512,
-    512,512,512,512,
-    512,512,512,512,
-    512,512,512,512,
-    512,512,512,512,
-    512,512,512,512,
+    256,/*256,256,256,
+    256,256,256,256,
+    256,256,/*256,256,
+    256,256,256,256,
+    256,256,256,256,
+    256,256,256,256,*/
 };
 
 
@@ -180,11 +178,9 @@ Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
 
     auto time_taken = std::chrono::high_resolution_clock::now() - start_time;
 
-    double expected_time_at_max_rate = max_num_blocks / clock_freq;
     double time_in_seconds = time_taken.count() / 1000000000.0;
     double read_bw = double(num_buffer_elems * kernel_indices.size()) / 1000000000.0 / time_in_seconds * sizeof(uint32_t); // GB/s
-    double percent_cycles_used = expected_time_at_max_rate / time_in_seconds;
-    std::cout << "    Time taken: " << time_in_seconds << "s, BW: " << read_bw << "GB/s. Cycles used ratio: " << percent_cycles_used << std::endl;
+    std::cout << "    Time taken: " << time_in_seconds << "s, BW: " << read_bw << "GB/s." << std::endl;
 
     runs.clear();
     kernels.clear();
@@ -201,20 +197,16 @@ Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
         uint32_t reg_setting = user_manage.read_register(0x01c);
         uint32_t reg_cycles = user_manage.read_register(0x020);
         uint32_t reg_result = user_manage.read_register(0x024);
+        uint64_t reg_start_time = (uint64_t(user_manage.read_register(0x02c)) << 32) | user_manage.read_register(0x028);
+        uint64_t reg_end_time = (uint64_t(user_manage.read_register(0x034)) << 32) | user_manage.read_register(0x030);
 
         double effective = double(reg_count) / reg_cycles;
-        std::cout << "    " << kernel_name << " took " << reg_cycles << " cycles for " << reg_count << " transfers. " << effective << " effective." << std::endl;
+        std::cout << "    " << kernel_name << " took " << reg_cycles << " cycles for " << reg_count << " transfers. " << effective << " effective. Start at: " << reg_start_time << ", end at: " << reg_end_time << std::endl;
         totalEffective += effective;
         if(reg_result != expected_hash) {
             std::cout << "INCORRECT HASH! Found " << reg_result << " instead of " << expected_hash << std::endl;
             throw "BAD";
         }
-    }
-    if(kernel_indices.size() == 2) {
-        co_run_bandwidths[kernel_indices[0]][kernel_indices[1]] = read_bw;
-    }
-    if(kernel_indices.size() == 2) {
-        co_run_cycle_efficiencies[kernel_indices[0]][kernel_indices[1]] = totalEffective / 2;
     }
     Pair result;
     result.totalBandwidth = read_bw;
@@ -469,32 +461,32 @@ int main(int argc, const char** argv)
     run_parallel_kernels(std::vector<size_t>{0, 5, 6, 3}, config);*/
 
     std::vector<std::vector<size_t>> all_index_combinations{
-        std::vector<size_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
-        std::vector<size_t>{0},
-        std::vector<size_t>{1},
-        std::vector<size_t>{2},
-        std::vector<size_t>{3},
-        std::vector<size_t>{4},
-        std::vector<size_t>{5},
-        std::vector<size_t>{6},
-        std::vector<size_t>{7},
-        std::vector<size_t>{8},
-        std::vector<size_t>{9},
-        std::vector<size_t>{10},
-        std::vector<size_t>{11},
-        std::vector<size_t>{12},
-        std::vector<size_t>{13},
-        std::vector<size_t>{14},
-        std::vector<size_t>{15},
-        std::vector<size_t>{16},
-        std::vector<size_t>{17},
-        std::vector<size_t>{18},
-        std::vector<size_t>{19},
-        std::vector<size_t>{20},
-        std::vector<size_t>{21},
-        std::vector<size_t>{22},
-        std::vector<size_t>{23},
-        /*std::vector<size_t>{0, 1, 12, 14},
+        //std::vector<size_t>{1, 2},
+        //std::vector<size_t>{3, 4},
+        //std::vector<size_t>{7, 5, 8},
+        //std::vector<size_t>{1, 2},
+        //std::vector<size_t>{9, 0},
+        /*std::vector<size_t>{0,1,2,3, 4},
+        //std::vector<size_t>{7,8,6},
+        //std::vector<size_t>{1,7,8,6},
+        //std::vector<size_t>{1,9,6},
+        //std::vector<size_t>{0,5,9},
+        std::vector<size_t>{0,6,2},
+        std::vector<size_t>{0,7,2},
+        std::vector<size_t>{0,8,2},
+        std::vector<size_t>{0,9,2},
+        std::vector<size_t>{0,6},
+        std::vector<size_t>{0,7},
+        std::vector<size_t>{0,8},
+        std::vector<size_t>{0,9},
+        std::vector<size_t>{2,6},
+        std::vector<size_t>{2,7},
+        std::vector<size_t>{2,8},
+        std::vector<size_t>{2,9},
+        //std::vector<size_t>{9,4,0},
+        //std::vector<size_t>{8,5,0},
+        //std::vector<size_t>{3,5,2},
+        /*std::vector<size_t>{0, 1, 12, 14},g
         std::vector<size_t>{5, 8, 13, 7},
         std::vector<size_t>{6, 9, 18, 10, 11, 19, 2},
         std::vector<size_t>{3, 4, 15, 16, 17},
@@ -509,11 +501,18 @@ int main(int argc, const char** argv)
         std::vector<size_t>{0, 5, 6, 3},*/
     };
 
+    std::vector<size_t> allKernelIds;
+    for(size_t i = 0; i < NUM_KERNELS; i++) {
+        all_index_combinations.push_back(std::vector<size_t>{i});
+        allKernelIds.push_back(i);
+    }
+    //all_index_combinations.push_back(allKernelIds);
+
     std::cout << "And now for data collection for :" << std::endl;
     std::vector<std::vector<Pair>> allBenchmarkData;
     std::vector<uint32_t> maxInFlightPoints;
 
-    for(int max_in_flight = 64; max_in_flight < 192;) {
+    for(int max_in_flight = 128; max_in_flight <= 256;) {
         maxInFlightPoints.push_back(max_in_flight);
         max_in_flight += 2;
     }

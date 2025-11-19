@@ -616,24 +616,25 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
     SlowState#(T: type int#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE), RESET_TO: 0) cur_start_chunk_addr
     SlowState#(T: type int#(FROM: 0, TO: CHUNKS_TO), RESET_TO: 0) num_chunks_left // When == 0 we're not transmitting
     state int#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT + 3000) num_in_flight
+    state bool last_burst_in_flight
 
     // araddr is always aligned to AxSIZE
     int next_araddr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: CHUNK_BYTE_SIZE))(cur_start_chunk_addr.old, 0)
+    int next_arlen
+    bool next_last_burst_in_flight = false
 
     int cur_burst_addr, int cur_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_BURST))(cur_start_chunk_addr.old)
 
-    // compute this_burst_size
-    int this_burst_size
     reg bool chunks_are_left = num_chunks_left.old > 0
     when chunks_are_left {
-        int max_chunks_in_this_burst = MAX_BURST - cur_align
-        when num_chunks_left.old <= max_chunks_in_this_burst {
-            reg this_burst_size = IntNarrow#(FROM: 1, TO: MAX_BURST+1)(num_chunks_left.old)
+        int max_chunks_in_this_burst = MAX_BURST - 1 - cur_align
+        when num_chunks_left.old <= max_chunks_in_this_burst + 1 {
+            reg next_arlen = IntNarrow#(FROM: 1, TO: MAX_BURST+1)(num_chunks_left.old) - 1
+            next_last_burst_in_flight = true
         } else {
-            reg this_burst_size = max_chunks_in_this_burst
+            reg next_arlen = max_chunks_in_this_burst
         }
     }
-    int next_arlen = this_burst_size - 1
 
     //arvalid = chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update & LatencyOffset#(OFFSET: MAX_CHUNKS_IN_FLIGHT)(is_ready_to_receive_lots_of_data) & (num_in_flight < MAX_CHUNKS_IN_FLIGHT - MAX_BURST)
     input int#(FROM: 0, TO: 2048) max_in_flight
@@ -650,21 +651,21 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
             reg int next_burst_addr = cur_burst_addr + 1
             cur_start_chunk_addr.update(IntNarrow#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE)(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_BURST))(next_burst_addr, 0)))
             // SAFETY: we will never take off more chunks than are in num_chunks_left, of course
-            int next_num_chunks_left = IntNarrow#(FROM: 0, TO: CHUNKS_TO)(num_chunks_left.old - this_burst_size)
+            int next_num_chunks_left = IntNarrow#(FROM: 0, TO: CHUNKS_TO)(num_chunks_left.old - (next_arlen + 1))
             num_chunks_left.update(next_num_chunks_left)
 
             arvalid = true
             araddr = next_araddr
             arlen = next_arlen
+            last_burst_in_flight = next_last_burst_in_flight
         }
     }
 
     // We're always ready to send data
     rready = aresetn
     
-    num_in_flight = IntNarrow#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT+3000)(num_in_flight - BoolToInt(rvalid) + Ternary(arready & arvalid, this_burst_size, 0))
+    num_in_flight = IntNarrow#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT+3000)(num_in_flight - BoolToInt(rvalid) + Ternary(!arvalid & may_next_arvalid, next_arlen + 1, 0))
     
-    state int#(FROM: 0, TO: CHUNKS_TO) chunks_left
     state int final_chunk_align
     state int cur_chunk_align // Only different from 0 on the first chunk
     when rvalid { // & true, due to rready being always true
@@ -673,7 +674,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
             elements[ELEMENT_I] = rdata[ELEMENT_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
         }
         int num_chunk_elements
-        bool is_last = chunks_left == 1
+        bool is_last = num_in_flight == 1 & last_burst_in_flight
         when is_last {
             num_chunk_elements = IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS + 1)(final_chunk_align - cur_chunk_align)
         } else {
@@ -682,7 +683,6 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
         
         element_packet_valid(elements, cur_chunk_align, num_chunk_elements, is_last)
         cur_chunk_align = 0
-        chunks_left = IntNarrow#(FROM: 0, TO: CHUNKS_TO)(chunks_left - 1)
     }
 
 
@@ -703,7 +703,6 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
         num_chunks_left.update(num_chunks)
 
         final_chunk_align = BitwiseIntConcat#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(BoolToInt(!is_no_chunks & (final_alignment == 0)), final_alignment)
-        chunks_left = num_chunks
         cur_chunk_align = element_in_chunk_align
     }
 

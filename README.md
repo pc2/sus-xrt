@@ -70,14 +70,14 @@ If more memory masters than this are instantiated, programmable logic "virtual" 
 Observe the NoC endpoint isn't directly connected to the two pink kernels - Kernel 1 and 24 - the worst pairing in the conflicts benchmark. Instead, the large blob of orange logic is the virtual extension to the NoC, which both kernels then connect to. 
 
 #### Optimal MAX_IN_FLIGHT values on VCK-5000
-From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements over the burst size is good enough. 
+From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements over the burst size is good enough. For 512-bit, a slightly lower bound is good enough, and may allow smaller FIFOs. 
 | AXI_WIDTH | MAX_IN_FLIGHT |
 | --- | --- |
 | 32  | 320 |
 | 64  | 320 |
 | 128 | 320 |
 | 256 | 192 |
-| 512 | 96  |
+| 512 | 110 |
 
 ### Misc
 - **Around 460MHz 256-bit AXI readers attain identical bandwidth to 512-bit readers**
