@@ -231,6 +231,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
 module axi_memory_reader_tie_off#(int AXI_WIDTH) {
     domain aclk
     input bool aresetn'0
+    bool _aresetn = aresetn
 
     gen int ADDR_WIDTH = 64
     gen int ATO = pow2#(E: ADDR_WIDTH)
@@ -253,11 +254,17 @@ module axi_memory_reader_tie_off#(int AXI_WIDTH) {
     input  bool[AXI_WIDTH]          rdata'0
     input  bool[2]                  rresp'0
     input  bool                     rlast'0
+    bool _arready = arready
+    bool _rvalid = rvalid
+    bool[AXI_WIDTH] _rdata = rdata
+    bool[2] _rresp = rresp
+    bool _rlast = rlast
 }
 
 module axi_memory_writer_tie_off#(int AXI_WIDTH) {
     domain aclk
     input bool aresetn'0
+    bool _aresetn = aresetn
 
     gen int ADDR_WIDTH = 64
     gen int ATO = pow2#(E: ADDR_WIDTH)
@@ -265,7 +272,7 @@ module axi_memory_writer_tie_off#(int AXI_WIDTH) {
     // axi mm master
     // write channels - tie off, never ready/valid
     output bool                     awvalid'0 = false
-    input  bool                     awready'0 
+    input  bool                     awready'0
     output int#(FROM: 0, TO: ATO)   awaddr'0 = 0
     output int#(FROM: 0, TO: 256)   awlen'0 = 0
     output int#(FROM: 0, TO: 8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
@@ -283,6 +290,10 @@ module axi_memory_writer_tie_off#(int AXI_WIDTH) {
     input  bool                     bvalid'0
     input  bool[2]                  bresp'0
     output bool                     bready'0 = false
+    bool _awready = awready
+    bool _wready = wready
+    bool _bvalid = bvalid
+    bool[2] _bresp = bresp
 }
 
 
@@ -328,6 +339,8 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
     input  bool[AXI_WIDTH]          rdata'0
     input  bool[2]                  rresp'0
     input  bool                     rlast'0
+    bool[2] _rresp = rresp // Ignore rresp as we can't handle it anyway
+    bool _rlast = rlast
 
     // control signals
     // Returns "true" if the request was 
@@ -439,7 +452,8 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
     output bool                     wlast'0
     input  bool                     bvalid'0
     output bool                     bready'0
-    input  bool[2]                  bresp'0 // ignore bresp, we can't handle errors anyway
+    input  bool[2]                  bresp'0
+    bool[2] _bresp = bresp // ignore bresp, we can't handle errors anyway
 
     state bool[sizeof#(T)] writing_data
     state bool writing_data_valid
@@ -555,6 +569,12 @@ Vivado Utiliziation report for axi_array_burst_reader#(AXI_WIDTH: 512, ADDR_ALIG
 /// element: size is ADDR_ALIGN * 8. It is also the resolution of count
 /// chunk: one AXI transfer. Contains AXI_WIDTH / (ADDR_ALIGN * 8) elements
 /// burst: 1-256 chunks. The module handles converting the user's large bitwidth element `count` into a sequence of 4K page aligned bursts. `last` is only asserted at the end of the whole read
+///
+/// Output stream looks like:
+/// ...XXXXX
+/// XXXXXXXX
+/// XXXXX...
+/// due to alignment of address
 module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int ATO) {
     domain aclk
     input bool aresetn'0
@@ -605,8 +625,9 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
     output bool                           rready'0
     input  bool[AXI_WIDTH]                rdata'0
     input  bool[2]                        rresp'0
+    bool[2] _rresp = rresp
     input  bool                           rlast'0
-    bool _ = rlast
+    bool _rlast = rlast // We handle rlast ourselves by counting
 
     // User ports
     input bool is_ready_to_receive_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
@@ -812,8 +833,8 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
     }
 }
 
-/// A Bursting AXI Memory writer. Because 
-module axi_array_burst_writer#(int AXI_WIDTH, int ADDR_ALIGN) {
+/// A Bursting AXI Memory writer. Requires a FIFO
+module axi_array_burst_writer_with_fifo #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int WRITE_DATA_LATENCY) {
     domain aclk
     input bool aresetn'0
 
@@ -827,9 +848,6 @@ module axi_array_burst_writer#(int AXI_WIDTH, int ADDR_ALIGN) {
 
     /// For XRT: Supported AXI_WIDTH ranges from 32-512
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
-
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
 
     gen int MAX_AXI_ALIGNMENT = pow2#(E: 12) // 4kb page size, a burst cannot cross a 4K boundary
     gen int MAX_BURST = MAX_AXI_ALIGNMENT / AXI_WIDTH_BYTES
@@ -845,54 +863,49 @@ module axi_array_burst_writer#(int AXI_WIDTH, int ADDR_ALIGN) {
     assert#(C: pow2#(E: clog2#(V: ADDR_ALIGN)) == ADDR_ALIGN)
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
     assert#(C: AXI_WIDTH mod ELEMENT_BITWIDTH == 0)
+    gen int CHUNK_BYTE_SIZE = AXI_WIDTH / 8
 
     output bool                     awvalid'0
     input  bool                     awready'0
     output int#(FROM: 0, TO: ATO)   awaddr'0
     output int#(FROM: 0, TO: 256)   awlen'0
-    output int#(FROM: 0, TO: 8)     awsize  = clog2#(V: AXI_WIDTH / 8)
+    output int#(FROM: 0, TO: 8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  awburst'0 = 2'b01 // BURST
-    output bool[3]                  awprot'0 = 3'b000 // Unprivileged, Secure, Data Access
     output bool[4]                  awcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
+    output bool[3]                  awprot'0 = 3'b000 // Unprivileged, Secure, Data Access
     output int#(FROM: 0, TO: 16)    awqos'0 = 0 // Lowest priority
     output bool                     awlock'0 = false // NORMAL - No atomics
     output int#(FROM: 0, TO: 16)    awregion'0 = 0 // Region 0
     output bool                     wvalid'0
     input  bool                     wready'0
+    output bool                     wlast'0
     output bool[AXI_WIDTH]          wdata'0
     output bool[AXI_WIDTH / 8]      wstrb'0
-    output bool                     wlast'0
     input  bool                     bvalid'0
-    output bool                     bready'0
+    input  bool[2]                  bresp'0
+    output bool                     bready'0 = !aresetn
 
-    state int cur_wr_elem_addr
+    SlowState#(T: type int#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE), RESET_TO: 0) cur_start_chunk_addr
+    state int#(FROM: 0, TO: MAX_BURST * NUM_PARALLEL_ELEMENTS) elem_in_burst
+
     action set_burst_start_addr : int #(FROM: 0, TO: ATO) start_addr {
-        cur_wr_elem_addr = start_addr / ELEMENT_BYTE_SIZE
+        int addr_aligned, int _lower = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
+        elem_in_burst = addr_aligned mod MAX_BURST * NUM_PARALLEL_ELEMENTS
+        int chunk_aligned, int _align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: CHUNK_BYTE_SIZE / ADDR_ALIGN))(addr_aligned)
+        cur_start_chunk_addr.update(chunk_aligned)
     }
 
-    int cur_elem_chunk, int addr_in_chunk_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(cur_wr_elem_addr)
-
-
-    gen int FIFO_DEPTH = 500
-    state ElemT[NUM_PARALLEL_ELEMENTS][FIFO_DEPTH] fifo_buffer
-    state int#(FROM: 0, TO: FIFO_DEPTH * NUM_PARALLEL_ELEMENTS) fifo_write_addr
-    int fifo_write_addr_row, int fifo_write_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(fifo_write_addr)
-    state int#(FROM: 0, TO: FIFO_DEPTH) fifo_read_addr
-
-    gen int MAY_WRITE_LATENCY = 500
-
-    /// `true` if 
-    state bool write_addr_set
-
-    output bool may_write'-MAY_WRITE_LATENCY
+    output bool may_write'-WRITE_DATA_LATENCY
     action write'0:
-        ElemT[NUM_PARALLEL_ELEMENTS] chunk'0,
+        bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] chunk'0,
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0,
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0,
         bool last'0 {
 
-        ElemT[NUM_PARALLEL_ELEMENTS] rotated_chunk = RotateRight(chunk, chunk_offset - fifo_write_align mod NUM_PARALLEL_ELEMENTS) // Most expensive line in the whole writer!
-        bool[NUM_PARALLEL_ELEMENTS] write_strobe = MakeStrobe(fifo_write_align, chunk_length)
+        int cur_align = elem_in_burst mod ADDR_ALIGN
+        bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] rotated_chunk = RotateRight(chunk, chunk_offset - cur_align mod NUM_PARALLEL_ELEMENTS) // Most expensive line in the whole writer!
+        bool[NUM_PARALLEL_ELEMENTS] write_strobe = MakeStrobe(cur_align, chunk_length)
+        int new_
         
         int new_fifo_write_addr = fifo_write_addr + chunk_length mod FIFO_DEPTH * NUM_PARALLEL_ELEMENTS
         when last {
@@ -912,5 +925,5 @@ module test_burst_reader {
     axi_realigning_burst_reader #(T: type bool[32][16], AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
     //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
     //axi_array_burst_writer #(AXI_WIDTH: 512, ADDR_ALIGN: 4) fullFatWriter
-    
+    //axi_array_burst_writer_with_fifo#(AXI_WIDTH: 512, ADDR_ALIGN: 4, ATO: pow2#(E: 64), WRITE_DATA_LATENCY: 200) burst_writer
 }

@@ -2,6 +2,8 @@
 #include "experimental/xrt_uuid.h"
 #include "experimental/xrt_kernel.h"
 #include "experimental/xrt_bo.h"
+#include "experimental/xrt_error.h"
+#include "ert.h"
 
 #include <chrono>
 #include <cstdint>
@@ -43,7 +45,7 @@ void printConfig(AXIConfig config) {
 xrt::device vck5000;
 std::unique_ptr<xrt::uuid>   xclbin_handle_ptr;
 
-size_t num_buffer_elems = 2500000000 / 10;
+size_t num_buffer_elems = 2500000000 / 10 / 100;
 uint32_t expected_hash;
 std::vector<uint32_t> host_buffer;
 
@@ -102,10 +104,10 @@ const int sizes[28]{
 };*/
 
 
-constexpr size_t NUM_KERNELS = 1;
-double clock_freq = 422 * 1000000; // In Hz
+constexpr size_t NUM_KERNELS = 10;
+double clock_freq = 368 * 1000000; // In Hz
 const char* kernel_names[NUM_KERNELS]{
-    "sus_bench_burst256:{sus_bench_burst256_1}",/*
+    "sus_bench_burst256:{sus_bench_burst256_1}",
     "sus_bench_burst256:{sus_bench_burst256_2}",
     "sus_bench_burst256:{sus_bench_burst256_3}",
     "sus_bench_burst256:{sus_bench_burst256_4}",
@@ -131,7 +133,7 @@ const char* kernel_names[NUM_KERNELS]{
     "sus_bench_burst256:{sus_bench_burst256_24}",*/
 };
 const int sizes[NUM_KERNELS]{
-    256,/*256,256,256,
+    256,256,256,256,
     256,256,256,256,
     256,256,/*256,256,
     256,256,256,256,
@@ -173,10 +175,19 @@ Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
         runs.push_back(k(buffers[i], num_blocks, config_u32));
     }
     for(xrt::run& r : runs) {
+	//ert_cmd_state sa = r.state();
+    	//std::cout << sa << std::endl;
         r.wait();
+	//ert_cmd_state sb = r.state();
+    	//std::cout << sb << std::endl;
+    	//while (r.state() == ERT_CMD_STATE_NEW) {
+	//}
+    	//std::cout << r.state() << std::endl;
     }
 
     auto time_taken = std::chrono::high_resolution_clock::now() - start_time;
+    //xrt::error error(vck5000, XRT_ERROR_CLASS_FIRST_ENTRY);
+    //std::cout << error.to_string() << std::endl;
 
     double time_in_seconds = time_taken.count() / 1000000000.0;
     double read_bw = double(num_buffer_elems * kernel_indices.size()) / 1000000000.0 / time_in_seconds * sizeof(uint32_t); // GB/s
@@ -184,6 +195,38 @@ Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
 
     runs.clear();
     kernels.clear();
+
+
+for (int asdf=0; asdf < 10; asdf++) {
+    // Second user-managed run - REMEMBER REGISTERS FROM XRT
+    std::vector<xrt::ip> user_kernels;
+    user_kernels.reserve(kernel_indices.size());
+    for(size_t ki : kernel_indices) {
+        const char* kernel_name = kernel_names[ki];
+        
+        user_kernels.emplace_back(vck5000, *xclbin_handle_ptr, kernel_name);
+    }
+    auto start_time_user = std::chrono::high_resolution_clock::now();
+    for(xrt::ip& k : user_kernels) {
+        k.write_register(0x000, 1);
+    }
+    while(!user_kernels.empty()) {
+        for (auto it = user_kernels.begin(); it != user_kernels.end(); ) {
+            uint32_t ctrl = it->read_register(0x000); // Check done flag
+            if (ctrl & 0x2) {
+                it = user_kernels.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    auto time_taken_user = std::chrono::high_resolution_clock::now() - start_time_user;
+
+    double time_in_seconds_user = time_taken_user.count() / 1000000000.0;
+    double read_bw_user = double(num_buffer_elems * kernel_indices.size()) / 1000000000.0 / time_in_seconds_user * sizeof(uint32_t); // GB/s
+    std::cout << "    Time taken (USER MANAGED): " << time_in_seconds_user << "s, BW: " << read_bw_user << "GB/s." << std::endl;
+}
+
 
     double totalEffective = 0.0;
     for(size_t ki : kernel_indices) {
@@ -274,7 +317,8 @@ int main(int argc, const char** argv)
     for(const char* kernel_name: kernel_names) {
         std::cout << "Copying Buffer for " << kernel_name << "..." << std::endl;
         xrt::kernel k = xrt::kernel(vck5000, *xclbin_handle_ptr, kernel_name);
-        xrt::bo bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, k.group_id(0));
+        //xrt::bo bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_DEV_ONLY, k.group_id(0));
+        xrt::bo bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
 
         bench_buffer.write(host_buffer.data(), sizeof(uint32_t) * num_buffer_elems, 0);
         bench_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -461,28 +505,28 @@ int main(int argc, const char** argv)
     run_parallel_kernels(std::vector<size_t>{0, 5, 6, 3}, config);*/
 
     std::vector<std::vector<size_t>> all_index_combinations{
-        //std::vector<size_t>{1, 2},
-        //std::vector<size_t>{3, 4},
-        //std::vector<size_t>{7, 5, 8},
-        //std::vector<size_t>{1, 2},
-        //std::vector<size_t>{9, 0},
-        /*std::vector<size_t>{0,1,2,3, 4},
-        //std::vector<size_t>{7,8,6},
-        //std::vector<size_t>{1,7,8,6},
-        //std::vector<size_t>{1,9,6},
-        //std::vector<size_t>{0,5,9},
-        std::vector<size_t>{0,6,2},
-        std::vector<size_t>{0,7,2},
-        std::vector<size_t>{0,8,2},
-        std::vector<size_t>{0,9,2},
-        std::vector<size_t>{0,6},
-        std::vector<size_t>{0,7},
-        std::vector<size_t>{0,8},
-        std::vector<size_t>{0,9},
-        std::vector<size_t>{2,6},
-        std::vector<size_t>{2,7},
-        std::vector<size_t>{2,8},
-        std::vector<size_t>{2,9},
+//        std::vector<size_t>{1, 2},
+//        std::vector<size_t>{3, 4},
+//        std::vector<size_t>{7, 5, 8},
+//        std::vector<size_t>{1, 2},
+//        std::vector<size_t>{9, 0},
+//        std::vector<size_t>{0,1,2,3, 4},
+//        std::vector<size_t>{7,8,6},
+//        std::vector<size_t>{1,7,8,6},
+//        std::vector<size_t>{1,9,6},
+//        std::vector<size_t>{0,5,9},
+//        std::vector<size_t>{0,6,2},
+//        std::vector<size_t>{0,7,2},
+//        std::vector<size_t>{0,8,2},
+//        std::vector<size_t>{0,9,2},
+//        std::vector<size_t>{0,6},
+        std::vector<size_t>{0,7}, 
+//        std::vector<size_t>{0,8},
+//        std::vector<size_t>{0,9},
+//        std::vector<size_t>{2,6},
+//        std::vector<size_t>{2,7},
+//        std::vector<size_t>{2,8},
+//        std::vector<size_t>{2,9},
         //std::vector<size_t>{9,4,0},
         //std::vector<size_t>{8,5,0},
         //std::vector<size_t>{3,5,2},
@@ -502,17 +546,20 @@ int main(int argc, const char** argv)
     };
 
     std::vector<size_t> allKernelIds;
+    /*
     for(size_t i = 0; i < NUM_KERNELS; i++) {
         all_index_combinations.push_back(std::vector<size_t>{i});
         allKernelIds.push_back(i);
     }
-    //all_index_combinations.push_back(allKernelIds);
+    all_index_combinations.push_back(allKernelIds);
+    */
 
     std::cout << "And now for data collection for :" << std::endl;
     std::vector<std::vector<Pair>> allBenchmarkData;
     std::vector<uint32_t> maxInFlightPoints;
 
-    for(int max_in_flight = 128; max_in_flight <= 256;) {
+    //for(int max_in_flight = 128; max_in_flight <= 256;) {
+    for(int max_in_flight = 128; max_in_flight <= 170;) {
         maxInFlightPoints.push_back(max_in_flight);
         max_in_flight += 2;
     }

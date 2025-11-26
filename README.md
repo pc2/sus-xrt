@@ -69,7 +69,7 @@ If more memory masters than this are instantiated, programmable logic "virtual" 
 ![Programmable Logic NoC](measurements/24x512_noc.png)
 Observe the NoC endpoint isn't directly connected to the two pink kernels - Kernel 1 and 24 - the worst pairing in the conflicts benchmark. Instead, the large blob of orange logic is the virtual extension to the NoC, which both kernels then connect to. 
 
-#### Optimal MAX_IN_FLIGHT values on VCK-5000
+#### Optimal MAX_IN_FLIGHT values on VCK5000
 From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements over the burst size is good enough. For 512-bit, a slightly lower bound is good enough, and may allow smaller FIFOs. 
 | AXI_WIDTH | MAX_IN_FLIGHT |
 | --- | --- |
@@ -82,4 +82,7 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 ### Misc
 - **Around 460MHz 256-bit AXI readers attain identical bandwidth to 512-bit readers**
 - **ArCACHE[1] bit does not seem to have an effect**
-- **The VCK-5000 does not appear to have NUMA-like memory regions. While `kernel.group_id(0)` returns different values, buffers created with these have no appreciable difference in access bandwidth.**
+- **The VCK5000 does not appear to have NUMA-like memory regions. While `kernel.group_id(0)` returns different values, buffers created with these have no appreciable difference in access bandwidth.**
+- **There is only one Memory Bank**
+- **No Host DMA is supported**
+- **Rarely XRT has a 'blip', which includes a 500ms delay after a set of kernels finish**
