@@ -466,7 +466,7 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
         wlast = true
         for int BYTE in 0..AXI_WIDTH / 8 {
             if BYTE < sizeof#(T) / 8 {
-                wdata[BYTE*8 +: 8] = writing_data
+                wdata[BYTE*8 +: 8] = writing_data[BYTE*8 +: 8]
                 wstrb[BYTE] = true
             } else {
                 wdata[BYTE*8 +: 8] = 8'h00
