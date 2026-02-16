@@ -1,58 +1,33 @@
 
 module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
+    FWFT#(DEPTH, MAY_PUSH_LATENCY) fifo
+    
+    domain clk
     input bool aresetn'0
 
+    when !aresetn {
+        fifo.rst()
+    }
+
+    domain axis
     input bool tready'0
     output bool tvalid'0
     output bool[sizeof#(T)] tdata'0
 
-    /// Basically the same as a FWFT XPM FIFO, just that we can't yet instantiate that one without an extra SV file. (#131)
-    state T[DEPTH] memory
-    state int#(FROM: 0, TO: DEPTH) wr_addr
-    state int#(FROM: 0, TO: DEPTH) rd_addr
-    
-    bool do_read = !tvalid | tready & tvalid
-
-    gen int NUM_PIPELINE_STAGES
-    if DEPTH <= 64 {
-        NUM_PIPELINE_STAGES = 1
+    when fifo.pop_available: bool[sizeof#(T)] data {
+        tvalid = true
+        tdata = data
+        when tready {
+            fifo.pop()
+        }
     } else {
-        NUM_PIPELINE_STAGES = 2
-    }
-    state T[NUM_PIPELINE_STAGES] memory_read_pipeline_stages
-    state bool[NUM_PIPELINE_STAGES] memory_read_pipeline_stages_valids
-    when do_read {
-        for int i in 1..NUM_PIPELINE_STAGES {
-            memory_read_pipeline_stages[i] = memory_read_pipeline_stages[i-1]
-            memory_read_pipeline_stages_valids[i] = memory_read_pipeline_stages_valids[i-1]
-        }
-        bool read_from_mem_is_valid = rd_addr != wr_addr
-        memory_read_pipeline_stages_valids[0] = read_from_mem_is_valid
-        when read_from_mem_is_valid {
-            memory_read_pipeline_stages[0] = memory[rd_addr]
-            rd_addr = rd_addr + 1 mod DEPTH
-        }
+        tvalid = false
     }
 
-    tdata = ToBits(memory_read_pipeline_stages[NUM_PIPELINE_STAGES - 1])
-    tvalid = memory_read_pipeline_stages_valids[NUM_PIPELINE_STAGES - 1]
-
-    int free_space = rd_addr - wr_addr - 1 mod DEPTH
-
-    output bool may_push'-MAY_PUSH_LATENCY
-    may_push = LatencyOffset#(OFFSET: -MAY_PUSH_LATENCY)(free_space >= MAY_PUSH_LATENCY)
+    domain push_dom
+    output bool may_push'-MAY_PUSH_LATENCY = fifo.may_push
     action push'0: T data'0 {
-        memory[wr_addr] = data
-        wr_addr = wr_addr + 1 mod DEPTH
-    }
-
-    when !aresetn {
-        wr_addr = 0
-        rd_addr = 0
-
-        for int i in 0..NUM_PIPELINE_STAGES {
-            memory_read_pipeline_stages_valids[i] = false
-        }
+        fifo.push(ToBits(data))
     }
 }
 /*module use_axis_master_fifo {
@@ -68,9 +43,6 @@ module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
 ///
 /// It also appears that ADDR_WIDTH must be >= 12, because the address mapping requires blocks of size 4096
 module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH, int AXI_WIDTH) {
-    domain aclk
-    input bool aresetn
-
     gen int DATA_STARTS_AT_ADDR = 16 // 0x010
     gen int REG_STRIDE = AXI_WIDTH / 8
     gen int CTRL_REG = 0
@@ -84,6 +56,10 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     gen bool[2] RESP_OKAY = [false, false]
     gen bool[2] RESP_SLVERR = [false, true]
 
+    domain aclk
+    input bool aresetn
+
+    domain axi4
     // AXI signals
     input int#(FROM: 0, TO: ATO) awaddr
     input bool awvalid
@@ -103,7 +79,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     output bool rvalid = false
     input bool rready
 
-
+    domain start_dom
     state bool[32][NUM_OUTPUT_REGS] stored_output_regs
     output state bool[32][NUM_INPUT_REGS] input_regs
     trigger start
@@ -201,12 +177,8 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     }
 
     domain finish_dom
-    CrossAction cross_finish
     action finish'0 : bool[32][NUM_OUTPUT_REGS] output_regs'0 {
-        cross_finish.in(output_regs)
-    }
-    when cross_finish.out : bool[32][NUM_OUTPUT_REGS] output_regs_vs {
-        stored_output_regs = output_regs_vs
+        stored_output_regs = output_regs
         reg_ctrl_ap_done = true
         reg_ctrl_ap_start = false
         reg_ctrl_ap_idle = false
@@ -229,13 +201,14 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
 
 
 module axi_memory_reader_tie_off#(int AXI_WIDTH) {
+    gen int ADDR_WIDTH = 64
+    gen int ATO = pow2#(E: ADDR_WIDTH)
+
     domain aclk
     input bool aresetn'0
     bool _aresetn = aresetn
 
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
-
+    domain axi4
     // axi mm master
     // read channels - tie off, never ready/valid
     output bool                     arvalid'0 = false
@@ -262,13 +235,14 @@ module axi_memory_reader_tie_off#(int AXI_WIDTH) {
 }
 
 module axi_memory_writer_tie_off#(int AXI_WIDTH) {
+    gen int ADDR_WIDTH = 64
+    gen int ATO = pow2#(E: ADDR_WIDTH)
+
     domain aclk
     input bool aresetn'0
     bool _aresetn = aresetn
 
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
-
+    domain axi4
     // axi mm master
     // write channels - tie off, never ready/valid
     output bool                     awvalid'0 = false
@@ -302,9 +276,6 @@ module axi_memory_writer_tie_off#(int AXI_WIDTH) {
 module axi_memory_reader #(T, int AXI_WIDTH) {
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
     
-    domain aclk
-    input bool aresetn'0
-
     gen int ADDR_WIDTH = 64
     gen int ATO = pow2#(E: ADDR_WIDTH)
     gen int MAX_BURST = 256
@@ -321,6 +292,9 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
         assert#(C: NUM_TRANSFERS < MAX_BURST) // T is too big!
         assert#(C: sizeof#(T) mod AXI_WIDTH == 0)
     }
+
+    domain aclk
+    input bool aresetn'0
 
     // read channel
     output bool                     arvalid'0
