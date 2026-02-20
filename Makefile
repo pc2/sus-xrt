@@ -18,7 +18,7 @@ sw/main.x: sw/main.cpp
 	make -C sw main.x
 
 sus_codegen.sv: axi.sus axi_example.sus
-	sus_compiler axi.sus axi_example.sus -o sus_codegen.sv --top combined_axi_ctrl_reader_writer --top test_burst_reader --top all_benchmarks
+	sus_compiler axi.sus axi_example.sus -o sus_codegen.sv --top test_burst_writer
 
 clean:
 	rm -f sus_codegen.sv

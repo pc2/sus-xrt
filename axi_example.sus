@@ -149,10 +149,7 @@ module combined_axi_ctrl_plus_reader {
     ctrl.rready  =                s_axi_control_rready
 
     axi_memory_reader#(T: type int#(FROM: 0, TO: pow2#(E: 32))) reader
-    reader.aresetn = aresetn
-
     axi_memory_writer_tie_off writer
-    writer.aresetn = aresetn
 
     domain mem_read
     output bool                     m_axi_awvalid = writer.awvalid
@@ -264,6 +261,8 @@ module combined_axi_ctrl_plus_reader {
         addr_state = STM_IDLE
         data_state = STM_IDLE
         outstream_tvalid = false
+        reader.rst()
+        writer.rst()
     }
 }
 
@@ -313,10 +312,7 @@ module combined_axi_ctrl_reader_writer {
     ctrl.rready  =         s_axi_control_rready
 
     axi_memory_reader#(T: type int#(FROM: 0, TO: pow2#(E: 32))[NUM_VALUES]) reader
-    reader.aresetn = aresetn
-
     axi_memory_writer#(T: type int#(FROM: 0, TO: pow2#(E: 32))[NUM_VALUES]) writer
-    writer.aresetn = aresetn
 
     domain mem_write
     output bool                     m_axi_awvalid = writer.awvalid
@@ -444,6 +440,8 @@ module combined_axi_ctrl_reader_writer {
     when !aresetn {
         addr_state = STM_IDLE
         data_state = STM_IDLE
+        reader.rst()
+        writer.rst()
     }
 }
 
@@ -492,23 +490,20 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     ctrl.rready  =         s_axi_control_rready
 
     axi_realigning_burst_reader#(T: type bool[32][NUM_ELEMS], AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64)) reader
-    reader.aresetn = aresetn
-
     axi_memory_writer_tie_off writer
-    writer.aresetn = aresetn
 
     domain mem_write
     output bool                     m_axi_awvalid = writer.awvalid
     input  bool                     m_axi_awready
     output int#(FROM: 0, TO: MTO)   m_axi_awaddr = writer.awaddr
     output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
-    //output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
+    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
-    //output bool[3]                  m_axi_awprot = writer.awprot
+    output bool[3]                  m_axi_awprot = writer.awprot
     output bool[4]                  m_axi_awcache = writer.awcache
-    //output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
-    //output bool                     m_axi_awlock = writer.awlock
-    //output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
+    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    output bool                     m_axi_awlock = writer.awlock
+    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
     output bool                     m_axi_wvalid = writer.wvalid
     input  bool                     m_axi_wready
     output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
@@ -606,6 +601,8 @@ module benchmark_burst_read#(int AXI_WIDTH) {
         num_cycles_running = 0
         hash = 32'h00000000
         cycles_since_reset = 0
+        reader.rst()
+        writer.rst()
     }
 }
 
@@ -615,19 +612,19 @@ module all_benchmarks {
     benchmark_burst_read#(AXI_WIDTH: 128) burst128
     benchmark_burst_read#(AXI_WIDTH: 256) burst256
     benchmark_burst_read#(AXI_WIDTH: 512) burst512
-    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader_for_testbench
-    burst_address_manager#(AXI_WIDTH: 512, ATO: pow2#(E: 64), ELEMENT_SIZE: 4) addr_mngr
-    axis_SkidBuffer#(T: type bool[32]) skid_buffer
-}
-
-module test_burst_reader {
     axi_array_burst_reader #(AXI_WIDTH: 64, ADDR_ALIGN: 2, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader
     //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) fullFatReader
     //axi_realigning_burst_reader #(T: type float[17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) bigSingleObjectReader
     //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
     axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
     axi_realigning_burst_reader #(T: type bool[32][16], AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
+    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader_for_testbench
     //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
     //axi_array_burst_writer #(AXI_WIDTH: 512, ADDR_ALIGN: 4) fullFatWriter
-    axi_burst_writer_with_fifo#(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, ATO: pow2#(E: 64), WRITE_DATA_LATENCY: 200) burst_writer
+    //axi_burst_writer_with_fifo#(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, ATO: pow2#(E: 64), WRITE_DATA_LATENCY: 200) burst_writer
+    axis_SkidBuffer#(T: type bool[32]) skid_buffer
+}
+
+module test_burst_writer {
+    write_burst_address_manager#(AXI_WIDTH_BYTES: 512 / 8, ATO: pow2#(E: 64), ELEMENT_SIZE: 4, ADDR_QUEUE_SIZE: 20, ADDR_MAY_PUSH_LATENCY: 0, TOTAL_ELEMENTS_THAT_CAN_BE_STORED: 4*512) mgr
 }
