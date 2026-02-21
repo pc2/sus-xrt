@@ -626,5 +626,6 @@ module all_benchmarks {
 }
 
 module test_burst_writer {
-    write_burst_address_manager#(AXI_WIDTH_BYTES: 512 / 8, ATO: pow2#(E: 64), ELEMENT_SIZE: 4, ADDR_QUEUE_SIZE: 20, ADDR_MAY_PUSH_LATENCY: 0, TOTAL_ELEMENTS_THAT_CAN_BE_STORED: 4*512) mgr
+    write_burst_address_manager#(AXI_WIDTH: 512, ATO: pow2#(E: 64), NUM_PARALLEL_ELEMENTS: 16, ADDR_QUEUE_SIZE: 20, ADDR_MAY_PUSH_LATENCY: 0, TOTAL_ELEMENTS_THAT_CAN_BE_STORED: 4*512) mgr
+    axi_array_burst_writer #(AXI_WIDTH: 512, ADDR_ALIGN: 4, ATO: pow2#(E: 64), MAY_PUSH_LATENCY: 20, MAX_IN_FLIGHT: 300) writer
 }

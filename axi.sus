@@ -505,19 +505,20 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
     }
 }
 
+
+/// MakeMask(3) = [true, true, true, false, false, ...]
+module MakeMask#(int SIZE) {
+    interface MakeMask : int#(FROM: 0, TO: SIZE + 1) up_to -> bool[SIZE] bits
+
+    for int I in 0..SIZE {
+        bits[I] = up_to > I
+    }
+}
+
 module MakeStrobe #(int STROBE_WIDTH) {
     interface MakeStrobe : int#(FROM: 0, TO: STROBE_WIDTH) chunk_offset'0, int#(FROM: 0, TO: STROBE_WIDTH+1) chunk_length'0 -> bool[STROBE_WIDTH] strobe
 
-    bool[STROBE_WIDTH] chunk_bits
-    for int I in 0..STROBE_WIDTH {
-        when chunk_length > I {
-            chunk_bits[I] = true
-        } else {
-            chunk_bits[I] = false
-        }
-    }
-
-    strobe = RotateRight(chunk_bits, chunk_offset)
+    strobe = RotateRight(MakeMask(chunk_length), chunk_offset)
 }
 
 /*
@@ -579,7 +580,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
     assert#(C: pow2#(E: clog2#(V: ADDR_ALIGN)) == ADDR_ALIGN)
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
     assert#(C: AXI_WIDTH mod ELEMENT_BITWIDTH == 0)
-    gen int CHUNK_BYTE_SIZE = AXI_WIDTH / 8
+    gen int TRANSFER_SIZE = AXI_WIDTH / 8
     gen int CHUNKS_TO = (COUNT_TO + NUM_PARALLEL_ELEMENTS) / NUM_PARALLEL_ELEMENTS + 2
 
     // axi interface
@@ -607,13 +608,13 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
     trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
-    SlowState#(T: type int#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE), RESET_TO: 0) cur_start_chunk_addr
+    SlowState#(T: type int#(FROM: 0, TO: ATO / TRANSFER_SIZE), RESET_TO: 0) cur_start_chunk_addr
     SlowState#(T: type int#(FROM: 0, TO: CHUNKS_TO), RESET_TO: 0) num_chunks_left // When == 0 we're not transmitting
     state int#(FROM: 0, TO: MAX_CHUNKS_IN_FLIGHT + 3000) num_in_flight
     state bool last_burst_in_flight
 
     // araddr is always aligned to AxSIZE
-    int next_araddr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: CHUNK_BYTE_SIZE))(cur_start_chunk_addr.old, 0)
+    int next_araddr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: TRANSFER_SIZE))(cur_start_chunk_addr.old, 0)
     int next_arlen
     bool next_last_burst_in_flight = false
 
@@ -643,7 +644,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
         // We can only set arvalid to true again if the stored version is false. But again, the address channel can be *much* slower than the data channel, since only one burst command has to be given every 64-256 cycles. 
         when may_next_arvalid {
             reg int next_burst_addr = cur_burst_addr + 1
-            cur_start_chunk_addr.update(IntNarrow#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE)(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_BURST))(next_burst_addr, 0)))
+            cur_start_chunk_addr.update(IntNarrow#(FROM: 0, TO: ATO / TRANSFER_SIZE)(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_BURST))(next_burst_addr, 0)))
             // SAFETY: we will never take off more chunks than are in num_chunks_left, of course
             int next_num_chunks_left = IntNarrow#(FROM: 0, TO: CHUNKS_TO)(num_chunks_left.old - (next_arlen + 1))
             num_chunks_left.update(next_num_chunks_left)
@@ -860,21 +861,23 @@ extern module assert_runtime {
 }
 
 /// awaddr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH_BYTES))(first_transfer_idx, 0)
-module write_burst_address_manager#(int AXI_WIDTH_BYTES, int ATO, int ELEMENT_SIZE, int ADDR_QUEUE_SIZE, int ADDR_MAY_PUSH_LATENCY, int TOTAL_ELEMENTS_THAT_CAN_BE_STORED) {
+module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELEMENTS, int ADDR_QUEUE_SIZE, int ADDR_MAY_PUSH_LATENCY, int TOTAL_ELEMENTS_THAT_CAN_BE_STORED) {
     domain clk
     gen int MAX_AXI_ALIGNMENT = pow2#(E: 12) // 4kb page size, a burst cannot cross a 4K boundary
-    gen int MAX_BURST = MAX_AXI_ALIGNMENT / AXI_WIDTH_BYTES
+    gen int MAX_BURST = MAX_AXI_ALIGNMENT / (AXI_WIDTH / 8)
 
     if MAX_BURST > 256 { // Limited to 256 for BURST_INCR - AXI4. (16 if AXI3, but we only support AXI4)
         MAX_BURST = 256
     }
 
-    // The alignment is a power of two
-    assert#(C: pow2#(E: clog2#(V: ELEMENT_SIZE)) == ELEMENT_SIZE)
-    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH_BYTES / ELEMENT_SIZE
+    gen int MAX_BURST_BYTES = MAX_BURST * (AXI_WIDTH / 8)
     gen int MAX_ELEMENTS_IN_BURST = MAX_BURST * NUM_PARALLEL_ELEMENTS
 
-    SlowState#(T: type int#(FROM: 0, TO: ATO / ELEMENT_SIZE), RESET_TO: 0) current_addr
+    // The alignment is a power of two
+    gen int ELEMENT_BYTES = AXI_WIDTH / NUM_PARALLEL_ELEMENTS / 8
+    assert#(C: pow2#(E: clog2#(V: ELEMENT_BYTES)) == ELEMENT_BYTES)
+
+    SlowState#(T: type int#(FROM: 0, TO: ATO / ELEMENT_BYTES), RESET_TO: 0) current_addr
     SlowState#(T: type bool, RESET_TO: false) current_addr_valid
     SlowState#(T: type bool, RESET_TO: false) current_command_chunk_end
     SlowState#(T: type bool, RESET_TO: false) current_command_is_last
@@ -901,11 +904,11 @@ module write_burst_address_manager#(int AXI_WIDTH_BYTES, int ATO, int ELEMENT_SI
             when do_accept_burst {
                 // Set current addr start to the begin of the next burst
                 current_command_chunk_end.update(false)
-                int cur_burst_idx, int _ = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_BURST * NUM_PARALLEL_ELEMENTS))(current_addr.old)
-                int next_addr = cur_burst_idx + 1 mod (ATO / (MAX_BURST * AXI_WIDTH_BYTES))
-                current_addr.update(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_BURST * NUM_PARALLEL_ELEMENTS))(next_addr, 0))
+                int cur_burst_idx, int _ = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(current_addr.old)
+                int next_burst_idx = cur_burst_idx + 1 mod ATO / MAX_BURST_BYTES // Find the first address at the start of the next burst
+                current_addr.update(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(next_burst_idx, 0))
             }
-            // When a is_last happens to coincide with the 
+            // When a is_last happens to coincide with the end of a burst, immediately set is_last, and don't do another request
             when current_command_final_align.old == 0 {
                 when do_accept_burst {
                     when current_command_is_last.old {
@@ -940,7 +943,7 @@ module write_burst_address_manager#(int AXI_WIDTH_BYTES, int ATO, int ELEMENT_SI
     domain addresses
     trigger may_push_address'-ADDR_MAY_PUSH_LATENCY
     action push_address'0 : int#(FROM: 0, TO: ATO) new_addr'0 {
-        int element_aligned_addr, int _addr_misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ELEMENT_SIZE))(new_addr)
+        int element_aligned_addr, int _addr_misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ELEMENT_BYTES))(new_addr)
         assert_runtime(_addr_misalign == 0)
         addr_fifo.push(element_aligned_addr)
         burst_splitter.push_new_align(element_aligned_addr mod MAX_ELEMENTS_IN_BURST)
@@ -1034,6 +1037,7 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
         when addr_queue.pop_available: int new_addr_align {
             current_align_valid = true
             current_align = new_addr_align
+            addr_queue.pop()
         } else {
             current_align_valid = false
         }
@@ -1046,8 +1050,112 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
     }
 }
 
+module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int MAX_BURST, int DEPTH, int MAY_PUSH_LATENCY) {
+    gen int ELEMENT_BITWIDTH = AXI_WIDTH / NUM_PARALLEL_ELEMENTS
+    gen int ELEMENT_BYTEWIDTH = ELEMENT_BITWIDTH / 8
+    domain clk
+    bool do_rst = false
+
+    // FIFO State
+    state int#(FROM: 0, TO: MAX_BURST) transfers_remaining
+    state bool pop_strobe_valid
+    state bool[NUM_PARALLEL_ELEMENTS] pop_strobe
+    state int stored_end_offset
+    
+    domain push_dom
+    // Unpack a bunch of FWFT FIFOs. Sadly this is waiting for submodule arrays
+    bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] push_elements'0
+    bool[NUM_PARALLEL_ELEMENTS] push_strobe'0
+    bool[NUM_PARALLEL_ELEMENTS] may_pushes
+    output bool may_push'-MAY_PUSH_LATENCY = &may_pushes
+    action push'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] write_v'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elems'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset'0 {
+        push_elements = RotateRight(write_v, fifo_offset)
+        push_strobe = MakeStrobe(fifo_offset, num_elems)
+    } else {
+        push_strobe = Repeat(false)
+    }
+    
+    domain axis_data_out
+    output bool                wvalid'0
+    input  bool                wready'0
+    output state bool          wlast'0
+    output bool[AXI_WIDTH]     wdata'0
+    output bool[AXI_WIDTH / 8] wstrb'0
+    for int I in 0..NUM_PARALLEL_ELEMENTS {
+        for int J in 0..ELEMENT_BYTEWIDTH {
+            wstrb[I * ELEMENT_BYTEWIDTH + J] = pop_strobe[I]
+        }
+    }
+
+    bool[NUM_PARALLEL_ELEMENTS] pop_available = Repeat(false)
+    wvalid = &(pop_available | !pop_strobe) & pop_strobe_valid
+    bool do_commit_pop = wvalid & wready
+
+    // No may_pop, since we're counting & keeping track manually. 
+
+    for int I in 0..NUM_PARALLEL_ELEMENTS {
+        FWFT#(T: type bool[ELEMENT_BITWIDTH], DEPTH) fifo
+
+        when push_strobe[I] {
+            fifo.push(push_elements[I])
+        }
+        may_pushes[I] = fifo.may_push
+
+        when fifo.pop_available: bool[ELEMENT_BITWIDTH] pop_data {
+            wdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = pop_data
+            pop_available[I] = true
+        }
+        when do_commit_pop & pop_strobe[I] {
+            fifo.pop()
+        }
+        when do_rst {
+            fifo.rst()
+        }
+    }
+
+    domain commands
+    trigger may_write_burst
+    when wvalid & wready | !pop_strobe_valid {
+        when transfers_remaining == 0 {
+            may_write_burst()
+            pop_strobe_valid = false // To be overwritten by write_burst
+        } else {
+            transfers_remaining = IntNarrow#(FROM: 0, TO: MAX_BURST)(transfers_remaining - 1)
+        }
+
+        when transfers_remaining == 1 { // Last transfer before starting next burst
+            pop_strobe = MakeMask(stored_end_offset)
+            wlast = true
+        } else {
+            pop_strobe = Repeat(true)
+            wlast = false
+        }
+    }
+    action write_burst : int#(FROM: 0, TO: MAX_BURST) transfer_awlen, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) start_offset, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) end_offset {
+        pop_strobe_valid = true
+        transfers_remaining = transfer_awlen
+        stored_end_offset = end_offset
+        
+        bool[NUM_PARALLEL_ELEMENTS] lower_mask = !MakeMask(start_offset)
+        bool[NUM_PARALLEL_ELEMENTS] upper_mask = MakeMask(end_offset)
+        when transfer_awlen == 0 {
+            pop_strobe = upper_mask & lower_mask
+            wlast = true
+        } else {
+            pop_strobe = lower_mask
+            wlast = false
+        }
+    }
+
+    domain reset
+    action rst {
+        do_rst = true
+        pop_strobe_valid = false
+    }
+}
+
 /// A Bursting AXI Memory writer. Requires a FIFO
-module axi_burst_writer_with_fifo #(T, int AXI_WIDTH, int ADDR_ALIGN, int ATO, int WRITE_DATA_LATENCY) {
+module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_LATENCY, int MAX_IN_FLIGHT) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -1066,23 +1174,41 @@ module axi_burst_writer_with_fifo #(T, int AXI_WIDTH, int ADDR_ALIGN, int ATO, i
         MAX_BURST = 256
     }
 
-    gen int MAX_CHUNKS_IN_FLIGHT = MAX_BURST + 64 // 64 cycles is the estimated max DDR latency, and we need MAX_BURST capacity 
-
     gen int ELEMENT_BITWIDTH = ADDR_ALIGN * 8
     // The alignment is a power of two
     assert#(C: pow2#(E: clog2#(V: ADDR_ALIGN)) == ADDR_ALIGN)
-    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
+    gen int TRANSFER_SIZE = AXI_WIDTH / 8
     assert#(C: AXI_WIDTH mod ELEMENT_BITWIDTH == 0)
-    gen int CHUNK_BYTE_SIZE = AXI_WIDTH / 8
 
-    // The write data size divides the element bitwidth
-    assert#(C: sizeof#(T) % ELEMENT_BITWIDTH == 0)
-    // Input write size is at least as large as the output axi width, otherwise we need a different implementation to deliver the bandwidth
-    assert#(C: sizeof#(T) >= AXI_WIDTH)
-    gen int NUM_ELEMENTS_PER_WRITE = sizeof#(T) / ELEMENT_BITWIDTH
+    gen int NUM_PARALLEL_ELEMENTS = TRANSFER_SIZE / ADDR_ALIGN
+
+    gen int FIFO_DEPTH
+    if MAY_PUSH_LATENCY > 2 * MAX_BURST {
+        FIFO_DEPTH = nextPow2#(V: 2 * MAY_PUSH_LATENCY)
+    } else {
+        FIFO_DEPTH = nextPow2#(V: MAX_BURST * 2 + MAY_PUSH_LATENCY)
+    }
+    if FIFO_DEPTH < 512 { // Target BRAMs
+        FIFO_DEPTH = 512
+    }
+    write_burst_address_manager#(
+        AXI_WIDTH,
+        ATO,
+        NUM_PARALLEL_ELEMENTS,
+        ADDR_QUEUE_SIZE: 20,
+        ADDR_MAY_PUSH_LATENCY: 1,
+        TOTAL_ELEMENTS_THAT_CAN_BE_STORED: FIFO_DEPTH * NUM_PARALLEL_ELEMENTS
+    ) addr_manager
+
+    burst_write_fifo_manager#(
+        AXI_WIDTH,
+        NUM_PARALLEL_ELEMENTS, 
+        DEPTH: FIFO_DEPTH,
+        MAX_BURST,
+        MAY_PUSH_LATENCY
+    ) fifo_manager
 
     domain aclk
-    input bool aresetn'0
 
     domain axi4
     output bool                     awvalid'0
@@ -1096,98 +1222,67 @@ module axi_burst_writer_with_fifo #(T, int AXI_WIDTH, int ADDR_ALIGN, int ATO, i
     output int#(FROM: 0, TO: 16)    awqos'0 = 0 // Lowest priority
     output bool                     awlock'0 = false // NORMAL - No atomics
     output int#(FROM: 0, TO: 16)    awregion'0 = 0 // Region 0
-    output bool                     wvalid'0
+
+    output bool                     wvalid'0 = fifo_manager.wvalid
     input  bool                     wready'0
-    output bool                     wlast'0
-    output bool[AXI_WIDTH]          wdata'0
-    output bool[AXI_WIDTH / 8]      wstrb'0
+    fifo_manager.wready = wready
+    output bool                     wlast'0 = fifo_manager.wlast
+    output bool[AXI_WIDTH]          wdata'0 = fifo_manager.wdata
+    output bool[AXI_WIDTH / 8]      wstrb'0 = fifo_manager.wstrb
+
+    RippleFIFO#(DEPTH: MAX_IN_FLIGHT / MAX_BURST + 1) burst_is_last_fifo    
     input  bool                     bvalid'0
     input  bool[2]                  bresp'0
-    output bool                     bready'0 = !aresetn
+    bool[2] _ = bresp // XRT doesn't return useful status codes anyway
+    output bool                     bready'0
 
-    domain user
-    action add_burst : int #(FROM: 0, TO: ATO) start_addr {
-
+    domain address
+    trigger may_start_burst
+    when addr_manager.may_push_address {
+        may_start_burst()
+    }
+    action start_burst : int #(FROM: 0, TO: ATO) start_addr {
+        addr_manager.push_address(start_addr)
     }
 
-    // Unpack a bunch of FWFT FIFOs. Sadly this is waiting for submodule arrays
-    bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_WRITE] fifo_push_elements
-    bool fifo_push
-    bool[NUM_ELEMENTS_PER_WRITE] fifo_may_writes
-    bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_WRITE] fifo_read_elements
-    bool[NUM_ELEMENTS_PER_WRITE] fifo_pop_strobe
-    // No may_pop, since we're counting & keeping track manually. 
-
-    gen int DEPTH = 512 // TODO
-    for int I in 0..NUM_ELEMENTS_PER_WRITE {
-        FWFT#(T: type bool[ELEMENT_BITWIDTH], DEPTH, MAY_PUSH_LATENCY: WRITE_DATA_LATENCY) fifo
-
-        when fifo_push {
-            fifo.push(fifo_push_elements[I])
+    when addr_manager.burst_available : int mgr_awlen, int mgr_awaddr, int mgr_start_offset, int mgr_end_offset, bool mgr_is_last {
+        awlen = mgr_awlen
+        awaddr = mgr_awaddr
+        awvalid = true
+        when awready & burst_is_last_fifo.may_push {
+            when fifo_manager.may_write_burst {
+                fifo_manager.write_burst(mgr_awlen, mgr_start_offset, mgr_end_offset)
+                addr_manager.accept_burst()
+                burst_is_last_fifo.push(mgr_is_last)
+            }
         }
-        fifo_may_writes[I] = fifo.may_push
-
-        when fifo.pop_available: bool[ELEMENT_BITWIDTH] pop_data {
-            fifo_read_elements[I] = pop_data
-        }
-        when fifo_pop_strobe[I] {
-            fifo.pop()
-        }
-    }
-
-
-    output bool may_write'-WRITE_DATA_LATENCY = &fifo_may_writes
-    action write: T write_v, bool is_last {
-        bool[sizeof#(T)] write_v_bits = ToBits(write_v)
-        for int I in 0..NUM_ELEMENTS_PER_WRITE {
-            fifo_push_elements[I] = write_v_bits[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
-        }
-        fifo_push = true
     } else {
-        fifo_push = false
+        awvalid = false
     }
 
-    int rotate_amount = 4
-    int num_to_pop_now
-    bool[NUM_ELEMENTS_PER_WRITE] unrotated_pop_strobe = Repeat(false)
-    for int I in 0..NUM_PARALLEL_ELEMENTS {
-        unrotated_pop_strobe[I] = num_to_pop_now <= I
-    }
-    fifo_pop_strobe = RotateLeft(unrotated_pop_strobe, rotate_amount)
-
-    bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_WRITE] output_elements = RotateLeft(fifo_read_elements, rotate_amount)
-    for int I in 0..NUM_PARALLEL_ELEMENTS {
-        wdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = output_elements[I]
-    }
-    wstrb = output_element_strobe[:NUM_PARALLEL_ELEMENTS]
-
-    /*SlowState#(T: type int#(FROM: 0, TO: ATO / CHUNK_BYTE_SIZE), RESET_TO: 0) cur_start_chunk_addr
-    state int#(FROM: 0, TO: MAX_BURST * NUM_PARALLEL_ELEMENTS) elem_in_burst
-
-    action set_burst_start_addr : int #(FROM: 0, TO: ATO) start_addr {
-        int addr_aligned, int _lower = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
-        elem_in_burst = addr_aligned mod MAX_BURST * NUM_PARALLEL_ELEMENTS
-        int chunk_aligned, int _align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: CHUNK_BYTE_SIZE / ADDR_ALIGN))(addr_aligned)
-        cur_start_chunk_addr.update(chunk_aligned)
-    }
-
-    output bool may_write'-WRITE_DATA_LATENCY
-    action write'0:
-        bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] chunk'0,
-        int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0,
-        int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0,
-        bool last'0 {
-
-        int cur_align = elem_in_burst mod ADDR_ALIGN
-        bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] rotated_chunk = RotateRight(chunk, chunk_offset - cur_align mod NUM_PARALLEL_ELEMENTS) // Most expensive line in the whole writer!
-        bool[NUM_PARALLEL_ELEMENTS] write_strobe = MakeStrobe(cur_align, chunk_length)
-        int new_
-        
-        int new_fifo_write_addr = fifo_write_addr + chunk_length mod FIFO_DEPTH * NUM_PARALLEL_ELEMENTS
-        when last {
-
-        } else {
-            fifo_write_addr = new_fifo_write_addr
+    domain write_commit
+    /// After all writes for a burst have been committed to memory, this pulses true. No backpressure, simply don't push addresses you don't know you can handle. 
+    trigger write_has_been_committed
+    bready = burst_is_last_fifo.may_pop
+    when bvalid & bready {
+        bool last_burst_just_finished = burst_is_last_fifo.pop()
+        when last_burst_just_finished {
+            write_has_been_committed()
         }
-    }*/
+    }
+
+    domain elements
+    output bool may_write'-MAY_PUSH_LATENCY = fifo_manager.may_push
+    action write'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] write_v'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elems'0, bool is_last'0 {
+        int fifo_offset = addr_manager.push_elements(num_elems, is_last)
+        fifo_manager.push(write_v, num_elems, fifo_offset)
+    }
+
+    domain reset
+    action rst {
+        addr_manager.rst()
+        fifo_manager.rst()
+        burst_is_last_fifo.rst()
+        bready = false
+    }
 }
