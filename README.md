@@ -1,11 +1,12 @@
 # AXI Slaves and Masters for XRT
 [SUS](https://github.com/pc2/sus-compiler) library that provides AXI slaves and masters for Xilinx' [XRT](https://github.com/Xilinx/XRT)
 
-Basics that are provided: 
+This Library Provides: 
 - AXI control slave: Provides input & output registers. Output registers only useable in XRT User-Managed Kernels
-- AXI Memory master: Simple low-bandwidth DDR read & write
-- AXI Memory master: High-bandwidth bursting AXI reader
-- AXI Memory master: (Unfinished) High-bandwidth bursting AXI writer
+- Low-bandwidth AXI reader
+- Low-bandwidth AXI writer
+- High-bandwidth bursting AXI reader
+- High-bandwidth bursting AXI writer
 
 ## Lessons Learned - VCK5000
 Extrapolated from various benchmarks, more info in [MIXED.md](measurements/MIXED.md), [24x512.md](measurements/24x512.md), [20x256.md](measurements/20x256.md)

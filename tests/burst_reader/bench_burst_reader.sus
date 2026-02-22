@@ -1,0 +1,180 @@
+
+
+module benchmark_burst_read#(int AXI_WIDTH) {
+    domain aclk
+    input bool aresetn
+
+    gen int CTRL_AXI_WIDTH = 32
+    gen int ADDR_WIDTH = 12
+    gen int ATO = pow2#(E: ADDR_WIDTH)
+    gen int MTO = pow2#(E: 64)
+
+    gen int NUM_ELEMS = AXI_WIDTH / 32
+
+    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 6, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+    ctrl.aresetn = aresetn
+
+    // Export AXI4-Lite interface
+    domain axi_control
+    input  int#(FROM: 0, TO: ATO)   s_axi_control_awaddr
+    input  bool                     s_axi_control_awvalid
+    output bool                     s_axi_control_awready = ctrl.awready
+    input  bool[CTRL_AXI_WIDTH]     s_axi_control_wdata
+    input  bool[CTRL_AXI_WIDTH / 8] s_axi_control_wstrb
+    input  bool                     s_axi_control_wvalid
+    output bool                     s_axi_control_wready  = ctrl.wready
+    output bool[2]                  s_axi_control_bresp   = ctrl.bresp
+    output bool                     s_axi_control_bvalid  = ctrl.bvalid
+    input  bool                     s_axi_control_bready
+    input  int#(FROM: 0, TO: ATO)   s_axi_control_araddr
+    input  bool                     s_axi_control_arvalid
+    output bool                     s_axi_control_arready = ctrl.arready
+    output bool[CTRL_AXI_WIDTH]     s_axi_control_rdata   = ctrl.rdata
+    output bool[2]                  s_axi_control_rresp   = ctrl.rresp
+    output bool                     s_axi_control_rvalid  = ctrl.rvalid
+    input  bool                     s_axi_control_rready
+    ctrl.awaddr  =         s_axi_control_awaddr
+    ctrl.awvalid =         s_axi_control_awvalid
+    ctrl.wdata   =         s_axi_control_wdata
+    ctrl.wstrb   =         s_axi_control_wstrb
+    ctrl.wvalid  =         s_axi_control_wvalid
+    ctrl.bready  =         s_axi_control_bready
+    ctrl.araddr  =         s_axi_control_araddr
+    ctrl.arvalid =         s_axi_control_arvalid
+    ctrl.rready  =         s_axi_control_rready
+
+    axi_realigning_burst_reader#(T: type bool[32][NUM_ELEMS], AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64)) reader
+    axi_memory_writer_tie_off writer
+
+    domain mem_write
+    output bool                     m_axi_awvalid = writer.awvalid
+    input  bool                     m_axi_awready
+    output int#(FROM: 0, TO: MTO)   m_axi_awaddr = writer.awaddr
+    output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
+    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
+    output bool[2]                  m_axi_awburst = writer.awburst
+    output bool[3]                  m_axi_awprot = writer.awprot
+    output bool[4]                  m_axi_awcache = writer.awcache
+    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    output bool                     m_axi_awlock = writer.awlock
+    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
+    output bool                     m_axi_wvalid = writer.wvalid
+    input  bool                     m_axi_wready
+    output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
+    output bool[AXI_WIDTH / 8]      m_axi_wstrb = writer.wstrb
+    output bool                     m_axi_wlast = writer.wlast
+    input  bool                     m_axi_bvalid
+    output bool                     m_axi_bready = writer.bready
+    input  bool[2]                  m_axi_bresp
+    writer.awready =                m_axi_awready
+    writer.wready =                 m_axi_wready
+    writer.bvalid =                 m_axi_bvalid
+    writer.bresp =                  m_axi_bresp
+    domain mem_read
+    output bool                     m_axi_arvalid'0 = reader.arvalid
+    input  bool                     m_axi_arready
+    output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
+    output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
+    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
+    output bool[2]                  m_axi_arburst = reader.arburst
+    //output bool[3]                  m_axi_arprot = reader.arprot
+    //output bool[4]                  m_axi_arcache = reader.arcache
+    //output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    //output bool                     m_axi_arlock = reader.arlock
+    //output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
+    input  bool                     m_axi_rvalid
+    output bool                     m_axi_rready = reader.rready
+    input  bool[AXI_WIDTH]          m_axi_rdata
+    input  bool[2]                  m_axi_rresp
+    input  bool                     m_axi_rlast
+    reader.arready =                m_axi_arready
+    reader.rvalid =                 m_axi_rvalid
+    reader.rdata =                  m_axi_rdata
+    reader.rresp =                  m_axi_rresp
+    reader.rlast =                  m_axi_rlast
+
+
+    bool[64] addr_a_bits
+    addr_a_bits[:32] = ctrl.input_regs[0]
+    addr_a_bits[32:] = ctrl.input_regs[1]
+
+    int start_addr = BitsToUInt(addr_a_bits)
+    int num_to_transfer = IntNarrow#(FROM: 1, TO: pow2#(E: 32))(BitsToUInt(ctrl.input_regs[2]))
+
+    bool[32] config_bits = ctrl.input_regs[3]
+
+    //output int#(FROM: 0, TO: 8)     m_axi_arsize  = BitsToUInt(config_bits[0:3])
+    //output bool[2]                  m_axi_arburst = config_bits[3:5]
+    output bool[3]                  m_axi_arprot'0 = config_bits[5:8]
+    output bool[4]                  m_axi_arcache'0 = config_bits[8:12]
+    output int#(FROM: 0, TO: 16)    m_axi_arqos'0 = BitsToUInt(config_bits[12:16])
+    output bool                     m_axi_arlock'0 = config_bits[16]
+    output int#(FROM: 0, TO: 16)    m_axi_arregion'0 = BitsToUInt(config_bits[17:21])
+
+    reader.max_in_flight = BitsToUInt(config_bits[21:32])
+    
+    state int cycles_since_reset
+    cycles_since_reset = cycles_since_reset + 1 mod pow2#(E: 64)
+
+    // Add a bunch of pipeline regs to pad out the big add
+    reg reg reg bool[64] cycles_since_reset_bits = UIntToBits(cycles_since_reset)
+
+    state bool[64] cycles_since_reset_at_start
+
+    state bool running
+    state int num_cycles_running
+    state bool[32] hash
+    when ctrl.start {
+        reader.request_new_burst(start_addr, num_to_transfer)
+        running = true
+        num_cycles_running = 0
+        hash = 32'h00000000
+        cycles_since_reset_at_start = cycles_since_reset_bits
+    }
+
+    when running {
+        num_cycles_running = num_cycles_running + 1 mod pow2#(E: 32)
+    }
+
+    reader.is_ready_to_receive_lots_of_data = true
+    when reader.value_valid: bool[32][NUM_ELEMS] value, bool last {
+        bool[32] new_hash_contrib
+        for int i in 0..32 {
+            reg reg new_hash_contrib[i] = ^(value[:][i])
+        }
+        bool[32] new_hash = hash ^ new_hash_contrib
+        when last {
+            running = false
+            ctrl.finish([UIntToBits(num_cycles_running), new_hash, cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
+        }
+        hash = new_hash
+    }
+
+    when !aresetn {
+        running = false
+        num_cycles_running = 0
+        hash = 32'h00000000
+        cycles_since_reset = 0
+        reader.rst()
+        writer.rst()
+    }
+}
+
+module all_benchmarks {
+    benchmark_burst_read#(AXI_WIDTH: 32) burst32
+    benchmark_burst_read#(AXI_WIDTH: 64) burst64
+    benchmark_burst_read#(AXI_WIDTH: 128) burst128
+    benchmark_burst_read#(AXI_WIDTH: 256) burst256
+    benchmark_burst_read#(AXI_WIDTH: 512) burst512
+    axi_array_burst_reader #(AXI_WIDTH: 64, ADDR_ALIGN: 2, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader
+    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) fullFatReader
+    //axi_realigning_burst_reader #(T: type float[17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) bigSingleObjectReader
+    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
+    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
+    axi_realigning_burst_reader #(T: type bool[32][16], AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
+    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader_for_testbench
+    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
+    //axi_array_burst_writer #(AXI_WIDTH: 512, ADDR_ALIGN: 4) fullFatWriter
+    //axi_burst_writer_with_fifo#(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, ATO: pow2#(E: 64), WRITE_DATA_LATENCY: 200) burst_writer
+    axis_SkidBuffer#(T: type bool[32]) skid_buffer
+}

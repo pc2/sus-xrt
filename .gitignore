@@ -15,6 +15,11 @@
 **/*.xo*
 **/*.xclbin*
 **/*.xsa*
+**/.run
+**/TempConfig
+**/sus_codegen.sv
+**/emconfig.json
+tests/*/target/
 .Xil/
 .analytics
 .metadata/
