@@ -158,7 +158,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
             last_rdata[1] = reg_ctrl_ap_done
             last_rdata[2] = reg_ctrl_ap_idle
             last_rdata[3] = reg_ctrl_ap_ready
-            last_rdata[4:] = Repeat(false)
+            last_rdata[4:] = 28'h0000000
             when reg_ctrl_ap_done {
                 reg_ctrl_ap_idle = true
             }
@@ -194,8 +194,8 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         reg_ctrl_ap_start = false
         reg_ctrl_ap_done = false
 
-        input_regs = Repeat(Repeat(false))
-        stored_output_regs = Repeat(Repeat(false))
+        input_regs = Repeat(32'h00000000)
+        stored_output_regs = Repeat(32'h00000000)
     }
 }
 
@@ -887,44 +887,37 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     int last_transfer_to_include
     int awlen_w = IntNarrow#(FROM: 0, TO: MAX_BURST)(last_transfer_to_include - (first_transfer_idx mod MAX_BURST))
 
+    domain addr_output_channel
     // start_offset is inclusive. 1 -> 0111
     // end_offset is also inclusive. 3 -> 1110
-    trigger burst_available : int#(FROM: 0, TO: MAX_BURST) awlen, int#(FROM: 0, TO: ATO) awaddr, int start_offset, int end_offset, bool is_last
-    bool do_accept_burst = false
-    action accept_burst {
-        do_accept_burst = true
-    }
+    trigger push_burst : int#(FROM: 0, TO: MAX_BURST) awlen, int#(FROM: 0, TO: ATO) awaddr, int start_offset, int end_offset, bool is_last
 
-    when current_addr.may_update & current_addr_valid.may_update & current_command_chunk_end.may_update & current_command_is_last.may_update & current_command_final_align.may_update & current_addr_valid.old {
-        int fully_expanded_addr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: ELEMENT_BYTES))(current_addr.old, 0)
-        when current_command_chunk_end.old {
-            // Since we go until the end of the burst, use 255 as this end marker
-            last_transfer_to_include = 255
+    action may_push_burst {
+        when current_addr.may_update & current_addr_valid.may_update & current_command_chunk_end.may_update & current_command_is_last.may_update & current_command_final_align.may_update & current_addr_valid.old {
+            int fully_expanded_addr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: ELEMENT_BYTES))(current_addr.old, 0)
+            when current_command_chunk_end.old {
+                // Since we go until the end of the burst, use 255 as this end marker
+                last_transfer_to_include = 255
 
-            burst_available(awlen_w, fully_expanded_addr, start_element_offset, NUM_PARALLEL_ELEMENTS - 1, current_command_final_align.old == 0 & current_command_is_last.old)
-            when do_accept_burst {
+                push_burst(awlen_w, fully_expanded_addr, start_element_offset, NUM_PARALLEL_ELEMENTS - 1, current_command_final_align.old == 0 & current_command_is_last.old)
                 // Set current addr start to the begin of the next burst
                 current_command_chunk_end.update(false)
                 int cur_burst_idx, int _ = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(current_addr.old)
                 int next_burst_idx = cur_burst_idx + 1 mod ATO / MAX_BURST_BYTES // Find the first address at the start of the next burst
                 current_addr.update(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(next_burst_idx, 0))
-            }
-            // When a is_last happens to coincide with the end of a burst, immediately set is_last, and don't do another request
-            when current_command_final_align.old == 0 {
-                when do_accept_burst {
+                // When a is_last happens to coincide with the end of a burst, immediately set is_last, and don't do another request
+                when current_command_final_align.old == 0 {
                     when current_command_is_last.old {
                         current_addr_valid.update(false)
                     }
                     current_command_is_last.update(false)
                 }
-            }
-        } else when current_command_is_last.old {
-            // If it were 0, then current_command_chunk_end must be true, and it would have already been reset
-            int last_element_before_final_align = IntNarrow#(FROM: 1, TO: MAX_ELEMENTS_IN_BURST)(current_command_final_align.old) - 1
-            last_transfer_to_include, int last_chunk_offset = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(last_element_before_final_align)
+            } else when current_command_is_last.old {
+                // If it were 0, then current_command_chunk_end must be true, and it would have already been reset
+                int last_element_before_final_align = IntNarrow#(FROM: 1, TO: MAX_ELEMENTS_IN_BURST)(current_command_final_align.old) - 1
+                last_transfer_to_include, int last_chunk_offset = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(last_element_before_final_align)
 
-            burst_available(awlen_w, fully_expanded_addr, start_element_offset, last_chunk_offset, true)
-            when do_accept_burst {
+                push_burst(awlen_w, fully_expanded_addr, start_element_offset, last_chunk_offset, true)
                 current_command_is_last.update(false)
                 current_addr_valid.update(false)
             }
@@ -1074,7 +1067,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
         push_elements = RotateRight(write_v, fifo_offset)
         push_strobe = MakeStrobe(fifo_offset, num_elems)
     } else {
-        push_strobe = Repeat(false)
+        push_strobe = RepeatGen#(T: type bool, SIZE: NUM_PARALLEL_ELEMENTS, V: false)
     }
     
     domain axis_data_out
@@ -1089,9 +1082,13 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
         }
     }
 
-    bool[NUM_PARALLEL_ELEMENTS] pop_available = Repeat(false)
+    bool[NUM_PARALLEL_ELEMENTS] pop_available = RepeatGen#(T: type bool, SIZE: NUM_PARALLEL_ELEMENTS, V: false)
     wvalid = &(pop_available | !pop_strobe) & pop_strobe_valid
     bool do_commit_pop = wvalid & wready
+    bool may_write_strobe = wvalid & wready | !pop_strobe_valid
+    when wvalid & wready {
+        pop_strobe_valid = false // May be overwritten same cycle due to may_write_strobe
+    }
 
     // No may_pop, since we're counting & keeping track manually. 
 
@@ -1117,20 +1114,23 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
 
     domain commands
     trigger may_write_burst
-    when wvalid & wready | !pop_strobe_valid {
+
+    when may_write_strobe {
         when transfers_remaining == 0 {
             may_write_burst()
-            pop_strobe_valid = false // To be overwritten by write_burst
         } else {
             transfers_remaining = IntNarrow#(FROM: 0, TO: MAX_BURST)(transfers_remaining - 1)
+            pop_strobe_valid = true
         }
-
         when transfers_remaining == 1 { // Last transfer before starting next burst
-            pop_strobe = MakeMask(stored_end_offset)
+            when stored_end_offset == 0 {
+                pop_strobe = RepeatGen#(T: type bool, SIZE: NUM_PARALLEL_ELEMENTS, V: true)
+            } else {
+                pop_strobe = MakeMask(stored_end_offset + 1)
+            }
             wlast = true
-            may_write_burst()
         } else {
-            pop_strobe = Repeat(true)
+            pop_strobe = RepeatGen#(T: type bool, SIZE: NUM_PARALLEL_ELEMENTS, V: true)
             wlast = false
         }
     }
@@ -1140,7 +1140,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
         stored_end_offset = end_offset
         
         bool[NUM_PARALLEL_ELEMENTS] lower_mask = !MakeMask(start_offset)
-        bool[NUM_PARALLEL_ELEMENTS] upper_mask = MakeMask(end_offset)
+        bool[NUM_PARALLEL_ELEMENTS] upper_mask = MakeMask(end_offset + 1)
         when transfer_awlen == 0 {
             pop_strobe = upper_mask & lower_mask
             wlast = true
@@ -1220,17 +1220,17 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
     domain aclk
 
     domain axi4
-    output bool                     awvalid'0 = false
-    input  bool                     awready'0
-    output int#(FROM: 0, TO: ATO)   awaddr'0
-    output int#(FROM: 0, TO: 256)   awlen'0
-    output int#(FROM: 0, TO: 8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
-    output bool[2]                  awburst'0 = 2'b01 // BURST
-    output bool[4]                  awcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
-    output bool[3]                  awprot'0 = 3'b000 // Unprivileged, Secure, Data Access
-    output int#(FROM: 0, TO: 16)    awqos'0 = 0 // Lowest priority
-    output bool                     awlock'0 = false // NORMAL - No atomics
-    output int#(FROM: 0, TO: 16)    awregion'0 = 0 // Region 0
+    output state bool                     awvalid'0 = false
+    input  bool                           awready'0
+    output state int#(FROM: 0, TO: ATO)   awaddr'0
+    output int#(FROM: 0, TO: 256)         awlen'0
+    output int#(FROM: 0, TO: 8)           awsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output bool[2]                        awburst'0 = 2'b01 // BURST
+    output bool[4]                        awcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
+    output bool[3]                        awprot'0 = 3'b000 // Unprivileged, Secure, Data Access
+    output int#(FROM: 0, TO: 16)          awqos'0 = 0 // Lowest priority
+    output bool                           awlock'0 = false // NORMAL - No atomics
+    output int#(FROM: 0, TO: 16)          awregion'0 = 0 // Region 0
 
     output bool                     wvalid'0 = fifo_manager.wvalid
     input  bool                     wready'0
@@ -1259,18 +1259,31 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
         burst_accepted()
     }
 
-    when addr_manager.burst_available : int mgr_awlen, int mgr_awaddr, int mgr_start_offset, int mgr_end_offset, bool mgr_is_last {
-        awlen = mgr_awlen
+    state bool is_stored_for_fifo_manager
+    state int stored_mgr_start_offset
+    state int stored_mgr_end_offset
+    state int stored_mgr_awlen
+    awlen = stored_mgr_awlen
+
+    when !awvalid & !is_stored_for_fifo_manager & burst_is_last_fifo.may_push {
+        addr_manager.may_push_burst()
+    }
+    when addr_manager.push_burst : int mgr_awlen, int mgr_awaddr, int mgr_start_offset, int mgr_end_offset, bool mgr_is_last {
         awaddr = mgr_awaddr
-        when burst_is_last_fifo.may_push {
-            when fifo_manager.may_write_burst {
-                awvalid = true
-                when awready {
-                    fifo_manager.write_burst(mgr_awlen, mgr_start_offset, mgr_end_offset)
-                    addr_manager.accept_burst()
-                    burst_is_last_fifo.push(mgr_is_last)
-                }
-            }
+        stored_mgr_awlen = mgr_awlen
+        stored_mgr_start_offset = mgr_start_offset
+        stored_mgr_end_offset = mgr_end_offset
+        awvalid = true
+        is_stored_for_fifo_manager = true
+        burst_is_last_fifo.push(mgr_is_last)
+    }
+    when awready & awvalid {
+        awvalid = false
+    }
+    when fifo_manager.may_write_burst {
+        when is_stored_for_fifo_manager {
+            fifo_manager.write_burst(stored_mgr_awlen, stored_mgr_start_offset, stored_mgr_end_offset)
+            is_stored_for_fifo_manager = false
         }
     }
 
@@ -1287,12 +1300,12 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
 
     domain elements
     output bool may_write'-MAY_PUSH_LATENCY = fifo_manager.may_push
-    action write'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] write_v'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elems'0, bool is_last'0 {
+    action write'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] write_v'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elems'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) strobe_offset'0, bool is_last'0 {
         // One pipeline stage here 
         reg int num_elems_d = num_elems
         reg bool is_last_d = is_last
-        int fifo_offset = addr_manager.push_elements(num_elems_d, is_last_d)
-        fifo_manager.push(write_v, num_elems, fifo_offset)
+        int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset = addr_manager.push_elements(num_elems_d, is_last_d)
+        fifo_manager.push(write_v, num_elems, fifo_offset - strobe_offset mod NUM_PARALLEL_ELEMENTS)
     }
 
     domain reset
@@ -1301,5 +1314,7 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
         fifo_manager.rst()
         burst_is_last_fifo.rst()
         bready = false
+        awvalid = false
+        is_stored_for_fifo_manager = false
     }
 }

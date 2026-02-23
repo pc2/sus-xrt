@@ -145,10 +145,10 @@ module bench_burst_writer#(int AXI_WIDTH) {
             write_data[I] = UIntToBits(cur_idx + I)
         }
         when num_left_to_transfer <= NUM_PARALLEL_ELEMS {
-            writer.write(write_data, IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMS+1)(num_left_to_transfer), true)
+            writer.write(write_data, IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMS+1)(num_left_to_transfer), 0, true)
             num_left_to_transfer = 0
         } else {
-            writer.write(write_data, NUM_PARALLEL_ELEMS, false)
+            writer.write(write_data, NUM_PARALLEL_ELEMS, 0, false)
             num_left_to_transfer = IntNarrow#(FROM: 0, TO: pow2#(E: 32))(num_left_to_transfer - NUM_PARALLEL_ELEMS)
             cur_idx = IntNarrow#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMS)(cur_idx + NUM_PARALLEL_ELEMS)
         }

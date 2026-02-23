@@ -3,6 +3,9 @@ TARGET := hw
 PART := xcvc1902-vsvd1760-2MP-e-S
 PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
 
+# PART := xcvc1902-vsvd1760-2MP-e-S
+# PLATFORM := xilinx_u280_gen3x16_xdma_1_202211_1
+
 all: hw/overlay_$(TARGET).xclbin
 
 packaging/all: packaging/pack_kernel.tcl sus_codegen.sv

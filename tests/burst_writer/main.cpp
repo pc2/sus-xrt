@@ -42,7 +42,7 @@ void printConfig(AXIConfig config) {
               << "  max_in_flight = " << config.max_in_flight << std::endl;
 }
 
-xrt::device vck5000;
+xrt::device device;
 std::unique_ptr<xrt::uuid>   xclbin_handle_ptr;
 
 size_t num_buffer_elems = 10000;
@@ -53,7 +53,7 @@ std::vector<xrt::bo> buffers;
 
 
 void printKernelRegs(const char* kernel_name) {
-    xrt::ip user_manage = xrt::ip(vck5000, *xclbin_handle_ptr, kernel_name);
+    xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, kernel_name);
 
     std::cout << "ctrl: " << user_manage.read_register(0x000) << std::endl;
     std::cout << "Addr_low: " << user_manage.read_register(0x010) << std::endl;
@@ -95,7 +95,7 @@ Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
     kernels.reserve(kernel_indices.size());
     for(size_t ki : kernel_indices) {
         const char* kernel_name = kernel_names[ki];
-        kernels.emplace_back(vck5000, *xclbin_handle_ptr, kernel_name);
+        kernels.emplace_back(device, *xclbin_handle_ptr, kernel_name);
     }
 
     std::vector<xrt::run> runs;
@@ -126,7 +126,7 @@ Pair run_parallel_kernels(const std::vector<size_t>& kernel_indices, AXIConfig c
     }
 
     auto time_taken = std::chrono::high_resolution_clock::now() - start_time;
-    //xrt::error error(vck5000, XRT_ERROR_CLASS_FIRST_ENTRY);
+    //xrt::error error(device, XRT_ERROR_CLASS_FIRST_ENTRY);
     //std::cout << error.to_string() << std::endl;
 
     double time_in_seconds = time_taken.count() / 1000000000.0;
@@ -144,7 +144,7 @@ for (int asdf=0; asdf < 10; asdf++) {
     for(size_t ki : kernel_indices) {
         const char* kernel_name = kernel_names[ki];
         
-        user_kernels.emplace_back(vck5000, *xclbin_handle_ptr, kernel_name);
+        user_kernels.emplace_back(device, *xclbin_handle_ptr, kernel_name);
     }
     auto start_time_user = std::chrono::high_resolution_clock::now();
     for(xrt::ip& k : user_kernels) {
@@ -172,7 +172,7 @@ for (int asdf=0; asdf < 10; asdf++) {
     for(size_t ki : kernel_indices) {
         const char* kernel_name = kernel_names[ki];
         
-        xrt::ip user_manage = xrt::ip(vck5000, *xclbin_handle_ptr, kernel_name);
+        xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, kernel_name);
         uint32_t reg_ctrl = user_manage.read_register(0x000);
         uint32_t reg_addr_low = user_manage.read_register(0x010);
         uint32_t reg_addr_high = user_manage.read_register(0x014);
@@ -207,20 +207,20 @@ int main(int argc, const char** argv) {
     const char* xclbin_file;
     switch(mode){
     case 'a':
-        vck5000 = xrt::device("0000:a1:00.1");
+        device = xrt::device("0000:a1:00.1");
         std::cout << "Got VCK5000 in 0000:a1:00.1" << std::endl;
-        xclbin_file = "../overlay_hw.xclbin";
+        xclbin_file = "overlay_hw.xclbin";
         break;
     case 'e':
-        vck5000 = xrt::device("0000:e1:00.1");
+        device = xrt::device("0000:e1:00.1");
         std::cout << "Got VCK5000 in 0000:e1:00.1" << std::endl;
-        xclbin_file = "../overlay_hw.xclbin";
+        xclbin_file = "overlay_hw.xclbin";
         break;
     case 'u':
-        std::cout << "Getting emulation, if this Segfaults, you forgot to run 'source ../setup_vcp_emu.sh -s on'" << std::endl;
-        vck5000 = xrt::device(0);
+        std::cout << "Getting emulation, if this Segfaults, you forgot to run 'source vck5000_emu.sh -s on'" << std::endl;
+        device = xrt::device(0);
         std::cout << "Got VCK5000 in emu" << std::endl;
-        xclbin_file = "../overlay_hw_emu.xclbin";
+        xclbin_file = "overlay_hw_emu.xclbin";
         break;
     default:
         std::cout << "UNKNOWN OPTION: " << argv[1] << std::endl;
@@ -229,16 +229,16 @@ int main(int argc, const char** argv) {
     if(argc >= 3) {
         xclbin_file = argv[2];
     }
-    std::cout << "device name:     " << vck5000.get_info<xrt::info::device::name>() << "\n";
-    std::cout << "device bdf:      " << vck5000.get_info<xrt::info::device::bdf>() << "\n";
+    std::cout << "device name:     " << device.get_info<xrt::info::device::name>() << "\n";
+    std::cout << "device bdf:      " << device.get_info<xrt::info::device::bdf>() << "\n";
 
     // Workaround for dumb missing default constructor
-    xclbin_handle_ptr = std::make_unique<xrt::uuid>(vck5000.load_xclbin(xclbin_file));
+    xclbin_handle_ptr = std::make_unique<xrt::uuid>(device.load_xclbin(xclbin_file));
 
     std::cout << "Got XCLBIN" << std::endl;
 
     /*for(const char* kernel_name : kernel_names) {
-        xrt::kernel k = xrt::kernel(vck5000, *xclbin_handle_ptr, kernel_name);
+        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_name);
         std::cout << "Kernel " << kernel_name << ": " << k.group_id(0) << std::endl;
     }
 
@@ -255,9 +255,9 @@ int main(int argc, const char** argv) {
     
     for(const char* kernel_name: kernel_names) {
         std::cout << "Copying Buffer for " << kernel_name << "..." << std::endl;
-        xrt::kernel k = xrt::kernel(vck5000, *xclbin_handle_ptr, kernel_name);
-        //xrt::bo bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_DEV_ONLY, k.group_id(0));
-        xrt::bo bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
+        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_name);
+        //xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_DEV_ONLY, k.group_id(0));
+        xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
 
         bench_buffer.write(host_buffer.data(), sizeof(uint32_t) * num_buffer_elems, 0);
         bench_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -277,12 +277,12 @@ int main(int argc, const char** argv) {
     };
     printConfig(config);
 
-    xrt::kernel k = xrt::kernel(vck5000, *xclbin_handle_ptr, kernel_names[2]);
+    xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_names[2]);
     std::cout << "Made Kernel" << std::endl;
     uint32_t* host_side = new uint32_t[num_buffer_elems];
-    xrt::bo bench_buffer = xrt::bo(vck5000, /*host_side, */sizeof(uint32_t) * num_buffer_elems, xrt::bo::flags::normal, k.group_id(0));
+    xrt::bo bench_buffer = xrt::bo(device, /*host_side, */sizeof(uint32_t) * num_buffer_elems, xrt::bo::flags::normal, k.group_id(0));
     std::cout << "Made Buffer" << std::endl;
-    //xrt::bo bench_buffer = xrt::bo(vck5000, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
+    //xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
 
     
     uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);

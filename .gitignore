@@ -19,7 +19,8 @@
 **/TempConfig
 **/sus_codegen.sv
 **/emconfig.json
-tests/*/target/
+tests/*/VCK5000/
+tests/*/U280/
 .Xil/
 .analytics
 .metadata/

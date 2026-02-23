@@ -1,64 +1,60 @@
-PART := xcvc1902-vsvd1760-2MP-e-S
-PLATFORM := xilinx_vck5000_gen4x8_qdma_2_202220_1
+# Default target if none specified
+TARGET ?= VCK5000
+# hw, hw_emu, sw, sw_emu
+MODE ?= hw
+
+# VCK5000
+PART_VCK5000 := xcvc1902-vsvd1760-2MP-e-S
+PLATFORM_VCK5000 := xilinx_vck5000_gen4x8_qdma_2_202220_1
+
+# U280
+PART_U280 := xcu280-fsvh2892-2L-e
+PLATFORM_U280 := xilinx_u280_gen3x16_xdma_1_202211_1
+
+# Select configuration
+PART := $(PART_$(TARGET))
+PLATFORM := $(PLATFORM_$(TARGET))
 
 sus_codegen.sv: ../../axi.sus top.sus
-	mkdir -p target
 	sus_compiler ../../axi.sus top.sus -o sus_codegen.sv --top all_write_benchmarks
 
-burst_writer%.xo: pack_kernel.tcl sus_codegen.sv
-	rm -f burst_writer$*.xo
-	rm -rf target/pack_prj$*
-	mkdir target/pack_prj$*
-	cd target/pack_prj$*;\
-	vivado -mode batch -source ../../pack_kernel.tcl -tclargs $(PART) $*
+XOS_VCK := $(TARGET)/burst_writer_32.xo $(TARGET)/burst_writer_64.xo $(TARGET)/burst_writer_128.xo $(TARGET)/burst_writer_256.xo $(TARGET)/burst_writer_512.xo
+LOCAL_XOS := ../burst_writer_32.xo ../burst_writer_64.xo ../burst_writer_128.xo ../burst_writer_256.xo ../burst_writer_512.xo
 
-overlay_hw_emu.xclbin: connectivity.cfg burst_writer32.xo burst_writer64.xo burst_writer128.xo burst_writer256.xo burst_writer512.xo
-	rm -rf target/overlay_hw_emu_prj
-	mkdir target/overlay_hw_emu_prj
-	cd target/overlay_hw_emu_prj &&\
-	v++ -l --kernel_frequency 450 --platform $(PLATFORM) -t hw_emu -s -g --config ../../connectivity.cfg -o overlay_hw_emu.xsa ../../burst_writer32.xo ../../burst_writer64.xo ../../burst_writer128.xo ../../burst_writer256.xo ../../burst_writer512.xo &&\
-	v++ -p --platform $(PLATFORM) -t hw_emu -o ../../overlay_hw_emu.xclbin overlay_hw_emu.xsa --package.boot_mode=ospi
+$(TARGET)/burst_writer_%.xo: pack_kernel.tcl sus_codegen.sv
+	mkdir -p $(TARGET)
+	rm -f $(TARGET)/burst_writer_$*.xo
+	rm -rf $(TARGET)/pack_prj$*
+	mkdir $(TARGET)/pack_prj$*
+	cd $(TARGET)/pack_prj$*;\
+	vivado -mode batch -source ../../pack_kernel.tcl -tclargs $(PART) $* ../burst_writer_$*.xo
 
-overlay_hw.xclbin: connectivity.cfg burst_writer32.xo burst_writer64.xo burst_writer128.xo burst_writer256.xo burst_writer512.xo
-	rm -rf target/overlay_hw_prj
-	mkdir target/overlay_hw_prj
-	cd target/overlay_hw_prj &&\
-	v++ -l --kernel_frequency 450 --platform $(PLATFORM) -t hw -s -g --config ../../connectivity.cfg -o overlay_hw.xsa ../../burst_writer32.xo ../../burst_writer64.xo ../../burst_writer128.xo ../../burst_writer256.xo ../../burst_writer512.xo &&\
-	v++ -p --platform $(PLATFORM) -t hw -o ../../overlay_hw.xclbin overlay_hw.xsa --package.boot_mode=ospi
-	xclbinutil --info -i overlay_hw.xclbin
+# VCK5000/overlay_hw.xclbin  or VCK5000/overlay_hw_emu.xclbin
+VCK5000/overlay_%.xclbin: vck5000_connectivity.cfg $(XOS_VCK)
+	rm -f $(TARGET)/overlay_$*.xclbin
+	rm -rf $(TARGET)/overlay_$*_prj
+	mkdir $(TARGET)/overlay_$*_prj
+	cd $(TARGET)/overlay_$*_prj &&\
+	v++ -l --platform $(PLATFORM) -t $* -s -g --config ../../vck5000_connectivity.cfg -o overlay_$*.xsa $(LOCAL_XOS) &&\
+	v++ -p --platform $(PLATFORM) -t $* -o ../overlay_$*.xclbin overlay_$*.xsa --package.boot_mode=ospi
+	xclbinutil --info -i $(TARGET)/overlay_$*.xclbin
+
+# VCK5000/overlay_hw.xclbin  or VCK5000/overlay_hw_emu.xclbin
+U280/overlay_%.xclbin: u280_connectivity.cfg $(XOS_VCK)
+	rm -f $(TARGET)/overlay_$*.xclbin
+	rm -rf $(TARGET)/overlay_$*_prj
+	mkdir $(TARGET)/overlay_$*_prj
+	cd $(TARGET)/overlay_$*_prj &&\
+	v++ -l --platform $(PLATFORM) -t $* -s -g --config ../../u280_connectivity.cfg -o ../overlay_$*.xclbin $(LOCAL_XOS)
+	xclbinutil --info -i $(TARGET)/overlay_$*.xclbin
 
 main.x: main.cpp
 	g++ -g -std=c++17 -I$(XILINX_XRT)/include -L$(XILINX_XRT)/lib -lxrt_coreutil -pthread main.cpp -o main.x
 
-test_emu: main.x overlay_hw_emu.xclbin
-	./main.x u
-
-test_emu_waveform: main.x overlay_hw_emu.xclbin
-	@echo "Running ./main.x u (timeout 5 minutes)..."
-	#source ../setup_vck_emu.sh -s on
-	@TMP_LOG=$$(mktemp); \
-	if timeout --signal=TERM --kill-after=0 1m ./main.x u 2>&1 | tee $$TMP_LOG; then \
-		echo "Program finished."; \
-	else \
-		echo "Program timed out after 5 minutes (killed)."; \
-	fi; \
-	SIM_PATH=$$(grep -oP 'Path of the simulation directory : \K.*' $$TMP_LOG | tail -n1); \
-	if [ -z "$$SIM_PATH" ]; then \
-		echo "Error: Could not find simulation directory in output."; \
-		cat $$TMP_LOG; \
-		rm -f $$TMP_LOG; \
-		exit 1; \
-	fi; \
-	echo "Found simulation path: $$SIM_PATH"
-	@echo "Launching xsim detached..."
-	@setsid xsim -gui $$SIM_PATH/*.wdb >/dev/null 2>&1 &
-	rm -f $$TMP_LOG
-
 clean:
-	rm -rf target
+	rm -rf VCK5000
+	rm -rf U280
 	rm -f sus_codegen.sv
-	rm -f *.xo
-	rm -f *.xclbin
 	rm -f main.x
 
-.PHONY: clean test_emu_waveform
+.PHONY: clean

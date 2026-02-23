@@ -1,5 +1,6 @@
-set AXI_WIDTH [lindex $argv 1]
 set PART [lindex $argv 0]
+set AXI_WIDTH [lindex $argv 1]
+set XO_FILE [lindex $argv 2]
 
 # set AXI_WIDTH 32
 # set PART xcvc1902-vsvd1760-2MP-e-S
@@ -78,5 +79,5 @@ ipx::update_checksums [ipx::current_core]
 ipx::check_integrity -kernel -xrt [ipx::current_core]
 ipx::save_core [ipx::current_core]
 
-package_xo -xo_path ../../${KERNEL_NAME}.xo -kernel_name ${KERNEL_NAME} -ctrl_protocol ap_ctrl_hs -ip_directory ./${KERNEL_NAME}_ip
+package_xo -xo_path $XO_FILE -kernel_name ${KERNEL_NAME} -ctrl_protocol ap_ctrl_hs -ip_directory ./${KERNEL_NAME}_ip
  # -output_kernel_xml ../../${KERNEL_NAME}.xml
