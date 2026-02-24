@@ -890,19 +890,20 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     domain addr_output_channel
     // start_offset is inclusive. 1 -> 0111
     // end_offset is also inclusive. 3 -> 1110
-    trigger push_burst : int#(FROM: 0, TO: MAX_BURST) awlen, int#(FROM: 0, TO: ATO) awaddr, int start_offset, int end_offset, bool is_last
+    trigger push_burst : int#(FROM: 0, TO: ATO) awaddr, int#(FROM: 0, TO: MAX_BURST) awlen, int start_offset, int end_offset, bool is_last
 
     action may_push_burst {
         when current_addr.may_update & current_addr_valid.may_update & current_command_chunk_end.may_update & current_command_is_last.may_update & current_command_final_align.may_update & current_addr_valid.old {
-            int fully_expanded_addr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: ELEMENT_BYTES))(current_addr.old, 0)
+            int transfer_idx, int _ = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(current_addr.old)
+            int transfer_aligned_addr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH / 8))(transfer_idx, 0)
             when current_command_chunk_end.old {
                 // Since we go until the end of the burst, use 255 as this end marker
                 last_transfer_to_include = 255
 
-                push_burst(awlen_w, fully_expanded_addr, start_element_offset, NUM_PARALLEL_ELEMENTS - 1, current_command_final_align.old == 0 & current_command_is_last.old)
+                push_burst(transfer_aligned_addr, awlen_w, start_element_offset, NUM_PARALLEL_ELEMENTS - 1, current_command_final_align.old == 0 & current_command_is_last.old)
                 // Set current addr start to the begin of the next burst
                 current_command_chunk_end.update(false)
-                int cur_burst_idx, int _ = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(current_addr.old)
+                int cur_burst_idx, int _e = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(current_addr.old)
                 int next_burst_idx = cur_burst_idx + 1 mod ATO / MAX_BURST_BYTES // Find the first address at the start of the next burst
                 current_addr.update(BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(next_burst_idx, 0))
                 // When a is_last happens to coincide with the end of a burst, immediately set is_last, and don't do another request
@@ -917,7 +918,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
                 int last_element_before_final_align = IntNarrow#(FROM: 1, TO: MAX_ELEMENTS_IN_BURST)(current_command_final_align.old) - 1
                 last_transfer_to_include, int last_chunk_offset = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(last_element_before_final_align)
 
-                push_burst(awlen_w, fully_expanded_addr, start_element_offset, last_chunk_offset, true)
+                push_burst(transfer_aligned_addr, awlen_w, start_element_offset, last_chunk_offset, true)
                 current_command_is_last.update(false)
                 current_addr_valid.update(false)
             }
@@ -1123,11 +1124,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
             pop_strobe_valid = true
         }
         when transfers_remaining == 1 { // Last transfer before starting next burst
-            when stored_end_offset == 0 {
-                pop_strobe = RepeatGen#(T: type bool, SIZE: NUM_PARALLEL_ELEMENTS, V: true)
-            } else {
-                pop_strobe = MakeMask(stored_end_offset + 1)
-            }
+            pop_strobe = MakeMask(stored_end_offset + 1)
             wlast = true
         } else {
             pop_strobe = RepeatGen#(T: type bool, SIZE: NUM_PARALLEL_ELEMENTS, V: true)
@@ -1268,7 +1265,7 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
     when !awvalid & !is_stored_for_fifo_manager & burst_is_last_fifo.may_push {
         addr_manager.may_push_burst()
     }
-    when addr_manager.push_burst : int mgr_awlen, int mgr_awaddr, int mgr_start_offset, int mgr_end_offset, bool mgr_is_last {
+    when addr_manager.push_burst : int mgr_awaddr, int mgr_awlen, int mgr_start_offset, int mgr_end_offset, bool mgr_is_last {
         awaddr = mgr_awaddr
         stored_mgr_awlen = mgr_awlen
         stored_mgr_start_offset = mgr_start_offset

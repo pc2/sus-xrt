@@ -11,7 +11,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
 
     gen int NUM_PARALLEL_ELEMS = AXI_WIDTH / 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 5, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+    axi_ctrl_slave #(NUM_INPUT_REGS: 5, NUM_OUTPUT_REGS: 5, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
     ctrl.aresetn = aresetn
 
     // Export AXI4-Lite interface
@@ -100,8 +100,9 @@ module bench_burst_writer#(int AXI_WIDTH) {
 
     int start_addr = BitsToUInt(addr_a_bits)
     int num_to_transfer = BitsToUInt(ctrl.input_regs[2])
+    int offset = BitsToUInt(ctrl.input_regs[3])
 
-    bool[32] config_bits = ctrl.input_regs[3]
+    bool[32] config_bits = ctrl.input_regs[4]
 
     //output int#(FROM: 0, TO: 8)     m_axi_arsize  = BitsToUInt(config_bits[0:3])
     //output bool[2]                  m_axi_arburst = config_bits[3:5]
@@ -124,7 +125,8 @@ module bench_burst_writer#(int AXI_WIDTH) {
     state int#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMS) cur_idx
     state int num_cycles_running
     when ctrl.start {
-        writer.request_new_burst(start_addr)
+        reg reg int modified_addr = start_addr + offset mod pow2#(E: 64)
+        writer.request_new_burst(modified_addr)
     }
 
     when writer.burst_accepted {

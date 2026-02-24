@@ -61,9 +61,14 @@ set_property description    {number of transfers}     [ipx::get_registers COUNT 
 set_property address_offset {0x018}                   [ipx::get_registers COUNT  -of_objects $CTRL_ADDR_BLOCK]
 set_property size           {32}                      [ipx::get_registers COUNT  -of_objects $CTRL_ADDR_BLOCK]
 
+ipx::add_register OFFSET $CTRL_ADDR_BLOCK
+set_property description    {address offset}          [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x01c}                   [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}                      [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
+
 ipx::add_register CONFIG $CTRL_ADDR_BLOCK
 set_property description    {config bits}     [ipx::get_registers CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property address_offset {0x01c}                   [ipx::get_registers CONFIG  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x020}                   [ipx::get_registers CONFIG  -of_objects $CTRL_ADDR_BLOCK]
 set_property size           {32}                      [ipx::get_registers CONFIG  -of_objects $CTRL_ADDR_BLOCK]
 
 ipx::add_register_parameter ASSOCIATED_BUSIF [ipx::get_registers ADDR_A -of_objects $CTRL_ADDR_BLOCK]
