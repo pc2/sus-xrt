@@ -57,7 +57,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     gen bool[2] RESP_SLVERR = [false, true]
 
     domain aclk
-    input bool aresetn
+    bool do_reset = false
 
     domain axi4
     // AXI signals
@@ -96,7 +96,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     state bool[2] last_bresp
     state bool last_werr_valid
     
-    awready = !stored_addr_valid & aresetn // Force low on reset
+    awready = !stored_addr_valid & !do_reset // Force low on reset
     wready = stored_addr_valid & !last_werr_valid // Already low by reset
     bvalid = last_werr_valid
     bresp = last_bresp
@@ -144,7 +144,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     regs_read_multiplexer[:NUM_INPUT_REGS] = input_regs
     regs_read_multiplexer[NUM_INPUT_REGS:] = stored_output_regs
 
-    arready = !last_rdata_valid & aresetn // Force low on reset
+    arready = !last_rdata_valid & !do_reset // Force low on reset
     rvalid = last_rdata_valid // Already low by reset
 
     when arready & arvalid {
@@ -184,7 +184,8 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         reg_ctrl_ap_idle = false
     }
 
-    when !aresetn {
+    action rst {
+        do_reset = true
         stored_addr_valid = false
         last_werr_valid = false
 
@@ -605,7 +606,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
 
     // User ports
     input bool is_ready_to_receive_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
-    trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
+    trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
 
     SlowState#(T: type int#(FROM: 0, TO: ATO / TRANSFER_SIZE), RESET_TO: 0) cur_start_chunk_addr
@@ -673,7 +674,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int
             num_chunk_elements = NUM_PARALLEL_ELEMENTS - cur_chunk_align
         }
         
-        element_packet_valid(elements, cur_chunk_align, num_chunk_elements, is_last)
+        element_packet_valid(elements, num_chunk_elements, cur_chunk_align, is_last)
         cur_chunk_align = 0
     }
 

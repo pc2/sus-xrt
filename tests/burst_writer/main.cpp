@@ -57,22 +57,29 @@ void printKernelRegs(const char* kernel_name) {
     std::cout << "Result: " << user_manage.read_register(0x024) << std::endl;
 }
 
-constexpr size_t BUFFER_CAPACITY = 5000;
-constexpr size_t NUM_KERNELS = 5;
-double clock_freq = 368 * 1000000; // In Hz
+constexpr size_t BUFFER_CAPACITY = 20000000;
+constexpr size_t NUM_KERNELS = 7;
+// U280 5K
+//double clock_freq = 498.7 * 1000000; // In Hz
+// U280 with HBM
+double clock_freq = 381.9 * 1000000; // In Hz
 const char* kernel_names[NUM_KERNELS]{
     "burst_writer32:{burst_writer32_1}",
     "burst_writer64:{burst_writer64_1}",
     "burst_writer128:{burst_writer128_1}",
     "burst_writer256:{burst_writer256_1}",
     "burst_writer512:{burst_writer512_1}",
+    "burst_writer256:{burst_writer256_2}",
+    "burst_writer512:{burst_writer512_2}"
 };
 const int sizes[NUM_KERNELS]{
     32,
     64,
     128,
     256,
-    512
+    512,
+    256,
+    512,
 };
 
 std::vector<xrt::bo> bench_buffers;
@@ -82,6 +89,7 @@ std::vector<xrt::kernel> kernels;
 void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t config_u32) {
     xrt::kernel& k = kernels[k_idx];
     xrt::bo& b = bench_buffers[k_idx];
+    std::cout << "Kernel " << kernel_names[k_idx] << std::endl;
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
     b.write(default_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
@@ -93,7 +101,8 @@ void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t conf
     std::cout << "Finished Kernel" << std::endl;
     double time_in_seconds = time_taken.count() / 1000000000.0;
     double bw = num_elems * sizeof(uint32_t) / 1000000000.0 / time_in_seconds; // GB/s
-    std::cout << "    Time taken: " << time_in_seconds << "s, BW: " << bw << "GB/s." << std::endl;
+    double bytes_per_cycle = num_elems * sizeof(uint32_t) / (time_in_seconds * clock_freq);
+    std::cout << "    Time taken: " << time_in_seconds << "s, BW: " << bw << "GB/s = " << bytes_per_cycle << " bytes per cycle @" << (clock_freq / 1000000) << "MHz" << std::endl;
 
     size_t offset_elem = offset / 4;
     b.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
@@ -148,8 +157,9 @@ int main(int argc, const char** argv) {
     if(argc >= 3) {
         xclbin_file = argv[2];
     }
-    std::cout << "device name:     " << device.get_info<xrt::info::device::name>() << "\n";
-    std::cout << "device bdf:      " << device.get_info<xrt::info::device::bdf>() << "\n";
+    std::cout << "device name:     " << device.get_info<xrt::info::device::name>() << std::endl;
+    std::cout << "device bdf:      " << device.get_info<xrt::info::device::bdf>() << std::endl;
+    std::cout << "device freq:     " << device.get_info<xrt::info::device::max_clock_frequency_mhz>() << std::endl;
 
     // Workaround for dumb missing default constructor
     xclbin_handle_ptr = std::make_unique<xrt::uuid>(device.load_xclbin(xclbin_file));
@@ -204,7 +214,7 @@ int main(int argc, const char** argv) {
     }
     host_side = new uint32_t[BUFFER_CAPACITY];
 
-    for(int i = 0; i < 5; i++) {
+    for(int i = 0; i < NUM_KERNELS; i++) {
         kernels.emplace_back(device, *xclbin_handle_ptr, kernel_names[i]);
         bench_buffers.emplace_back(device, /*host_side, */sizeof(uint32_t) * BUFFER_CAPACITY, xrt::bo::flags::normal, kernels[i].group_id(0));
     }
@@ -214,20 +224,20 @@ int main(int argc, const char** argv) {
     
     uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
 
-    for(int i = 0; i < 5; i++) {
-        std::cout << "Small Buffers" << std::endl;
+    for(int kernel = 0; kernel < NUM_KERNELS; kernel++) {
+        /*std::cout << "Small Buffers" << std::endl;
         for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(i, 19, offset, config_u32);
+            run_kernel(kernel, 19, offset, config_u32);
         }
 
         std::cout << "Small Buffers on Crossover" << std::endl;
         for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(i, 20, 4000 + offset, config_u32);
-        }
+            run_kernel(kernel, 20, 4000 + offset, config_u32);
+        }*/
 
         std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 1; size <= BUFFER_CAPACITY; size *= 2) {
-            run_kernel(i, size, 0, config_u32);
+        for(int size = 10000000; size <= BUFFER_CAPACITY; size *= 2) {
+            run_kernel(kernel, size, 0, config_u32);
         }
     }
 }

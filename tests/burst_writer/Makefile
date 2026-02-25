@@ -1,8 +1,5 @@
 # Default target if none specified
 TARGET ?= VCK5000
-# hw, hw_emu, sw, sw_emu
-MODE ?= hw
-
 # VCK5000
 PART_VCK5000 := xcvc1902-vsvd1760-2MP-e-S
 PLATFORM_VCK5000 := xilinx_vck5000_gen4x8_qdma_2_202220_1
@@ -49,7 +46,7 @@ U280/overlay_%.xclbin: u280_connectivity.cfg $(XOS_VCK)
 	xclbinutil --info -i $(TARGET)/overlay_$*.xclbin
 
 main.x: main.cpp
-	g++ -g -std=c++17 -I$(XILINX_XRT)/include -L$(XILINX_XRT)/lib -lxrt_coreutil -pthread main.cpp -o main.x
+	g++ -g -O3 -std=c++17 -I$(XILINX_XRT)/include -L$(XILINX_XRT)/lib -lxrt_coreutil -pthread main.cpp -o main.x
 
 clean:
 	rm -rf VCK5000

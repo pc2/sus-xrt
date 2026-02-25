@@ -12,7 +12,6 @@ module bench_burst_writer#(int AXI_WIDTH) {
     gen int NUM_PARALLEL_ELEMS = AXI_WIDTH / 32
 
     axi_ctrl_slave #(NUM_INPUT_REGS: 5, NUM_OUTPUT_REGS: 5, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
-    ctrl.aresetn = aresetn
 
     // Export AXI4-Lite interface
     domain axi_control
@@ -167,6 +166,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
         cycles_since_reset = 0
         reader.rst()
         writer.rst()
+        ctrl.rst()
     }
 }
 
