@@ -13,6 +13,42 @@ The executable can be built as:
 
 But should be run from the specified target folder, such that it targets the correct xclbin. This also ensures all simulation files are dumped in that target folder, without cluttering the main folder. 
 For easy rebuilds while developing, I stay in the target folder, and simply run:
-`burst_writer/U280$ make -C .. main.x && ../main.x u`
+`burst_writer/U280/$ make -C .. main.x && ../main.x u`
 
-For running `main.x`, I have shorthands. `../main.x u` uses `./overlay_hw_emu.xclbin` for emulation. `./main.x a` or `./main.x e` use the synthesized `./overlay_hw.xclbin` with FPGA `0000:a1:00.1` and `0000:e1:00.1` respectively. 
+## Synthesis
+Source the modules:
+`./$ source u280_modules.sh`
+
+Build the bitstream:
+`burst_writer/$ make TARGET=U280 U280/overlay_hw.xclbin`
+
+Build the executable:
+`burst_writer/$ make main.x`
+
+Run the executable **from the target folder** on an FPGA node:
+`burst_writer/U280/$ ../main.x a`
+
+`../main.x a` or `../main.x e` use the synthesized `./overlay_hw.xclbin` with FPGA `0000:a1:00.1` and `0000:e1:00.1` respectively. 
+
+For easier development, I reccomend combining building main.x with the run command:
+`burst_writer/U280/$ make -C .. main.x && ../main.x a`
+
+## Emulation
+Source the modules:
+`./$ source u280_modules.sh`
+
+Build the bitstream:
+`burst_writer/$ make TARGET=U280 U280/overlay_hw_emu.xclbin`
+
+Build the executable:
+`burst_writer/$ make main.x`
+
+**From the target folder: enable emulation**: `burst_writer/U280/$ source ../../u280_emu.sh -s on`
+
+Run the executable **from the target folder**:
+`burst_writer/U280/$ ../main.x u`
+
+`../main.x u` uses `./overlay_hw_emu.xclbin` for emulation. 
+
+For easier development, I reccomend combining building main.x with the run command:
+`burst_writer/U280/$ make -C .. main.x && ../main.x u`
