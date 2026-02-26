@@ -6,17 +6,22 @@ set XO_FILE [lindex $argv 2]
 # set PART xcvc1902-vsvd1760-2MP-e-S
 
 
-set KERNEL_NAME burst_writer${AXI_WIDTH}
+set KERNEL_NAME memory_doubler${AXI_WIDTH}
 
 create_project ${KERNEL_NAME} ./${KERNEL_NAME} -part $PART
 
 add_files -norecurse \
 {
-    ../../sus_codegen.sv \
+    ../sus_codegen.sv \
+}
+if { $PART == {xcu280-fsvh2892-2L-e} } { # U280
+    import_ip [glob -type f ../../sus-float/UltraScalePlus/xci_files/*.xci]
+} else { # VCK5000
+    import_ip [glob -type f ../../sus-float/Versal/xci_files/*.xci]
 }
 
 # ???
-set_property top bench_burst_writer_AXI_WIDTH_${AXI_WIDTH} [current_fileset]
+set_property top memory_doubler_AXI_WIDTH_${AXI_WIDTH} [current_fileset]
 
 
 update_compile_order -fileset sources_1
@@ -66,16 +71,10 @@ set_property description    {address offset}          [ipx::get_registers OFFSET
 set_property address_offset {0x01c}                   [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
 set_property size           {32}                      [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
 
-ipx::add_register READ_CONFIG $CTRL_ADDR_BLOCK
-set_property description    {read config bits}     [ipx::get_registers READ_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property address_offset {0x020}                   [ipx::get_registers READ_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property size           {32}                      [ipx::get_registers READ_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-
-ipx::add_register WRITE_CONFIG $CTRL_ADDR_BLOCK
-set_property description    {write config bits}     [ipx::get_registers WRITE_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property address_offset {0x024}                   [ipx::get_registers WRITE_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property size           {32}                      [ipx::get_registers WRITE_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-
+ipx::add_register CONFIG $CTRL_ADDR_BLOCK
+set_property description    {config bits}     [ipx::get_registers CONFIG  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x020}                   [ipx::get_registers CONFIG  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}                      [ipx::get_registers CONFIG  -of_objects $CTRL_ADDR_BLOCK]
 
 ipx::add_register_parameter ASSOCIATED_BUSIF [ipx::get_registers ADDR_A -of_objects $CTRL_ADDR_BLOCK]
 set_property value          {m_axi}          [ipx::get_register_parameters ASSOCIATED_BUSIF -of_objects [ipx::get_registers ADDR_A -of_objects $CTRL_ADDR_BLOCK]]

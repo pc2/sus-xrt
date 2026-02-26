@@ -1,0 +1,154 @@
+
+module memory_doubler#(int AXI_WIDTH) {
+
+    domain aclk
+    input bool aresetn
+
+    gen int CTRL_AXI_WIDTH = 32
+    gen int ADDR_WIDTH = 12
+    gen int CTRL_ATO = pow2#(E: ADDR_WIDTH)
+    gen int MEM_ATO = pow2#(E: 64)
+
+    gen int NUM_PARALLEL_ELEMS = AXI_WIDTH / 32
+
+    axi_ctrl_slave #(NUM_INPUT_REGS: 6, NUM_OUTPUT_REGS: 0, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+
+    // Export AXI4-Lite interface
+    domain axi_control
+    input  int#(FROM: 0, TO: CTRL_ATO)   s_axi_control_awaddr
+    input  bool                     s_axi_control_awvalid
+    output bool                     s_axi_control_awready = ctrl.awready
+    input  bool[CTRL_AXI_WIDTH]     s_axi_control_wdata
+    input  bool[CTRL_AXI_WIDTH / 8] s_axi_control_wstrb
+    input  bool                     s_axi_control_wvalid
+    output bool                     s_axi_control_wready  = ctrl.wready
+    output bool[2]                  s_axi_control_bresp   = ctrl.bresp
+    output bool                     s_axi_control_bvalid  = ctrl.bvalid
+    input  bool                     s_axi_control_bready
+    input  int#(FROM: 0, TO: CTRL_ATO)   s_axi_control_araddr
+    input  bool                     s_axi_control_arvalid
+    output bool                     s_axi_control_arready = ctrl.arready
+    output bool[CTRL_AXI_WIDTH]     s_axi_control_rdata   = ctrl.rdata
+    output bool[2]                  s_axi_control_rresp   = ctrl.rresp
+    output bool                     s_axi_control_rvalid  = ctrl.rvalid
+    input  bool                     s_axi_control_rready
+    ctrl.awaddr  =         s_axi_control_awaddr
+    ctrl.awvalid =         s_axi_control_awvalid
+    ctrl.wdata   =         s_axi_control_wdata
+    ctrl.wstrb   =         s_axi_control_wstrb
+    ctrl.wvalid  =         s_axi_control_wvalid
+    ctrl.bready  =         s_axi_control_bready
+    ctrl.araddr  =         s_axi_control_araddr
+    ctrl.arvalid =         s_axi_control_arvalid
+    ctrl.rready  =         s_axi_control_rready
+
+    axi_array_burst_reader#(ATO: MEM_ATO, ADDR_ALIGN: 4) reader
+    axi_array_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
+
+    domain mem_write
+    output bool                     m_axi_awvalid = writer.awvalid
+    input  bool                     m_axi_awready
+    output int#(FROM: 0, TO: MEM_ATO)   m_axi_awaddr = writer.awaddr
+    output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
+    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
+    output bool[2]                  m_axi_awburst = writer.awburst
+    //output bool[3]                  m_axi_awprot = writer.awprot
+    //output bool[4]                  m_axi_awcache = writer.awcache
+    //output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    //output bool                     m_axi_awlock = writer.awlock
+    //output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
+    output bool                     m_axi_wvalid = writer.wvalid
+    input  bool                     m_axi_wready
+    output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
+    output bool[AXI_WIDTH / 8]      m_axi_wstrb = writer.wstrb
+    output bool                     m_axi_wlast = writer.wlast
+    input  bool                     m_axi_bvalid
+    output bool                     m_axi_bready = writer.bready
+    input  bool[2]                  m_axi_bresp
+    writer.awready =                m_axi_awready
+    writer.wready =                 m_axi_wready
+    writer.bvalid =                 m_axi_bvalid
+    writer.bresp =                  m_axi_bresp
+    domain mem_read
+    output bool                     m_axi_arvalid'0 = reader.arvalid
+    input  bool                     m_axi_arready
+    output int#(FROM: 0, TO: MEM_ATO)   m_axi_araddr = reader.araddr
+    output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
+    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
+    output bool[2]                  m_axi_arburst = reader.arburst
+    //output bool[3]                  m_axi_arprot = reader.arprot
+    //output bool[4]                  m_axi_arcache = reader.arcache
+    //output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    //output bool                     m_axi_arlock = reader.arlock
+    //output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
+    input  bool                     m_axi_rvalid
+    output bool                     m_axi_rready = reader.rready
+    input  bool[AXI_WIDTH]          m_axi_rdata
+    input  bool[2]                  m_axi_rresp
+    input  bool                     m_axi_rlast
+    reader.arready =                m_axi_arready
+    reader.rvalid =                 m_axi_rvalid
+    reader.rdata =                  m_axi_rdata
+    reader.rresp =                  m_axi_rresp
+    reader.rlast =                  m_axi_rlast
+
+    bool[64] addr_a_bits
+    addr_a_bits[:32] = ctrl.input_regs[0]
+    addr_a_bits[32:] = ctrl.input_regs[1]
+
+    int start_addr = BitsToUInt(addr_a_bits)
+    int num_to_transfer = BitsToUInt(ctrl.input_regs[2])
+    int offset = BitsToUInt(ctrl.input_regs[3])
+    reg reg bool[32] config_bits_r = ctrl.input_regs[4]
+    reg reg bool[32] config_bits_w = ctrl.input_regs[5]
+
+    output bool[3]                  m_axi_awprot'0 = config_bits_w[5:8]
+    output bool[4]                  m_axi_awcache'0 = config_bits_w[8:12]
+    output int#(FROM: 0, TO: 16)    m_axi_awqos'0 = BitsToUInt(config_bits_w[12:16])
+    output bool                     m_axi_awlock'0 = config_bits_w[16]
+    output int#(FROM: 0, TO: 16)    m_axi_awregion'0 = BitsToUInt(config_bits_w[17:21])
+
+    output bool[3]                  m_axi_arprot'0 = config_bits_r[5:8]
+    output bool[4]                  m_axi_arcache'0 = config_bits_r[8:12]
+    output int#(FROM: 0, TO: 16)    m_axi_arqos'0 = BitsToUInt(config_bits_r[12:16])
+    output bool                     m_axi_arlock'0 = config_bits_r[16]
+    output int#(FROM: 0, TO: 16)    m_axi_arregion'0 = BitsToUInt(config_bits_r[17:21])
+    reader.max_in_flight = BitsToUInt(config_bits_r[21:])
+
+    when ctrl.start {
+        reg reg int modified_addr = start_addr + offset mod pow2#(E: 64)
+        writer.request_new_burst(modified_addr)
+        reader.request_new_burst(modified_addr, num_to_transfer)
+    }
+
+    reader.is_ready_to_receive_lots_of_data = writer.may_write
+
+    when reader.element_packet_valid: bool[32][NUM_PARALLEL_ELEMS] elems, int num_valid, int valid_offset, bool is_last {
+        bool[32][NUM_PARALLEL_ELEMS] doubled
+        for int i in 0..NUM_PARALLEL_ELEMS {
+            float in_v = FromBits(elems[i])
+            float double_v = fp32_add(in_v, in_v)
+            doubled[i] = ToBits(double_v)
+        }
+
+        writer.write(doubled, num_valid, valid_offset, is_last)
+    }
+
+    when writer.write_has_been_committed {
+        ctrl.finish([])
+    }
+
+    when !aresetn {
+        reader.rst()
+        writer.rst()
+        ctrl.rst()
+    }
+}
+
+module all_doubler_benchmarks {
+    memory_doubler#(AXI_WIDTH: 32) bench32
+    memory_doubler#(AXI_WIDTH: 64) bench64
+    memory_doubler#(AXI_WIDTH: 128) bench128
+    memory_doubler#(AXI_WIDTH: 256) bench256
+    memory_doubler#(AXI_WIDTH: 512) bench512
+}

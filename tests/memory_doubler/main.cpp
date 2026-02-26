@@ -1,7 +1,6 @@
 #include "experimental/xrt_ip.h"
 #include "experimental/xrt_uuid.h"
 #include "experimental/xrt_kernel.h"
-#include "experimental/xrt_xclbin.h"
 #include "experimental/xrt_bo.h"
 #include "experimental/xrt_error.h"
 #include "ert.h"
@@ -58,20 +57,20 @@ void printKernelRegs(const char* kernel_name) {
     std::cout << "Result: " << user_manage.read_register(0x024) << std::endl;
 }
 
-constexpr size_t BUFFER_CAPACITY = 20000000;
+constexpr size_t BUFFER_CAPACITY = 2000;
 constexpr size_t NUM_KERNELS = 7;
 // U280 5K
 //double clock_freq = 498.7 * 1000000; // In Hz
 // U280 with HBM
-double clock_freq = 470.8 * 1000000; // In Hz
+double clock_freq = 361.7 * 1000000; // In Hz
 const char* kernel_names[NUM_KERNELS]{
-    "burst_writer32:{burst_writer32_1}",
-    "burst_writer64:{burst_writer64_1}",
-    "burst_writer128:{burst_writer128_1}",
-    "burst_writer256:{burst_writer256_1}",
-    "burst_writer512:{burst_writer512_1}",
-    "burst_writer256:{burst_writer256_2}",
-    "burst_writer512:{burst_writer512_2}"
+    "memory_doubler32:{memory_doubler32_1}",
+    "memory_doubler64:{memory_doubler64_1}",
+    "memory_doubler128:{memory_doubler128_1}",
+    "memory_doubler256:{memory_doubler256_1}",
+    "memory_doubler512:{memory_doubler512_1}",
+    "memory_doubler256:{memory_doubler256_2}",
+    "memory_doubler512:{memory_doubler512_2}"
 };
 const int sizes[NUM_KERNELS]{
     32,
@@ -84,15 +83,15 @@ const int sizes[NUM_KERNELS]{
 };
 
 std::vector<xrt::bo> bench_buffers;
-uint32_t* default_buffer;
-uint32_t* host_side;
+float* default_buffer;
+float* host_side;
 std::vector<xrt::kernel> kernels;
 void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t config_u32) {
     xrt::kernel& k = kernels[k_idx];
     xrt::bo& b = bench_buffers[k_idx];
     std::cout << "Kernel " << kernel_names[k_idx] << std::endl;
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
-    b.write(default_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
+    b.write(default_buffer, sizeof(float) * BUFFER_CAPACITY, 0);
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     std::cout << "Start Write " << num_elems << " from " << offset << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -101,25 +100,25 @@ void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t conf
     auto time_taken = std::chrono::high_resolution_clock::now() - start_time;
     std::cout << "Finished Kernel" << std::endl;
     double time_in_seconds = time_taken.count() / 1000000000.0;
-    double bw = num_elems * sizeof(uint32_t) / 1000000000.0 / time_in_seconds; // GB/s
-    double bytes_per_cycle = num_elems * sizeof(uint32_t) / (time_in_seconds * clock_freq);
+    double bw = num_elems * sizeof(float) / 1000000000.0 / time_in_seconds; // GB/s
+    double bytes_per_cycle = num_elems * sizeof(float) / (time_in_seconds * clock_freq);
     std::cout << "    Time taken: " << time_in_seconds << "s, BW: " << bw << "GB/s = " << bytes_per_cycle << " bytes per cycle @" << (clock_freq / 1000000) << "MHz" << std::endl;
 
     size_t offset_elem = offset / 4;
     b.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    b.read(host_side, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
+    b.read(host_side, sizeof(float) * BUFFER_CAPACITY, 0);
     for(int i = 0; i < offset_elem; i++) {
-        if(host_side[i] != 0xDDDDDDDD) {
+        if(host_side[i] != default_buffer[i]) {
             std::cout << "ERROR: Buffer Elem [" << i << "] should not have been written to! = " << host_side[i] << std::endl;
         }
     }
     for(int i = 0; i < num_elems; i++) {
-        if(host_side[offset_elem + i] != i) {
+        if(host_side[offset_elem + i] != default_buffer[i] * 2) {
             std::cout << "ERROR: Buffer Elem [" << offset_elem + i << "] should be " << i << " but was " << host_side[offset_elem + i] << std::endl;
         }
     }
     for(int i = offset_elem + num_elems; i < BUFFER_CAPACITY; i++) {
-        if(host_side[i] != 0xDDDDDDDD) {
+        if(host_side[i] != default_buffer[i]) {
             std::cout << "ERROR: Buffer Elem [" << i << "] should not have been written to! = " << host_side[i] << std::endl;
         }
     }
@@ -137,18 +136,18 @@ int main(int argc, const char** argv) {
     switch(mode){
     case 'a':
         device = xrt::device("0000:a1:00.1");
-        std::cout << "Got VCK5000 in 0000:a1:00.1" << std::endl;
+        std::cout << "Got Device 0000:a1:00.1" << std::endl;
         xclbin_file = "overlay_hw.xclbin";
         break;
     case 'e':
         device = xrt::device("0000:e1:00.1");
-        std::cout << "Got VCK5000 in 0000:e1:00.1" << std::endl;
+        std::cout << "Got Device 0000:e1:00.1" << std::endl;
         xclbin_file = "overlay_hw.xclbin";
         break;
     case 'u':
         std::cout << "Getting emulation, if this Segfaults, you forgot to run 'source vck5000_emu.sh -s on'" << std::endl;
         device = xrt::device(0);
-        std::cout << "Got VCK5000 in emu" << std::endl;
+        std::cout << "Got Emulation Device" << std::endl;
         xclbin_file = "overlay_hw_emu.xclbin";
         break;
     default:
@@ -160,11 +159,10 @@ int main(int argc, const char** argv) {
     }
     std::cout << "device name:     " << device.get_info<xrt::info::device::name>() << std::endl;
     std::cout << "device bdf:      " << device.get_info<xrt::info::device::bdf>() << std::endl;
+    std::cout << "device freq:     " << device.get_info<xrt::info::device::max_clock_frequency_mhz>() << std::endl;
 
     // Workaround for dumb missing default constructor
-    xrt::xclbin xclbin = xrt::xclbin(xclbin_file);
-    xclbin_handle_ptr = std::make_unique<xrt::uuid>(device.load_xclbin(xclbin));
-    //std::cout << "clocks: " << xclbin.get_axlf_section<const char*>(axlf_section_kind::CLOCK_FREQ_TOPOLOGY) << std::endl;
+    xclbin_handle_ptr = std::make_unique<xrt::uuid>(device.load_xclbin(xclbin_file));
 
     std::cout << "Got XCLBIN" << std::endl;
 
@@ -210,15 +208,15 @@ int main(int argc, const char** argv) {
 
     xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_names[2]);
     std::cout << "Made Kernel" << std::endl;
-    default_buffer = new uint32_t[BUFFER_CAPACITY];
+    default_buffer = new float[BUFFER_CAPACITY];
     for(size_t i = 0; i < BUFFER_CAPACITY; i++) {
-        default_buffer[i] = 0xDDDDDDDD;
+        default_buffer[i] = i * 0.1;
     }
-    host_side = new uint32_t[BUFFER_CAPACITY];
+    host_side = new float[BUFFER_CAPACITY];
 
     for(int i = 0; i < NUM_KERNELS; i++) {
         kernels.emplace_back(device, *xclbin_handle_ptr, kernel_names[i]);
-        bench_buffers.emplace_back(device, /*host_side, */sizeof(uint32_t) * BUFFER_CAPACITY, xrt::bo::flags::normal, kernels[i].group_id(0));
+        bench_buffers.emplace_back(device, /*host_side, */sizeof(float) * BUFFER_CAPACITY, xrt::bo::flags::normal, kernels[i].group_id(0));
     }
     std::cout << "Made Buffer" << std::endl;
     //xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
@@ -238,7 +236,7 @@ int main(int argc, const char** argv) {
         }*/
 
         std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 10000000; size <= BUFFER_CAPACITY; size *= 2) {
+        for(int size = 100; size <= BUFFER_CAPACITY; size *= 2) {
             run_kernel(kernel, size, 0, config_u32);
         }
     }
