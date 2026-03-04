@@ -20,8 +20,6 @@
 
 
 struct AXIConfig {
-    uint32_t arsize : 3;
-    uint32_t arburst : 2;
     uint32_t arprot : 3;
     uint32_t arcache : 4;
     uint32_t arqos : 4;
@@ -32,8 +30,6 @@ struct AXIConfig {
 
 void printConfig(AXIConfig config) {
     std::cout << "Current AXIConfig:\n"
-              << "  arsize        = " << config.arsize << "\n"
-              << "  arburst       = " << config.arburst << "\n"
               << "  arprot        = " << config.arprot << "\n"
               << "  arcache       = " << config.arcache << "\n"
               << "  arqos         = " << config.arqos << "\n"
@@ -195,8 +191,6 @@ int main(int argc, const char** argv) {
     }*/
 
     AXIConfig config = AXIConfig{
-        .arsize = 0,
-        .arburst = 0,
         .arprot = 0,
         .arcache = 2,
         .arqos = 0,

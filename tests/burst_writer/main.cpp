@@ -21,20 +21,16 @@
 
 
 struct AXIConfig {
-    uint32_t arsize : 3;
-    uint32_t arburst : 2;
     uint32_t arprot : 3;
     uint32_t arcache : 4;
     uint32_t arqos : 4;
     uint32_t arlock : 1;
     uint32_t arregion : 4;
-    uint32_t max_in_flight: 11;
+    uint32_t max_in_flight: 16;
 };
 
 void printConfig(AXIConfig config) {
     std::cout << "Current AXIConfig:\n"
-              << "  arsize        = " << config.arsize << "\n"
-              << "  arburst       = " << config.arburst << "\n"
               << "  arprot        = " << config.arprot << "\n"
               << "  arcache       = " << config.arcache << "\n"
               << "  arqos         = " << config.arqos << "\n"
@@ -58,7 +54,7 @@ void printKernelRegs(const char* kernel_name) {
     std::cout << "Result: " << user_manage.read_register(0x024) << std::endl;
 }
 
-constexpr size_t BUFFER_CAPACITY = 20000000;
+constexpr size_t BUFFER_CAPACITY = 200000;
 constexpr size_t NUM_KERNELS = 7;
 // U280 5K
 //double clock_freq = 498.7 * 1000000; // In Hz
@@ -86,8 +82,9 @@ const int sizes[NUM_KERNELS]{
 std::vector<xrt::bo> bench_buffers;
 uint32_t* default_buffer;
 uint32_t* host_side;
+uint32_t* expected_buffer;
 std::vector<xrt::kernel> kernels;
-void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t config_u32) {
+void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, uint32_t config_u32) {
     xrt::kernel& k = kernels[k_idx];
     xrt::bo& b = bench_buffers[k_idx];
     std::cout << "Kernel " << kernel_names[k_idx] << std::endl;
@@ -96,7 +93,7 @@ void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t conf
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     std::cout << "Start Write " << num_elems << " from " << offset << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
-    xrt::run r = k(b, num_elems, offset, config_u32);
+    xrt::run r = k(b, num_elems, offset, num_repeats, experiment_offset, config_u32);
     r.wait();
     auto time_taken = std::chrono::high_resolution_clock::now() - start_time;
     std::cout << "Finished Kernel" << std::endl;
@@ -108,19 +105,29 @@ void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t conf
     size_t offset_elem = offset / 4;
     b.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
     b.read(host_side, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
-    for(int i = 0; i < offset_elem; i++) {
-        if(host_side[i] != 0xDDDDDDDD) {
-            std::cout << "ERROR: Buffer Elem [" << i << "] should not have been written to! = " << host_side[i] << std::endl;
+    for(size_t i = 0; i < BUFFER_CAPACITY; i++) {
+        expected_buffer[i] = 0xDDDDDDDD;
+    }
+    uint32_t total = 0;
+    for(int repeat_i = 0; repeat_i < num_repeats; repeat_i++) {
+        for(int i = 0; i < num_elems; i++) {
+            expected_buffer[experiment_offset / sizeof(uint32_t) * repeat_i + offset_elem + i] = total;
+            total++;
         }
     }
-    for(int i = 0; i < num_elems; i++) {
-        if(host_side[offset_elem + i] != i) {
-            std::cout << "ERROR: Buffer Elem [" << offset_elem + i << "] should be " << i << " but was " << host_side[offset_elem + i] << std::endl;
-        }
-    }
-    for(int i = offset_elem + num_elems; i < BUFFER_CAPACITY; i++) {
-        if(host_side[i] != 0xDDDDDDDD) {
-            std::cout << "ERROR: Buffer Elem [" << i << "] should not have been written to! = " << host_side[i] << std::endl;
+    for(int i = 0; i < BUFFER_CAPACITY; i++) {
+        if(expected_buffer[i] != host_side[i]) {
+            std::cout << "ERROR: [" << i << "]: expected = ";
+            if(expected_buffer[i] == 0xDDDDDDDD) {
+                std::cout << "UNSET";
+            } else {
+                std::cout << expected_buffer[i];
+            }
+            if(host_side[i] == 0xDDDDDDDD) {
+                std::cout << "    found = " << "UNSET" << std::endl;
+            } else {
+                std::cout << "    found = " << host_side[i] << std::endl;
+            }
         }
     }
     std::cout << "Checked " << BUFFER_CAPACITY << " elements." << std::endl;
@@ -135,20 +142,30 @@ int main(int argc, const char** argv) {
     }
     const char* xclbin_file;
     switch(mode){
+    case '0':
+        device = xrt::device("0000:01:00.1");
+        std::cout << "Got Device 0000:01:00.1" << std::endl;
+        xclbin_file = "overlay_hw.xclbin";
+        break;
+    case '8':
+        device = xrt::device("0000:81:00.1");
+        std::cout << "Got Device 0000:81:00.1" << std::endl;
+        xclbin_file = "overlay_hw.xclbin";
+        break;
     case 'a':
         device = xrt::device("0000:a1:00.1");
-        std::cout << "Got VCK5000 in 0000:a1:00.1" << std::endl;
+        std::cout << "Got Device 0000:a1:00.1" << std::endl;
         xclbin_file = "overlay_hw.xclbin";
         break;
     case 'e':
         device = xrt::device("0000:e1:00.1");
-        std::cout << "Got VCK5000 in 0000:e1:00.1" << std::endl;
+        std::cout << "Got Device 0000:e1:00.1" << std::endl;
         xclbin_file = "overlay_hw.xclbin";
         break;
     case 'u':
         std::cout << "Getting emulation, if this Segfaults, you forgot to run 'source vck5000_emu.sh -s on'" << std::endl;
         device = xrt::device(0);
-        std::cout << "Got VCK5000 in emu" << std::endl;
+        std::cout << "Got Device in emu" << std::endl;
         xclbin_file = "overlay_hw_emu.xclbin";
         break;
     default:
@@ -197,8 +214,6 @@ int main(int argc, const char** argv) {
     }*/
 
     AXIConfig config = AXIConfig{
-        .arsize = 0,
-        .arburst = 0,
         .arprot = 0,
         .arcache = 2,
         .arqos = 0,
@@ -215,6 +230,7 @@ int main(int argc, const char** argv) {
         default_buffer[i] = 0xDDDDDDDD;
     }
     host_side = new uint32_t[BUFFER_CAPACITY];
+    expected_buffer = new uint32_t[BUFFER_CAPACITY];
 
     for(int i = 0; i < NUM_KERNELS; i++) {
         kernels.emplace_back(device, *xclbin_handle_ptr, kernel_names[i]);
@@ -238,8 +254,8 @@ int main(int argc, const char** argv) {
         }*/
 
         std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 10000000; size <= BUFFER_CAPACITY; size *= 2) {
-            run_kernel(kernel, size, 0, config_u32);
+        for(int size = 1; size <= 1000; size *= 2) {
+            run_kernel(kernel, size, 0, 2, 4096, config_u32);
         }
     }
 }

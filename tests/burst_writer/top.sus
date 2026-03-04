@@ -11,7 +11,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
 
     gen int NUM_PARALLEL_ELEMS = AXI_WIDTH / 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 5, NUM_OUTPUT_REGS: 5, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+    axi_ctrl_slave #(NUM_INPUT_REGS: 7, NUM_OUTPUT_REGS: 5, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
 
     // Export AXI4-Lite interface
     domain axi_control
@@ -100,16 +100,16 @@ module bench_burst_writer#(int AXI_WIDTH) {
     int start_addr = BitsToUInt(addr_a_bits)
     int num_to_transfer = BitsToUInt(ctrl.input_regs[2])
     int offset = BitsToUInt(ctrl.input_regs[3])
+    int num_repeats = BitsToUInt(ctrl.input_regs[4])
+    int repeat_offset = BitsToUInt(ctrl.input_regs[5])
 
-    bool[32] config_bits = ctrl.input_regs[4]
+    bool[32] config_bits_w = ctrl.input_regs[6]
 
-    //output int#(FROM: 0, TO: 8)     m_axi_arsize  = BitsToUInt(config_bits[0:3])
-    //output bool[2]                  m_axi_arburst = config_bits[3:5]
-    output bool[3]                  m_axi_awprot'0 = config_bits[5:8]
-    output bool[4]                  m_axi_awcache'0 = config_bits[8:12]
-    output int#(FROM: 0, TO: 16)    m_axi_awqos'0 = BitsToUInt(config_bits[12:16])
-    output bool                     m_axi_awlock'0 = config_bits[16]
-    output int#(FROM: 0, TO: 16)    m_axi_awregion'0 = BitsToUInt(config_bits[17:21])
+    output bool[3]                  m_axi_awprot'0 = config_bits_w[0:3]
+    output bool[4]                  m_axi_awcache'0 = config_bits_w[3:7]
+    output int#(FROM: 0, TO: 16)    m_axi_awqos'0 = BitsToUInt(config_bits_w[7:11])
+    output bool                     m_axi_awlock'0 = config_bits_w[11]
+    output int#(FROM: 0, TO: 16)    m_axi_awregion'0 = BitsToUInt(config_bits_w[12:16])
 
     state int cycles_since_reset
     cycles_since_reset = cycles_since_reset + 1 mod pow2#(E: 64)
@@ -120,43 +120,74 @@ module bench_burst_writer#(int AXI_WIDTH) {
     state bool[64] cycles_since_reset_at_start
 
     state bool running
+    FWFT#(DEPTH: 32) queued_transfers
+    state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining
+    state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining_to_finish
     state int#(FROM: 0, TO: pow2#(E: 32)) num_left_to_transfer
     state int#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMS) cur_idx
     state int num_cycles_running
-    when ctrl.start {
-        reg reg int modified_addr = start_addr + offset mod pow2#(E: 64)
-        writer.request_new_burst(modified_addr)
-    }
 
-    when writer.burst_accepted {
+    state int#(FROM: 0, TO: pow2#(E: 64)) cur_experiment_addr
+    when ctrl.start {
+        num_repeats_remaining = num_repeats
+        num_repeats_remaining_to_finish = num_repeats
+        cur_experiment_addr = start_addr + offset mod pow2#(E: 64)
         running = true
-        num_left_to_transfer = num_to_transfer
         cur_idx = 0
         num_cycles_running = 0
         cycles_since_reset_at_start = cycles_since_reset_bits
+    }
+
+    when num_repeats_remaining != 0 {
+        when writer.may_request_new_write {
+            when queued_transfers.may_push {
+                writer.request_new_write(cur_experiment_addr)
+                cur_experiment_addr = cur_experiment_addr + repeat_offset mod pow2#(E: 64)
+                queued_transfers.push(0)
+                num_repeats_remaining = num_repeats_remaining - 1 mod pow2#(E: 32)
+            }
+        }
     }
 
     when running {
         num_cycles_running = num_cycles_running + 1 mod pow2#(E: 32)
     }
 
+    bool grab_new_transfer = false
     when num_left_to_transfer > 0 & writer.may_write {
         bool[32][NUM_PARALLEL_ELEMS] write_data
         for int I in 0..NUM_PARALLEL_ELEMS {
             write_data[I] = UIntToBits(cur_idx + I)
         }
+        int extra_idx
         when num_left_to_transfer <= NUM_PARALLEL_ELEMS {
             writer.write(write_data, IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMS+1)(num_left_to_transfer), 0, true)
-            num_left_to_transfer = 0
+            grab_new_transfer = true
+            extra_idx = num_left_to_transfer
         } else {
             writer.write(write_data, NUM_PARALLEL_ELEMS, 0, false)
-            num_left_to_transfer = IntNarrow#(FROM: 0, TO: pow2#(E: 32))(num_left_to_transfer - NUM_PARALLEL_ELEMS)
-            cur_idx = IntNarrow#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMS)(cur_idx + NUM_PARALLEL_ELEMS)
+            num_left_to_transfer = num_left_to_transfer - NUM_PARALLEL_ELEMS mod pow2#(E: 32)
+            extra_idx = NUM_PARALLEL_ELEMS
+        }
+        cur_idx = IntNarrow#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMS)(cur_idx + extra_idx)
+    }
+    when num_left_to_transfer == 0 {
+        grab_new_transfer = true
+    }
+    when grab_new_transfer {
+        when queued_transfers.pop_available : int _ {
+            num_left_to_transfer = num_to_transfer
+            queued_transfers.pop()
+        } else {
+            num_left_to_transfer = 0
         }
     }
 
     when writer.write_has_been_committed {
-        ctrl.finish([UIntToBits(num_cycles_running), cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
+        when num_repeats_remaining_to_finish == 1 {
+            ctrl.finish([UIntToBits(num_cycles_running), cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
+        }
+        num_repeats_remaining_to_finish = IntNarrow#(FROM: 0, TO: pow2#(E: 32))(num_repeats_remaining_to_finish - 1)
     }
 
     when !aresetn {
@@ -164,9 +195,11 @@ module bench_burst_writer#(int AXI_WIDTH) {
         num_cycles_running = 0
         num_left_to_transfer = 0
         cycles_since_reset = 0
+        num_repeats_remaining = 0
         reader.rst()
         writer.rst()
         ctrl.rst()
+        queued_transfers.rst()
     }
 }
 

@@ -102,23 +102,23 @@ module memory_doubler#(int AXI_WIDTH) {
     reg reg bool[32] config_bits_r = ctrl.input_regs[4]
     reg reg bool[32] config_bits_w = ctrl.input_regs[5]
 
-    output bool[3]                  m_axi_awprot'0 = config_bits_w[5:8]
-    output bool[4]                  m_axi_awcache'0 = config_bits_w[8:12]
-    output int#(FROM: 0, TO: 16)    m_axi_awqos'0 = BitsToUInt(config_bits_w[12:16])
-    output bool                     m_axi_awlock'0 = config_bits_w[16]
-    output int#(FROM: 0, TO: 16)    m_axi_awregion'0 = BitsToUInt(config_bits_w[17:21])
+    output bool[3]                  m_axi_awprot'0 = config_bits_w[0:3]
+    output bool[4]                  m_axi_awcache'0 = config_bits_w[3:7]
+    output int#(FROM: 0, TO: 16)    m_axi_awqos'0 = BitsToUInt(config_bits_w[7:11])
+    output bool                     m_axi_awlock'0 = config_bits_w[11]
+    output int#(FROM: 0, TO: 16)    m_axi_awregion'0 = BitsToUInt(config_bits_w[12:16])
 
-    output bool[3]                  m_axi_arprot'0 = config_bits_r[5:8]
-    output bool[4]                  m_axi_arcache'0 = config_bits_r[8:12]
-    output int#(FROM: 0, TO: 16)    m_axi_arqos'0 = BitsToUInt(config_bits_r[12:16])
-    output bool                     m_axi_arlock'0 = config_bits_r[16]
-    output int#(FROM: 0, TO: 16)    m_axi_arregion'0 = BitsToUInt(config_bits_r[17:21])
-    reader.max_in_flight = BitsToUInt(config_bits_r[21:])
+    output bool[3]                  m_axi_arprot'0 = config_bits_r[0:3]
+    output bool[4]                  m_axi_arcache'0 = config_bits_r[3:7]
+    output int#(FROM: 0, TO: 16)    m_axi_arqos'0 = BitsToUInt(config_bits_r[7:11])
+    output bool                     m_axi_arlock'0 = config_bits_r[11]
+    output int#(FROM: 0, TO: 16)    m_axi_arregion'0 = BitsToUInt(config_bits_r[12:16])
+    reader.max_in_flight = BitsToUInt(config_bits_r[16:])
 
     when ctrl.start {
         reg reg int modified_addr = start_addr + offset mod pow2#(E: 64)
-        writer.request_new_burst(modified_addr)
-        reader.request_new_burst(modified_addr, num_to_transfer)
+        writer.request_new_write(modified_addr)
+        reader.request_new_read(modified_addr, num_to_transfer)
     }
 
     reader.is_ready_to_receive_lots_of_data = writer.may_write

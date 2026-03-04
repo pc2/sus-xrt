@@ -1,8 +1,9 @@
 
 puts {ADDING WAVES}
-add_wave {{/design_1_wrapper_sim_wrapper/design_1_wrapper_i/design_1_i/VitisRegion/burst_writer128_1/inst/writer}} 
-add_wave {{/design_1_wrapper_sim_wrapper/design_1_wrapper_i/design_1_i/VitisRegion/burst_writer128_1/inst/writer/fifo_manager}} 
-add_wave {{/design_1_wrapper_sim_wrapper/design_1_wrapper_i/design_1_i/VitisRegion/burst_writer128_1/inst/writer/addr_manager}}
-add_wave {{/design_1_wrapper_sim_wrapper/design_1_wrapper_i/design_1_i/VitisRegion/burst_writer128_1/inst/writer/fifo_manager/MakeMask}} 
-add_wave {{/design_1_wrapper_sim_wrapper/design_1_wrapper_i/design_1_i/VitisRegion/burst_writer128_1/inst/writer/fifo_manager/MakeMask_2}} 
-add_wave {{/design_1_wrapper_sim_wrapper/design_1_wrapper_i/design_1_i/VitisRegion/burst_writer128_1/inst/writer/fifo_manager/MakeMask_3}}
+add_wave {{/pfm_top_wrapper/pfm_top_i/pfm_dynamic_inst/burst_writer128_1}}
+add_wave {{/pfm_top_wrapper/pfm_top_i/pfm_dynamic_inst/burst_writer128_1/inst}}
+add_wave {{/pfm_top_wrapper/pfm_top_i/pfm_dynamic_inst/burst_writer32_1}}
+add_wave {{/pfm_top_wrapper/pfm_top_i/pfm_dynamic_inst/burst_writer32_1/inst}}
+add_wave {{/pfm_top_wrapper/pfm_top_i/pfm_dynamic_inst/burst_writer32_1/inst/writer}}
+add_wave {{/pfm_top_wrapper/pfm_top_i/pfm_dynamic_inst/burst_writer32_1/inst/writer/fifo_manager}}
+add_wave {{/pfm_top_wrapper/pfm_top_i/pfm_dynamic_inst/burst_writer32_1/inst/writer/addr_manager}}

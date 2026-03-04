@@ -56,24 +56,29 @@ set_property description    {buffer addr}     [ipx::get_registers ADDR_A  -of_ob
 set_property address_offset {0x010}           [ipx::get_registers ADDR_A  -of_objects $CTRL_ADDR_BLOCK]
 set_property size           {64}              [ipx::get_registers ADDR_A  -of_objects $CTRL_ADDR_BLOCK]
 
-ipx::add_register COUNT $CTRL_ADDR_BLOCK
-set_property description    {number of transfers}     [ipx::get_registers COUNT  -of_objects $CTRL_ADDR_BLOCK]
-set_property address_offset {0x018}                   [ipx::get_registers COUNT  -of_objects $CTRL_ADDR_BLOCK]
-set_property size           {32}                      [ipx::get_registers COUNT  -of_objects $CTRL_ADDR_BLOCK]
+ipx::add_register ELEMENT_COUNT $CTRL_ADDR_BLOCK
+set_property description    {number of elements}      [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x018}                   [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}                      [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
 
 ipx::add_register OFFSET $CTRL_ADDR_BLOCK
 set_property description    {address offset}          [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
 set_property address_offset {0x01c}                   [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
 set_property size           {32}                      [ipx::get_registers OFFSET  -of_objects $CTRL_ADDR_BLOCK]
 
-ipx::add_register READ_CONFIG $CTRL_ADDR_BLOCK
-set_property description    {read config bits}     [ipx::get_registers READ_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property address_offset {0x020}                   [ipx::get_registers READ_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property size           {32}                      [ipx::get_registers READ_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
+ipx::add_register EXPERIMENT_REPEATS $CTRL_ADDR_BLOCK
+set_property description    {number of repeats}       [ipx::get_registers EXPERIMENT_REPEATS  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x020}                   [ipx::get_registers EXPERIMENT_REPEATS  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}                      [ipx::get_registers EXPERIMENT_REPEATS  -of_objects $CTRL_ADDR_BLOCK]
+
+ipx::add_register EXPERIMENT_OFFSET $CTRL_ADDR_BLOCK
+set_property description    {per experiment offset in memory}    [ipx::get_registers EXPERIMENT_OFFSET  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x024}                              [ipx::get_registers EXPERIMENT_OFFSET  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}                                 [ipx::get_registers EXPERIMENT_OFFSET  -of_objects $CTRL_ADDR_BLOCK]
 
 ipx::add_register WRITE_CONFIG $CTRL_ADDR_BLOCK
 set_property description    {write config bits}     [ipx::get_registers WRITE_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
-set_property address_offset {0x024}                   [ipx::get_registers WRITE_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x028}                   [ipx::get_registers WRITE_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
 set_property size           {32}                      [ipx::get_registers WRITE_CONFIG  -of_objects $CTRL_ADDR_BLOCK]
 
 
