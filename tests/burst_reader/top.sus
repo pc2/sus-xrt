@@ -1,6 +1,6 @@
 
 
-module benchmark_burst_read#(int AXI_WIDTH) {
+module bench_burst_reader#(int AXI_WIDTH) {
     domain aclk
     input bool aresetn
 
@@ -9,10 +9,11 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     gen int ATO = pow2#(E: ADDR_WIDTH)
     gen int MTO = pow2#(E: 64)
 
-    gen int NUM_ELEMS = AXI_WIDTH / 32
+    gen int ELEM_BYTE_SIZE = 4
+    gen int ELEM_BITWIDTH = ELEM_BYTE_SIZE * 8
+    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEM_BITWIDTH
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 6, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
-    ctrl.aresetn = aresetn
+    axi_ctrl_slave #(NUM_INPUT_REGS: 7, NUM_OUTPUT_REGS: 6, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
 
     // Export AXI4-Lite interface
     domain axi_control
@@ -43,7 +44,7 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     ctrl.arvalid =         s_axi_control_arvalid
     ctrl.rready  =         s_axi_control_rready
 
-    axi_realigning_burst_reader#(T: type bool[32][NUM_ELEMS], AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64)) reader
+    axi_array_burst_reader_benchmarker#(AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64)) reader
     axi_memory_writer_tie_off writer
 
     domain mem_write
@@ -99,20 +100,23 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     addr_a_bits[32:] = ctrl.input_regs[1]
 
     int start_addr = BitsToUInt(addr_a_bits)
-    int num_to_transfer = IntNarrow#(FROM: 1, TO: pow2#(E: 32))(BitsToUInt(ctrl.input_regs[2]))
+    int num_to_transfer = BitsToUInt(ctrl.input_regs[2])
+    int offset = BitsToUInt(ctrl.input_regs[3])
+    int num_repeats = BitsToUInt(ctrl.input_regs[4])
+    int repeat_offset = BitsToUInt(ctrl.input_regs[5])
 
-    bool[32] config_bits = ctrl.input_regs[3]
+    bool[32] config_bits_r = ctrl.input_regs[6]
 
-    //output int#(FROM: 0, TO: 8)     m_axi_arsize  = BitsToUInt(config_bits[0:3])
-    //output bool[2]                  m_axi_arburst = config_bits[3:5]
-    output bool[3]                  m_axi_arprot'0 = config_bits[5:8]
-    output bool[4]                  m_axi_arcache'0 = config_bits[8:12]
-    output int#(FROM: 0, TO: 16)    m_axi_arqos'0 = BitsToUInt(config_bits[12:16])
-    output bool                     m_axi_arlock'0 = config_bits[16]
-    output int#(FROM: 0, TO: 16)    m_axi_arregion'0 = BitsToUInt(config_bits[17:21])
+    output bool[3]                  m_axi_arprot'0 = config_bits_r[0:3]
+    output bool[4]                  m_axi_arcache'0 = config_bits_r[3:7]
+    output int#(FROM: 0, TO: 16)    m_axi_arqos'0 = BitsToUInt(config_bits_r[7:11])
+    output bool                     m_axi_arlock'0 = config_bits_r[11]
+    output int#(FROM: 0, TO: 16)    m_axi_arregion'0 = BitsToUInt(config_bits_r[12:16])
 
-    reader.max_in_flight = BitsToUInt(config_bits[21:32])
+    reader.MAX_IN_FLIGHT = BitsToUInt(config_bits_r[16:32])
     
+
+
     state int cycles_since_reset
     cycles_since_reset = cycles_since_reset + 1 mod pow2#(E: 64)
 
@@ -122,59 +126,73 @@ module benchmark_burst_read#(int AXI_WIDTH) {
     state bool[64] cycles_since_reset_at_start
 
     state bool running
+    state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining
+    state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining_to_finish
     state int num_cycles_running
+    state int#(FROM: 0, TO: pow2#(E: 64)) cur_experiment_addr
+
     state bool[32] hash
     when ctrl.start {
-        reader.request_new_burst(start_addr, num_to_transfer)
+        num_repeats_remaining = num_repeats
+        num_repeats_remaining_to_finish = num_repeats
+        cur_experiment_addr = start_addr + offset mod pow2#(E: 64)
         running = true
         num_cycles_running = 0
-        hash = 32'h00000000
         cycles_since_reset_at_start = cycles_since_reset_bits
+        hash = 32'h00000000
+    }
+
+    when num_repeats_remaining != 0 {
+        when reader.may_request_new_read {
+            reader.request_new_read(cur_experiment_addr, num_to_transfer)
+            cur_experiment_addr = cur_experiment_addr + repeat_offset mod pow2#(E: 64)
+            num_repeats_remaining = num_repeats_remaining - 1 mod pow2#(E: 32)
+        }
     }
 
     when running {
         num_cycles_running = num_cycles_running + 1 mod pow2#(E: 32)
     }
 
-    reader.is_ready_to_receive_lots_of_data = true
-    when reader.value_valid: bool[32][NUM_ELEMS] value, bool last {
+    when reader.element_packet_valid : bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, bool last {
+        bool[NUM_PARALLEL_ELEMENTS] mask = MakeStrobe(chunk_length, chunk_offset)
+        bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] masked_elements
+        for int i in 0..NUM_PARALLEL_ELEMENTS {
+            when mask[i] {
+                masked_elements[i] = elements[i]
+            } else {
+                masked_elements[i] = RepeatGen#(SIZE: ELEM_BITWIDTH, T: type bool, V: false)
+            }
+        }
         bool[32] new_hash_contrib
         for int i in 0..32 {
-            reg reg new_hash_contrib[i] = ^(value[:][i])
+            reg reg new_hash_contrib[i] = ^(masked_elements[:][i])
         }
         bool[32] new_hash = hash ^ new_hash_contrib
         when last {
-            running = false
-            ctrl.finish([UIntToBits(num_cycles_running), new_hash, cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
+            when num_repeats_remaining_to_finish == 1 {
+                running = false
+                ctrl.finish([new_hash, UIntToBits(num_cycles_running), cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
+            }
+            num_repeats_remaining_to_finish = IntNarrow#(FROM: 0, TO: pow2#(E: 32))(num_repeats_remaining_to_finish - 1)
         }
         hash = new_hash
     }
-
     when !aresetn {
         running = false
         num_cycles_running = 0
-        hash = 32'h00000000
         cycles_since_reset = 0
+        num_repeats_remaining = 0
         reader.rst()
         writer.rst()
+        ctrl.rst()
     }
 }
 
-module all_benchmarks {
-    benchmark_burst_read#(AXI_WIDTH: 32) burst32
-    benchmark_burst_read#(AXI_WIDTH: 64) burst64
-    benchmark_burst_read#(AXI_WIDTH: 128) burst128
-    benchmark_burst_read#(AXI_WIDTH: 256) burst256
-    benchmark_burst_read#(AXI_WIDTH: 512) burst512
-    axi_array_burst_reader #(AXI_WIDTH: 64, ADDR_ALIGN: 2, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader
-    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) fullFatReader
-    //axi_realigning_burst_reader #(T: type float[17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) bigSingleObjectReader
-    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
-    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) unalignedBigSingleObjectReader
-    axi_realigning_burst_reader #(T: type bool[32][16], AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
-    axi_realigning_burst_reader #(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) reader_for_testbench
-    //axi_array_burst_reader #(AXI_WIDTH: 512, ADDR_ALIGN: 64, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64)) alignedBigSingleObjectReader
-    //axi_array_burst_writer #(AXI_WIDTH: 512, ADDR_ALIGN: 4) fullFatWriter
-    //axi_burst_writer_with_fifo#(T: type bool[32][17], AXI_WIDTH: 512, ADDR_ALIGN: 4, ATO: pow2#(E: 64), WRITE_DATA_LATENCY: 200) burst_writer
-    axis_SkidBuffer#(T: type bool[32]) skid_buffer
+module all_read_benchmarks {
+    bench_burst_reader#(AXI_WIDTH: 32) burst32
+    bench_burst_reader#(AXI_WIDTH: 64) burst64
+    bench_burst_reader#(AXI_WIDTH: 128) burst128
+    bench_burst_reader#(AXI_WIDTH: 256) burst256
+    bench_burst_reader#(AXI_WIDTH: 512) burst512
 }
