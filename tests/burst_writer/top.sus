@@ -9,7 +9,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
     gen int CTRL_ATO = pow2#(E: ADDR_WIDTH)
     gen int MEM_ATO = pow2#(E: 64)
 
-    gen int NUM_PARALLEL_ELEMS = AXI_WIDTH / 32
+    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / 32
 
     axi_ctrl_slave #(NUM_INPUT_REGS: 7, NUM_OUTPUT_REGS: 5, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
 
@@ -124,8 +124,8 @@ module bench_burst_writer#(int AXI_WIDTH) {
     state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining
     state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining_to_finish
     state int#(FROM: 0, TO: pow2#(E: 32)) num_left_to_transfer
-    state int#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMS) cur_idx
-    state int num_cycles_running
+    state int#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMENTS) cur_idx
+    state int#(FROM: 0, TO: pow2#(E: 32)) num_cycles_running
 
     state int#(FROM: 0, TO: pow2#(E: 64)) cur_experiment_addr
     when ctrl.start {
@@ -155,21 +155,21 @@ module bench_burst_writer#(int AXI_WIDTH) {
 
     bool grab_new_transfer = false
     when num_left_to_transfer > 0 & writer.may_write {
-        bool[32][NUM_PARALLEL_ELEMS] write_data
-        for int I in 0..NUM_PARALLEL_ELEMS {
+        bool[32][NUM_PARALLEL_ELEMENTS] write_data
+        for int I in 0..NUM_PARALLEL_ELEMENTS {
             write_data[I] = UIntToBits(cur_idx + I)
         }
         int extra_idx
-        when num_left_to_transfer <= NUM_PARALLEL_ELEMS {
-            writer.write(write_data, IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMS+1)(num_left_to_transfer), 0, true)
+        when num_left_to_transfer <= NUM_PARALLEL_ELEMENTS {
+            writer.write(write_data, IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1)(num_left_to_transfer), 0, true)
             grab_new_transfer = true
             extra_idx = num_left_to_transfer
         } else {
-            writer.write(write_data, NUM_PARALLEL_ELEMS, 0, false)
-            num_left_to_transfer = num_left_to_transfer - NUM_PARALLEL_ELEMS mod pow2#(E: 32)
-            extra_idx = NUM_PARALLEL_ELEMS
+            writer.write(write_data, NUM_PARALLEL_ELEMENTS, 0, false)
+            num_left_to_transfer = num_left_to_transfer - NUM_PARALLEL_ELEMENTS mod pow2#(E: 32)
+            extra_idx = NUM_PARALLEL_ELEMENTS
         }
-        cur_idx = IntNarrow#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMS)(cur_idx + extra_idx)
+        cur_idx = IntNarrow#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMENTS)(cur_idx + extra_idx)
     }
     when num_left_to_transfer == 0 {
         grab_new_transfer = true
@@ -185,6 +185,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
 
     when writer.write_has_been_committed {
         when num_repeats_remaining_to_finish == 1 {
+            running = false
             ctrl.finish([UIntToBits(num_cycles_running), cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
         }
         num_repeats_remaining_to_finish = IntNarrow#(FROM: 0, TO: pow2#(E: 32))(num_repeats_remaining_to_finish - 1)
@@ -210,9 +211,3 @@ module all_write_benchmarks {
     bench_burst_writer#(AXI_WIDTH: 256) bench256
     bench_burst_writer#(AXI_WIDTH: 512) bench512
 }
-/*
-module test_burst_writer {
-    write_burst_address_manager#(AXI_WIDTH: 512, ATO: pow2#(E: 64), NUM_PARALLEL_ELEMENTS: 16, ADDR_QUEUE_SIZE: 20, ADDR_MAY_PUSH_LATENCY: 0, TOTAL_ELEMENTS_THAT_CAN_BE_STORED: 4*512) mgr
-    //axi_array_burst_writer #(AXI_WIDTH: 512, ADDR_ALIGN: 4, ATO: pow2#(E: 64), MAY_PUSH_LATENCY: 20, MAX_IN_FLIGHT: 300) writer
-}
-*/

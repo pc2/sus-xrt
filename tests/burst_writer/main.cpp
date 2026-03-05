@@ -42,16 +42,29 @@ void printConfig(AXIConfig config) {
 xrt::device device;
 std::unique_ptr<xrt::uuid>   xclbin_handle_ptr;
 
+uint64_t read_64_bit_reg(xrt::ip& user_manage, uint32_t idx) {
+    uint32_t low = user_manage.read_register(idx);
+    uint32_t high = user_manage.read_register(idx + 0x004);
+
+    return (uint64_t(high) << 32) | low;
+}
+
 void printKernelRegs(const char* kernel_name) {
     xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, kernel_name);
 
+    std::cout << "== " << kernel_name << " ==" << std::endl;
     std::cout << "ctrl: " << user_manage.read_register(0x000) << std::endl;
-    std::cout << "Addr_low: " << user_manage.read_register(0x010) << std::endl;
-    std::cout << "Addr_high: " << user_manage.read_register(0x014) << std::endl;
+    std::cout << "Addr: " << read_64_bit_reg(user_manage, 0x010) << std::endl;
     std::cout << "Count: " << user_manage.read_register(0x018) << std::endl;
-    std::cout << "Settings: " << user_manage.read_register(0x01c) << std::endl;
-    std::cout << "Cycles taken: " << user_manage.read_register(0x020) << std::endl;
-    std::cout << "Result: " << user_manage.read_register(0x024) << std::endl;
+    std::cout << "Addr Offset: " << user_manage.read_register(0x01c) << std::endl;
+    std::cout << "Num Repeats: " << user_manage.read_register(0x020) << std::endl;
+    std::cout << "Repeats Offset: " << user_manage.read_register(0x024) << std::endl;
+    std::cout << "Settings: " << user_manage.read_register(0x028) << std::endl;
+    std::cout << "Cycles taken: " << user_manage.read_register(0x02c) << std::endl;
+    std::cout << "Cycles since reset @start: " << read_64_bit_reg(user_manage, 0x030) << std::endl;
+    std::cout << "Cycles since reset @end: " << read_64_bit_reg(user_manage, 0x038) << std::endl;
+    std::cout << "Cycles going by reset?: " << read_64_bit_reg(user_manage, 0x038) - read_64_bit_reg(user_manage, 0x030) << std::endl;
+    std::cout << "Result: " << user_manage.read_register(0x03c) << std::endl;
 }
 
 constexpr size_t BUFFER_CAPACITY = 200000;
@@ -83,24 +96,39 @@ std::vector<xrt::bo> bench_buffers;
 uint32_t* default_buffer;
 uint32_t* host_side;
 uint32_t* expected_buffer;
-std::vector<xrt::kernel> kernels;
 void run_kernel(size_t k_idx, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, uint32_t config_u32) {
-    xrt::kernel& k = kernels[k_idx];
+    const char* chosen_kernel = kernel_names[k_idx];
     xrt::bo& b = bench_buffers[k_idx];
-    std::cout << "Kernel " << kernel_names[k_idx] << std::endl;
+    std::cout << "Kernel " << chosen_kernel << std::endl;
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
     b.write(default_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    std::cout << "Start Write " << num_elems << " from " << offset << std::endl;
-    auto start_time = std::chrono::high_resolution_clock::now();
-    xrt::run r = k(b, num_elems, offset, num_repeats, experiment_offset, config_u32);
-    r.wait();
-    auto time_taken = std::chrono::high_resolution_clock::now() - start_time;
-    std::cout << "Finished Kernel" << std::endl;
-    double time_in_seconds = time_taken.count() / 1000000000.0;
-    double bw = num_elems * sizeof(uint32_t) / 1000000000.0 / time_in_seconds; // GB/s
-    double bytes_per_cycle = num_elems * sizeof(uint32_t) / (time_in_seconds * clock_freq);
-    std::cout << "    Time taken: " << time_in_seconds << "s, BW: " << bw << "GB/s = " << bytes_per_cycle << " bytes per cycle @" << (clock_freq / 1000000) << "MHz" << std::endl;
+    size_t total_data = num_elems * num_repeats * sizeof(uint32_t);
+    double time_in_seconds;
+    {
+        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, chosen_kernel);
+        std::cout << "Start Write " << num_elems << " from " << offset << std::endl;
+        auto start_time = std::chrono::high_resolution_clock::now();
+        xrt::run r = k(b, num_elems, offset, num_repeats, experiment_offset, config_u32);
+        r.wait();
+        auto time_taken = std::chrono::high_resolution_clock::now() - start_time;
+        std::cout << "Finished Kernel" << std::endl;
+        time_in_seconds = time_taken.count() / 1000000000.0;
+    }
+    printKernelRegs(chosen_kernel);
+    printKernelRegs(chosen_kernel);
+    uint32_t num_cycles;
+    {
+        xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, chosen_kernel);
+        num_cycles = user_manage.read_register(0x02c);
+    }
+    double bw = total_data / 1000000000.0 / time_in_seconds; // GB/s
+    double bytes_per_cycle = double(total_data) / num_cycles;
+    std::cout << "    Time taken: " << time_in_seconds << "s" << std::endl;
+    std::cout << "    BW: " << bw << "GB/s" << std::endl;
+    std::cout << "    Cycles: " << num_cycles << std::endl;
+    std::cout << "    Bytes/cy: " << bytes_per_cycle << std::endl;
+    std::cout << "    @" << (clock_freq / 1000000) << "MHz" << std::endl;
 
     size_t offset_elem = offset / 4;
     b.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
@@ -223,7 +251,6 @@ int main(int argc, const char** argv) {
     };
     printConfig(config);
 
-    xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_names[2]);
     std::cout << "Made Kernel" << std::endl;
     default_buffer = new uint32_t[BUFFER_CAPACITY];
     for(size_t i = 0; i < BUFFER_CAPACITY; i++) {
@@ -233,8 +260,8 @@ int main(int argc, const char** argv) {
     expected_buffer = new uint32_t[BUFFER_CAPACITY];
 
     for(int i = 0; i < NUM_KERNELS; i++) {
-        kernels.emplace_back(device, *xclbin_handle_ptr, kernel_names[i]);
-        bench_buffers.emplace_back(device, /*host_side, */sizeof(uint32_t) * BUFFER_CAPACITY, xrt::bo::flags::normal, kernels[i].group_id(0));
+        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_names[i]);
+        bench_buffers.emplace_back(device, /*host_side, */sizeof(uint32_t) * BUFFER_CAPACITY, xrt::bo::flags::normal, k.group_id(0));
     }
     std::cout << "Made Buffer" << std::endl;
     //xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
@@ -254,7 +281,7 @@ int main(int argc, const char** argv) {
         }*/
 
         std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 1; size <= 1000; size *= 2) {
+        for(int size = 1000; size <= 1000; size *= 2) {
             run_kernel(kernel, size, 0, 2, 4096, config_u32);
         }
     }

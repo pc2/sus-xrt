@@ -1,4 +1,9 @@
 
+export TMPDIR := /tmp/vivado_$(USER)
+
+$(TMPDIR):
+	mkdir -p $(TMPDIR)
+
 # Configurations that change based on the platform
 VCK5000/%: TARGET := VCK5000
 VCK5000/%: PART := xcvc1902-vsvd1760-2MP-e-S
@@ -58,12 +63,15 @@ main.x: main.cpp
 	g++ -g -O3 -std=c++17 -I$(XILINX_XRT)/include -L$(XILINX_XRT)/lib -lxrt_coreutil -pthread main.cpp -o main.x
 
 .PHONY: _emu
-_emu: main.x
+_emu: main.x | $(TMPDIR)
+# It appears that the emulation creates .runs in the directory that holds main.x, so we copy it over to /tmp such that the .runs can be safely dropped there. 
+# While the temporary directory doesn't seem to improve performance, it does appear that it's less "sticky" than the $PC2HOME filesystem. IE, it's less likely to get stuck undeletable due to xsim and xsimk not dieing
+	cp main.x $(TMPDIR)
 	cp extra_waves.tcl $(TARGET)/
 	cp $(XRT_INI) $(TARGET)/xrt.ini
 	cd $(TARGET) &&\
 	emconfigutil --platform $(PLATFORM) &&\
-	XCL_EMULATION_MODE=hw_emu ../main.x u
+	XCL_EMULATION_MODE=hw_emu $(TMPDIR)/main.x u
 
 .PHONY: U280/emulate U280/emulate_batch U280/run
 U280/emulate: XRT_INI := xrt_gui.ini
@@ -81,10 +89,13 @@ VCK5000/emulate_batch: _emu
 VCK5000/run: main.x
 	cd $(TARGET) && ../main.x a
 
-clean:
+.PHONY: clean cleantmp
+clean: cleantmp
 	rm -rf VCK5000
 	rm -rf U280
 	rm -f sus_codegen.sv
 	rm -f main.x
+	
+cleantmp:
+	rm -r $(TMPDIR)
 
-.PHONY: clean
