@@ -524,6 +524,7 @@ module MakeStrobe #(int STROBE_WIDTH) {
 
 /// Similar interface to [axi_array_burst_reader]. Used to determine optimal values for [axi_array_burst_reader::MAX_IN_FLIGHT]
 module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO) {
+    domain aclk
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -567,7 +568,7 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
     output bool                           arlock'0 = false // NORMAL - No atomics
     output int#(FROM: 0, TO: 16)          arregion'0 = 0 // Region 0
     input  bool                           rvalid'0
-    output bool                           rready'0
+    output state bool                     rready'0
     input  bool[AXI_WIDTH]                rdata'0
     input  bool[2]                        rresp'0
     bool[2] _rresp = rresp
@@ -602,6 +603,7 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
     int extra_burst_arlen
     when arready & arvalid {
         extra_burst_arlen = arlen + 1
+        arvalid = false
     } else {
         extra_burst_arlen = 0
     }
@@ -609,7 +611,7 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
 
     domain data
     // User ports
-    bool is_ready_to_receive_lots_of_data = false
+    bool is_ready_to_receive_lots_of_data = true
     trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
     when cur_addr_valid & cur_transfers_in_flight < MAX_IN_FLIGHT - MAX_BURST & is_ready_to_receive_lots_of_data & !arvalid & command_fifo.may_push {
@@ -693,12 +695,9 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
         cur_transfers_in_flight = 0
         cur_addr_valid = false
         arvalid = false
-        rready = false
         stored_is_empty_burst = false
+        rready = false
         command_fifo.rst()
-    } else {
-        // Always ready to send data, but have to hold ready low during reset
-        rready = true
     }
 }
 
@@ -733,6 +732,7 @@ Vivado Utiliziation report for axi_array_burst_reader#(AXI_WIDTH: 512, ADDR_ALIG
 /// XXXXX...
 /// due to alignment of address
 module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, int MAX_IN_FLIGHT) {
+    domain aclk
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -809,6 +809,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUN
     int extra_burst_arlen
     when arready & arvalid {
         extra_burst_arlen = arlen + 1
+        arvalid = false
     } else {
         extra_burst_arlen = 0
     }

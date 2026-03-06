@@ -115,8 +115,6 @@ module bench_burst_reader#(int AXI_WIDTH) {
 
     reader.MAX_IN_FLIGHT = BitsToUInt(config_bits_r[16:32])
     
-
-
     state int cycles_since_reset
     cycles_since_reset = cycles_since_reset + 1 mod pow2#(E: 64)
 

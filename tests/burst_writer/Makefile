@@ -1,5 +1,5 @@
 
-export TMPDIR := /tmp/vivado_$(USER)
+TMPDIR := /tmp/vivado_$(USER)
 
 $(TMPDIR):
 	mkdir -p $(TMPDIR)
@@ -97,5 +97,10 @@ clean: cleantmp
 	rm -f main.x
 	
 cleantmp:
-	rm -r $(TMPDIR)
+	rm -rf $(TMPDIR)
 
+U280/enable_host_mem: 
+	sudo /opt/software/FPGA/scripts/u280/host_memory/enable_hostmem_single_fpga.sh 0000\:01\:00.1
+	sudo /opt/software/FPGA/scripts/u280/host_memory/enable_hostmem_single_fpga.sh 0000\:81\:00.1
+	sudo /opt/software/FPGA/scripts/u280/host_memory/enable_hostmem_single_fpga.sh 0000\:a1\:00.1
+	

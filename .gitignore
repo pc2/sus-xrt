@@ -22,6 +22,8 @@
 tests/*/VCK5000/
 tests/*/U280/
 tests/*/U280_5K/
+tests/*/U280_old/
+tests/*/U280_oldd/
 .Xil/
 .analytics
 .metadata/

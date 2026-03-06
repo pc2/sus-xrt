@@ -16,6 +16,7 @@
 #include <string>
 #include <sstream>
 #include <cstdint>
+#include <random>
 
 #include <unistd.h>
 
@@ -60,14 +61,14 @@ void printKernelRegs(const char* kernel_name) {
     std::cout << "Num Repeats: " << user_manage.read_register(0x020) << std::endl;
     std::cout << "Repeats Offset: " << user_manage.read_register(0x024) << std::endl;
     std::cout << "Settings: " << user_manage.read_register(0x028) << std::endl;
-    std::cout << "Cycles taken: " << user_manage.read_register(0x02c) << std::endl;
-    std::cout << "Cycles since reset @start: " << read_64_bit_reg(user_manage, 0x030) << std::endl;
-    std::cout << "Cycles since reset @end: " << read_64_bit_reg(user_manage, 0x038) << std::endl;
-    std::cout << "Cycles going by reset?: " << read_64_bit_reg(user_manage, 0x038) - read_64_bit_reg(user_manage, 0x030) << std::endl;
-    std::cout << "Result: " << user_manage.read_register(0x03c) << std::endl;
+    std::cout << "Result: " << user_manage.read_register(0x02c) << std::endl;
+    std::cout << "Cycles taken: " << user_manage.read_register(0x030) << std::endl;
+    std::cout << "Cycles since reset @start: " << read_64_bit_reg(user_manage, 0x034) << std::endl;
+    std::cout << "Cycles since reset @end: " << read_64_bit_reg(user_manage, 0x03c) << std::endl;
+    std::cout << "Cycles going by reset?: " << read_64_bit_reg(user_manage, 0x03c) - read_64_bit_reg(user_manage, 0x034) << std::endl;
 }
 
-constexpr size_t BUFFER_CAPACITY = 2000000;
+constexpr size_t BUFFER_CAPACITY = 20000;
 
 double clock_freq; // In Hz
 
@@ -77,34 +78,20 @@ struct KernelInfo {
     std::string typ;
     xrt::bo bo;
 };
-
 std::vector<KernelInfo> kernel_infos;
-/*
-    KernelInfo{"burst_writer32:{burst_writer32_1}", 32, false},
-    KernelInfo{"burst_writer64:{burst_writer64_1}", 64, false},
-    KernelInfo{"burst_writer128:{burst_writer128_1}", 128, false},
-    KernelInfo{"burst_writer256:{burst_writer256_1}", 256, false},
-    KernelInfo{"burst_writer512:{burst_writer512_1}", 512, false},
-    KernelInfo{"burst_writer256:{burst_writer256_2}", 256, false},
-    KernelInfo{"burst_writer512:{burst_writer512_2}", 512, false},
-    KernelInfo{"burst_writer256:{burst_writer256_3}", 256, true},
-    KernelInfo{"burst_writer512:{burst_writer512_3}", 512, true},
-*/
 
-uint32_t* default_buffer;
-uint32_t* host_side;
-uint32_t* expected_buffer;
+uint32_t* reference_buffer;
 void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, uint32_t config_u32) {
     xrt::bo& b = info.bo;
     std::cout << "Kernel " << info.name << std::endl;
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
-    b.write(default_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
+    b.write(reference_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     size_t total_data = num_elems * num_repeats * sizeof(uint32_t);
     double time_in_seconds;
     {
         xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, info.name.c_str());
-        std::cout << "Start Write " << num_elems << " from " << offset << " (x" << num_repeats << " repeats at offset " << experiment_offset << ")" << std::endl;
+        std::cout << "Start Read " << num_elems << " from " << offset << " (x" << num_repeats << " repeats at offset " << experiment_offset << ")" << std::endl;
         auto start_time = std::chrono::high_resolution_clock::now();
         xrt::run r = k(b, num_elems, offset, num_repeats, experiment_offset, config_u32);
         r.wait();
@@ -112,12 +99,13 @@ void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t 
         std::cout << "Finished Kernel" << std::endl;
         time_in_seconds = time_taken.count() / 1000000000.0;
     }
-    //printKernelRegs(chosen_kernel);
-    //printKernelRegs(chosen_kernel);
+    //printKernelRegs(info.name.c_str());
     uint32_t num_cycles;
+    uint32_t hash;
     {
         xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, info.name.c_str());
-        num_cycles = user_manage.read_register(0x02c);
+        num_cycles = user_manage.read_register(0x030);
+        hash = user_manage.read_register(0x02c);
     }
     double bw = total_data / 1000000000.0 / time_in_seconds; // GB/s
     double bytes_per_cycle = double(total_data) / num_cycles;
@@ -128,34 +116,17 @@ void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t 
     std::cout << "    @" << (clock_freq / 1000000) << "MHz" << std::endl;
 
     size_t offset_elem = offset / 4;
-    b.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-    b.read(host_side, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
-    for(size_t i = 0; i < BUFFER_CAPACITY; i++) {
-        expected_buffer[i] = 0xDDDDDDDD;
-    }
-    uint32_t total = 0;
+    uint32_t expected_hash = 0;
     for(int repeat_i = 0; repeat_i < num_repeats; repeat_i++) {
         for(int i = 0; i < num_elems; i++) {
-            expected_buffer[experiment_offset / sizeof(uint32_t) * repeat_i + offset_elem + i] = total;
-            total++;
+            expected_hash ^= reference_buffer[experiment_offset / sizeof(uint32_t) * repeat_i + offset_elem + i];
         }
     }
-    for(int i = 0; i < BUFFER_CAPACITY; i++) {
-        if(expected_buffer[i] != host_side[i]) {
-            std::cout << "ERROR: [" << i << "]: expected = ";
-            if(expected_buffer[i] == 0xDDDDDDDD) {
-                std::cout << "UNSET";
-            } else {
-                std::cout << expected_buffer[i];
-            }
-            if(host_side[i] == 0xDDDDDDDD) {
-                std::cout << "    found = " << "UNSET" << std::endl;
-            } else {
-                std::cout << "    found = " << host_side[i] << std::endl;
-            }
-        }
+    if(hash != expected_hash) {
+        std::cout << "The device computed hash (" << std::hex << hash << ") does not match the expected hash (" << expected_hash << std::dec << ")!!!!" << std::endl;
+    } else {
+        std::cout << "Hash is correct: " << hash << std::endl;
     }
-    std::cout << "Checked " << BUFFER_CAPACITY << " elements." << std::endl;
 }
 
 int main(int argc, const char** argv) {
@@ -258,25 +229,25 @@ int main(int argc, const char** argv) {
     printConfig(config);
 
     std::cout << "Made Kernel" << std::endl;
-    default_buffer = new uint32_t[BUFFER_CAPACITY];
+    reference_buffer = new uint32_t[BUFFER_CAPACITY];
+    std::random_device random_device;
+    std::uniform_int_distribution<uint32_t> distribution(0u, 0xFFFFFFFFu);
     for(size_t i = 0; i < BUFFER_CAPACITY; i++) {
-        default_buffer[i] = 0xDDDDDDDD;
+        reference_buffer[i] = distribution(random_device);
     }
-    host_side = new uint32_t[BUFFER_CAPACITY];
-    expected_buffer = new uint32_t[BUFFER_CAPACITY];
 
     for(xrt::xclbin::kernel kernel : xclbin.get_kernels()) {
         std::string kernel_name = kernel.get_name();
         int AXI_WIDTH;
-        if(kernel_name == "burst_writer32") {
+        if(kernel_name == "burst_reader32") {
             AXI_WIDTH = 32;
-        } else if(kernel_name == "burst_writer64") {
+        } else if(kernel_name == "burst_reader64") {
             AXI_WIDTH = 64;
-        } else if(kernel_name == "burst_writer128") {
+        } else if(kernel_name == "burst_reader128") {
             AXI_WIDTH = 128;
-        } else if(kernel_name == "burst_writer256") {
+        } else if(kernel_name == "burst_reader256") {
             AXI_WIDTH = 256;
-        } else if(kernel_name == "burst_writer512") {
+        } else if(kernel_name == "burst_reader512") {
             AXI_WIDTH = 512;
         } else {
             std::cout << "ERROR, UNKNOWN KERNEL " << kernel_name << std::endl;
@@ -306,6 +277,10 @@ int main(int argc, const char** argv) {
             }
             xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, full_name);
             xrt::bo bo = xrt::bo(device, sizeof(uint32_t) * BUFFER_CAPACITY, buf_flags, k.group_id(0));
+
+            std::cout << "Write reference data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
+            bo.write(reference_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
+            bo.sync(XCL_BO_SYNC_BO_TO_DEVICE);
             kernel_infos.push_back(KernelInfo{full_name, AXI_WIDTH, typ, bo});
         }
     }
@@ -327,8 +302,8 @@ int main(int argc, const char** argv) {
         }*/
 
         //std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 1000000; size <= 1000000; size *= 2) {
-            run_kernel(kernel_info, size, 0, 100, 0, config_u32);
+        for(int size = 1; size <= 100; size *= 2) {
+            run_kernel(kernel_info, size, 0, 3, 0, config_u32);
         }
     }
 }
