@@ -294,17 +294,32 @@ int main(int argc, const char** argv) {
     for(KernelInfo kernel_info : kernel_infos) {
         /*std::cout << "Small Buffers" << std::endl;
         for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(kernel, 19, offset, config_u32);
+            run_kernel(kernel_info, 19, offset, config_u32);
         }
 
         std::cout << "Small Buffers on Crossover" << std::endl;
         for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(kernel, 20, 4000 + offset, config_u32);
+            run_kernel(kernel_info, 20, 4000 + offset, config_u32);
         }*/
 
-        //std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 512; size <= 1000; size *= 2) {
+        std::cout << "Large Buffer Benchmark" << std::endl;
+        for(int size = 1; size <= BUFFER_CAPACITY; size *= 2) {
             run_kernel(kernel_info, size, 0, 1, 0, config_u32);
+        }
+
+        std::cout << "Zero sized test" << std::endl;
+        for(int offset = 0; offset <= 8192; offset+=4) {
+            run_kernel(kernel_info, 0, offset, 1, 0, config_u32);
+        }
+
+        std::cout << "One sized test" << std::endl;
+        for(int offset = 0; offset <= 8192; offset+=4) {
+            run_kernel(kernel_info, 1, offset, 1, 0, config_u32);
+        }
+
+        std::cout << "Two sized test" << std::endl;
+        for(int offset = 0; offset <= 8192; offset+=4) {
+            run_kernel(kernel_info, 2, offset, 1, 0, config_u32);
         }
     }
 }

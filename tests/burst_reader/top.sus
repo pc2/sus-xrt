@@ -153,13 +153,13 @@ module bench_burst_reader#(int AXI_WIDTH) {
     }
 
     when reader.element_packet_valid : bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, bool last {
-        bool[NUM_PARALLEL_ELEMENTS] mask = MakeStrobe(chunk_length, chunk_offset)
+        reg reg bool[NUM_PARALLEL_ELEMENTS] mask = MakeStrobe(chunk_length, chunk_offset)
         bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] masked_elements
         for int i in 0..NUM_PARALLEL_ELEMENTS {
             when mask[i] {
-                masked_elements[i] = elements[i]
+                reg masked_elements[i] = elements[i]
             } else {
-                masked_elements[i] = RepeatGen#(SIZE: ELEM_BITWIDTH, T: type bool, V: false)
+                reg masked_elements[i] = RepeatGen#(SIZE: ELEM_BITWIDTH, T: type bool, V: false)
             }
         }
         bool[32] new_hash_contrib
@@ -167,7 +167,8 @@ module bench_burst_reader#(int AXI_WIDTH) {
             reg reg new_hash_contrib[i] = ^(masked_elements[:][i])
         }
         bool[32] new_hash = hash ^ new_hash_contrib
-        when last {
+        reg reg bool last_d = last
+        when last_d {
             when num_repeats_remaining_to_finish == 1 {
                 running = false
                 ctrl.finish([new_hash, UIntToBits(num_cycles_running), cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])

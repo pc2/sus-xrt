@@ -140,6 +140,7 @@ void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t 
             total++;
         }
     }
+    bool any_incorrect = false;
     for(int i = 0; i < BUFFER_CAPACITY; i++) {
         if(expected_buffer[i] != host_side[i]) {
             std::cout << "ERROR: [" << i << "]: expected = ";
@@ -153,9 +154,15 @@ void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t 
             } else {
                 std::cout << "    found = " << host_side[i] << std::endl;
             }
+            any_incorrect = true;
         }
     }
-    std::cout << "Checked " << BUFFER_CAPACITY << " elements." << std::endl;
+    if(any_incorrect) {
+        std::cout << "\033[31mIncorrect elements in " << BUFFER_CAPACITY << " elements!\033[0m" << std::endl;
+        exit(1);
+    } else {
+        std::cout << "\033[32mChecked " << BUFFER_CAPACITY << " elements.\033[0m" << std::endl;
+    }
 }
 
 int main(int argc, const char** argv) {
@@ -290,17 +297,33 @@ int main(int argc, const char** argv) {
     for(KernelInfo kernel_info : kernel_infos) {
         /*std::cout << "Small Buffers" << std::endl;
         for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(kernel, 19, offset, config_u32);
+            run_kernel(kernel_info, 19, offset, config_u32);
         }
 
         std::cout << "Small Buffers on Crossover" << std::endl;
         for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(kernel, 20, 4000 + offset, config_u32);
+            run_kernel(kernel_info, 20, 4000 + offset, config_u32);
         }*/
 
-        //std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 1000000; size <= 1000000; size *= 2) {
-            run_kernel(kernel_info, size, 0, 100, 0, config_u32);
+
+        std::cout << "Zero sized test" << std::endl;
+        for(int offset = 0; offset <= 8192; offset+=4) {
+            run_kernel(kernel_info, 0, offset, 1, 0, config_u32);
+        }
+        
+        std::cout << "Large Buffer Benchmark" << std::endl;
+        for(int size = 1; size <= 1000000; size *= 2) {
+            run_kernel(kernel_info, size, 0, 1, 0, config_u32);
+        }
+
+        std::cout << "One sized test" << std::endl;
+        for(int offset = 0; offset <= 8192; offset+=4) {
+            run_kernel(kernel_info, 1, offset, 1, 0, config_u32);
+        }
+
+        std::cout << "Two sized test" << std::endl;
+        for(int offset = 0; offset <= 8192; offset+=4) {
+            run_kernel(kernel_info, 2, offset, 1, 0, config_u32);
         }
     }
 }

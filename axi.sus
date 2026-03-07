@@ -694,7 +694,13 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
         chunk_length = NUM_PARALLEL_ELEMENTS - chunk_offset
     }
     when rready & rvalid | stored_is_empty_burst {
-        element_packet_valid(elements, chunk_length, chunk_offset, is_final_last)
+        int emptied_chunk_length
+        when stored_is_empty_burst {
+            emptied_chunk_length = 0
+        } else {
+            emptied_chunk_length = chunk_length
+        }
+        element_packet_valid(elements, emptied_chunk_length, chunk_offset, is_final_last)
         chunk_offset = 0
         stored_is_empty_burst = false
     }
@@ -1095,6 +1101,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     SlowState#(T: type bool, RESET_TO: false) current_addr_valid
     SlowState#(T: type bool, RESET_TO: false) current_command_chunk_end
     SlowState#(T: type bool, RESET_TO: false) current_command_is_last
+    SlowState#(T: type bool, RESET_TO: false) current_command_is_empty_burst
     SlowState#(T: type int, RESET_TO: 0) current_command_final_align
     
     int first_transfer_idx, int start_element_offset = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(current_addr.old)
@@ -1104,16 +1111,16 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     domain addr_output_channel
     // start_offset is inclusive. 1 -> 0111
     // end_offset is also inclusive. 3 -> 1110
-    trigger push_burst : int#(FROM: 0, TO: ATO / (AXI_WIDTH / 8)) awaddr, int#(FROM: 0, TO: MAX_BURST) awlen, int start_offset, int end_offset, bool is_last
+    trigger push_burst : int#(FROM: 0, TO: ATO / (AXI_WIDTH / 8)) awaddr, int#(FROM: 0, TO: MAX_BURST) awlen, int start_offset, int end_offset, bool is_last, bool is_empty_burst
 
     action may_push_burst {
-        when current_addr.may_update & current_addr_valid.may_update & current_command_chunk_end.may_update & current_command_is_last.may_update & current_command_final_align.may_update & current_addr_valid.old {
+        when current_addr.may_update & current_addr_valid.may_update & current_command_chunk_end.may_update & current_command_is_last.may_update & current_command_is_empty_burst.may_update & current_command_final_align.may_update & current_addr_valid.old {
             int transfer_addr, int _ = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(current_addr.old)
             when current_command_chunk_end.old {
                 // Since we go until the end of the burst, use 255 as this end marker
                 last_transfer_to_include = 255
 
-                push_burst(transfer_addr, awlen_w, start_element_offset, NUM_PARALLEL_ELEMENTS - 1, current_command_final_align.old == 0 & current_command_is_last.old)
+                push_burst(transfer_addr, awlen_w, start_element_offset, NUM_PARALLEL_ELEMENTS - 1, current_command_final_align.old == 0 & current_command_is_last.old, current_command_is_empty_burst.old)
                 // Set current addr start to the begin of the next burst
                 current_command_chunk_end.update(false)
                 int cur_burst_idx, int _e = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(current_addr.old)
@@ -1131,7 +1138,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
                 int last_element_before_final_align = IntNarrow#(FROM: 1, TO: MAX_ELEMENTS_IN_BURST)(current_command_final_align.old) - 1
                 last_transfer_to_include, int last_chunk_offset = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(last_element_before_final_align)
 
-                push_burst(transfer_addr, awlen_w, start_element_offset, last_chunk_offset, true)
+                push_burst(transfer_addr, awlen_w, start_element_offset, last_chunk_offset, true, current_command_is_empty_burst.old)
                 current_command_is_last.update(false)
                 current_addr_valid.update(false)
             }
@@ -1145,7 +1152,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     gen int MAX_NUM_COMMANDS = ADDR_QUEUE_SIZE * 2 + MAX_NUM_FULL_BURSTS_STORED_SIMULTANEOUSLY
     FIFO#(DEPTH: MAX_NUM_COMMANDS, MAY_PUSH_LATENCY: 0) command_fifo
     bool _ = command_fifo.may_push // guarded by addr_fifo
-    Tuple3 pack_command
+    Tuple4 pack_command
     burst_write_splitter#(MAX_ELEMENTS_IN_BURST, NUM_PARALLEL_ELEMENTS, ADDR_QUEUE_SIZE) burst_splitter
 
     domain addresses
@@ -1165,21 +1172,23 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
         fifo_offset = burst_splitter.push_elements(num_elements, is_last_elem)
     }
 
-    when burst_splitter.output_command : bool end_of_burst, bool is_last_burst, int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) final_align {
-        command_fifo.push(pack_command.pack(end_of_burst, is_last_burst, final_align))
+    when burst_splitter.output_command : bool end_of_burst, bool is_last_burst, int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) final_align, bool burst_is_empty {
+        reg bool[] command = pack_command.pack(end_of_burst, is_last_burst, final_align, burst_is_empty)
+        command_fifo.push(command)
     }
 
-    when current_addr.may_update & current_addr_valid.may_update & current_command_chunk_end.may_update & current_command_is_last.may_update & current_command_final_align.may_update {
+    when current_addr.may_update & current_addr_valid.may_update & current_command_chunk_end.may_update & current_command_is_last.may_update & current_command_is_empty_burst.may_update & current_command_final_align.may_update {
         when !current_addr_valid.old & addr_fifo.may_pop {
             current_addr_valid.update(true)
             current_addr.update(addr_fifo.pop())
         }
 
         when !current_command_chunk_end.old & !current_command_is_last.old & command_fifo.may_pop {
-            bool chunk_end, bool is_last, int final_align = pack_command.unpack(command_fifo.pop())
+            bool chunk_end, bool is_last, int final_align, bool is_empty_burst = pack_command.unpack(command_fifo.pop())
             current_command_chunk_end.update(chunk_end)
             current_command_is_last.update(is_last)
             current_command_final_align.update(final_align)
+            current_command_is_empty_burst.update(is_empty_burst)
         }
     }
 
@@ -1202,6 +1211,7 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
 
     state int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) current_align
     state bool current_align_valid
+    state bool current_burst_is_empty
 
     // Must be a FWFT, because we need to be able to instantly grab the next 
     FWFT#(MAY_PUSH_LATENCY: 0, DEPTH: ADDR_QUEUE_SIZE) addr_queue
@@ -1213,7 +1223,7 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
     }
 
     domain burst_queue
-    trigger output_command : bool end_of_burst, bool is_last_burst, int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) final_align
+    trigger output_command : bool end_of_burst, bool is_last_burst, int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) final_align, bool burst_is_empty
 
     domain elements
     bool new_addr_requested = false
@@ -1227,8 +1237,11 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
         int next_align = current_align_and mod MAX_ELEMENTS_IN_BURST
 
         bool push_end_of_burst = current_align_and >= MAX_ELEMENTS_IN_BURST
+
+        bool next_current_burst_is_empty = current_burst_is_empty & num_elements == 0
+        current_burst_is_empty = next_current_burst_is_empty
         when push_end_of_burst | is_last {
-            output_command(push_end_of_burst, is_last, next_align)
+            output_command(push_end_of_burst, is_last, next_align, next_current_burst_is_empty)
         }
         when is_last {
             new_addr_requested = true
@@ -1245,6 +1258,7 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
         when addr_queue.pop_available: int new_addr_align {
             current_align_valid = true
             current_align = new_addr_align
+            current_burst_is_empty = true
             addr_queue.pop()
         } else {
             current_align_valid = false
@@ -1451,7 +1465,8 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
     output bool[AXI_WIDTH / 8]      wstrb'0 = fifo_manager.wstrb
 
     // 32 bursts in flight aught to be enough for anyone
-    RippleFIFO#(DEPTH: 32) burst_is_last_fifo    
+    Tuple2 burst_is_last_tuple
+    FWFT#(DEPTH: 32) burst_is_last_fifo    
     input  bool                     bvalid'0
     input  bool[2]                  bresp'0
     bool[2] _ = bresp // XRT doesn't return useful status codes anyway
@@ -1476,14 +1491,14 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
     when !awvalid & !is_stored_for_fifo_manager & burst_is_last_fifo.may_push {
         addr_manager.may_push_burst()
     }
-    when addr_manager.push_burst : int mgr_awaddr, int mgr_awlen, int mgr_start_offset, int mgr_end_offset, bool mgr_is_last {
+    when addr_manager.push_burst : int mgr_awaddr, int mgr_awlen, int mgr_start_offset, int mgr_end_offset, bool mgr_is_last, bool is_empty_burst {
         awaddr_transfer = mgr_awaddr
         stored_mgr_awlen = mgr_awlen
         stored_mgr_start_offset = mgr_start_offset
         stored_mgr_end_offset = mgr_end_offset
-        awvalid = true
-        is_stored_for_fifo_manager = true
-        burst_is_last_fifo.push(mgr_is_last)
+        awvalid = !is_empty_burst
+        is_stored_for_fifo_manager = !is_empty_burst
+        burst_is_last_fifo.push(burst_is_last_tuple.pack(mgr_is_last, is_empty_burst))
     }
     when awready & awvalid {
         awvalid = false
@@ -1498,11 +1513,20 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
     domain write_commit
     /// After all writes for a burst have been committed to memory, this pulses true. No backpressure, simply don't push addresses you don't know you can handle. 
     trigger write_has_been_committed
-    bready = burst_is_last_fifo.may_pop
-    when bvalid & bready {
-        bool last_burst_just_finished = burst_is_last_fifo.pop()
-        when last_burst_just_finished {
+    bready = false
+    when burst_is_last_fifo.pop_available: bool[2] packed_info {
+        bool last_burst_just_finished, bool burst_was_empty = burst_is_last_tuple.unpack(packed_info)
+        when burst_was_empty {
             write_has_been_committed()
+            burst_is_last_fifo.pop()
+        } else {
+            bready = true
+            when bvalid {
+                when last_burst_just_finished {
+                    write_has_been_committed()
+                }
+                burst_is_last_fifo.pop()
+            }
         }
     }
 
