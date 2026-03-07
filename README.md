@@ -87,3 +87,4 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 - **There is only one Memory Bank**
 - **No Host DMA is supported**
 - **Rarely XRT has a 'blip', which includes a 500ms delay after a set of kernels finish**
+- **On the U280, grouping multiple HBM banks together (a la `sp=burst_reader512_hbm_2x.m_axi:HBM[16:17]`) does not actually improve bandwidth, yet does introduce lots of cruft around the HBM interfaces**

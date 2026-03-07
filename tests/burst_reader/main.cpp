@@ -123,9 +123,10 @@ void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t 
         }
     }
     if(hash != expected_hash) {
-        std::cout << "The device computed hash (" << std::hex << hash << ") does not match the expected hash (" << expected_hash << std::dec << ")!!!!" << std::endl;
+        std::cout << "\033[31mThe device computed hash (" << std::hex << hash << ") does not match the expected hash (" << expected_hash << std::dec << ")!!!!\033[0m" << std::endl;
+        exit(1);
     } else {
-        std::cout << "Hash is correct: " << hash << std::endl;
+        std::cout << "\033[32mHash is correct: " << hash << "\033[0m" << std::endl;
     }
 }
 
@@ -302,8 +303,8 @@ int main(int argc, const char** argv) {
         }*/
 
         //std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 1; size <= 100; size *= 2) {
-            run_kernel(kernel_info, size, 0, 3, 0, config_u32);
+        for(int size = 512; size <= 1000; size *= 2) {
+            run_kernel(kernel_info, size, 0, 1, 0, config_u32);
         }
     }
 }

@@ -219,34 +219,6 @@ int main(int argc, const char** argv) {
 
     std::cout << "Got XCLBIN" << std::endl;
 
-    /*for(const char* kernel_name : kernel_names) {
-        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_name);
-        std::cout << "Kernel " << kernel_name << ": " << k.group_id(0) << std::endl;
-    }
-
-
-    std::cout << "Making total buffer of " << num_buffer_elems << " elements..." << std::endl;
-    host_buffer.reserve(num_buffer_elems);
-    expected_hash = 0;
-    for(uint32_t i = 0; i < num_buffer_elems; i++) {
-        host_buffer.push_back(i * 13);
-
-        expected_hash ^= i * 13;
-    }
-    std::cout << "Expected hash is " << expected_hash << std::endl;
-    
-    for(const char* kernel_name: kernel_names) {
-        std::cout << "Copying Buffer for " << kernel_name << "..." << std::endl;
-        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_name);
-        //xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_DEV_ONLY, k.group_id(0));
-        xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
-
-        bench_buffer.write(host_buffer.data(), sizeof(uint32_t) * num_buffer_elems, 0);
-        bench_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-        buffers.push_back(std::move(bench_buffer));
-    }*/
-
     AXIConfig config = AXIConfig{
         .arprot = 0,
         .arcache = 2,
