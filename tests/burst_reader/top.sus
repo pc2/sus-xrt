@@ -127,13 +127,13 @@ module bench_burst_reader#(int AXI_WIDTH) {
     state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining
     state int#(FROM: 0, TO: pow2#(E: 32)) num_repeats_remaining_to_finish
     state int num_cycles_running
-    state int#(FROM: 0, TO: pow2#(E: 64)) cur_experiment_addr
+    SlowState#(T: type int#(FROM: 0, TO: pow2#(E: 64)), RESET_TO: 0) cur_experiment_addr
 
     state bool[32] hash
     when ctrl.start {
         num_repeats_remaining = num_repeats
         num_repeats_remaining_to_finish = num_repeats
-        cur_experiment_addr = start_addr + offset mod pow2#(E: 64)
+        cur_experiment_addr.update(start_addr + offset mod pow2#(E: 64))
         running = true
         num_cycles_running = 0
         cycles_since_reset_at_start = cycles_since_reset_bits
@@ -141,9 +141,10 @@ module bench_burst_reader#(int AXI_WIDTH) {
     }
 
     when num_repeats_remaining != 0 {
-        when reader.may_request_new_read {
-            reader.request_new_read(cur_experiment_addr, num_to_transfer)
-            cur_experiment_addr = cur_experiment_addr + repeat_offset mod pow2#(E: 64)
+        when reader.may_request_new_read & cur_experiment_addr.may_update {
+            reader.request_new_read(cur_experiment_addr.old, num_to_transfer)
+            reg int new_addr = cur_experiment_addr.old + repeat_offset mod pow2#(E: 64)
+            cur_experiment_addr.update(new_addr)
             num_repeats_remaining = num_repeats_remaining - 1 mod pow2#(E: 32)
         }
     }
@@ -185,6 +186,7 @@ module bench_burst_reader#(int AXI_WIDTH) {
         reader.rst()
         writer.rst()
         ctrl.rst()
+        cur_experiment_addr.rst()
     }
 }
 

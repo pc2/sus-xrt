@@ -664,16 +664,41 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
     state bool stored_is_last
     state bool stored_is_empty_burst
 
+    bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
+    for int I in 0..NUM_PARALLEL_ELEMENTS {
+        elements[I] = rdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
+    }
+
+    int chunk_length
+    bool is_final_last
+    when stored_is_empty_burst{
+        is_final_last = true
+        chunk_length = 0
+    } else {
+        is_final_last = rlast & stored_is_last
+        when is_final_last {
+            chunk_length = IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS + 1)(stored_end_align + 1 - chunk_offset)
+        } else {
+            chunk_length = NUM_PARALLEL_ELEMENTS - chunk_offset
+        }
+    }
+    when rready & rvalid | stored_is_empty_burst {
+        // For a zero-sized burst, the elements will be invalid data. This is acceptable, since the associated strobe is 'b000000...
+        element_packet_valid(elements, chunk_length, chunk_offset, is_final_last)
+        chunk_offset = 0
+        stored_is_empty_burst = false
+    }
+    
     bool should_get_new_burst = rready & rvalid & rlast | stored_is_empty_burst | !rready
     when should_get_new_burst {
         when command_fifo.pop_available : bool[] pop_data {
             command_fifo.pop()
             int start_align, int end_align, bool is_last, bool is_empty_burst = command_tuple.unpack(pop_data)
 
-            chunk_offset = start_align
+            chunk_offset = start_align // Takes prescedence over the setting to 0 when sending the last one
             stored_end_align = end_align
             stored_is_last = is_last
-            stored_is_empty_burst = is_empty_burst
+            stored_is_empty_burst = is_empty_burst // Takes prescedence over the setting to false when sending the last one
 
             rready = !is_empty_burst
         } else {
@@ -681,30 +706,6 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
         }
     }
 
-    bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
-    for int I in 0..NUM_PARALLEL_ELEMENTS {
-        elements[I] = rdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
-    }
-
-    int chunk_length
-    bool is_final_last = rlast & stored_is_last
-    when is_final_last {
-        chunk_length = IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS + 1)(stored_end_align + 1 - chunk_offset)
-    } else {
-        chunk_length = NUM_PARALLEL_ELEMENTS - chunk_offset
-    }
-    when rready & rvalid | stored_is_empty_burst {
-        int emptied_chunk_length
-        when stored_is_empty_burst {
-            emptied_chunk_length = 0
-        } else {
-            emptied_chunk_length = chunk_length
-        }
-        element_packet_valid(elements, emptied_chunk_length, chunk_offset, is_final_last)
-        chunk_offset = 0
-        stored_is_empty_burst = false
-    }
-    
     domain reset
     action rst {
         cur_transfers_in_flight = 0
@@ -833,7 +834,7 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUN
     cur_transfers_in_flight = cur_transfers_in_flight + extra_burst_arlen - BoolToInt(rready & rvalid) mod pow2#(E: 16)
 
     domain data
-    input bool is_ready_to_receive_lots_of_data'-MAX_IN_FLIGHT
+    input bool is_ready_to_receive_lots_of_data'noinfer#(V: -MAX_IN_FLIGHT)
     trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
     bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(is_ready_to_receive_lots_of_data)
@@ -880,34 +881,23 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUN
     state bool stored_is_last
     state bool stored_is_empty_burst
 
-    bool should_get_new_burst = rready & rvalid & rlast | stored_is_empty_burst | !rready
-    when should_get_new_burst {
-        when command_fifo.pop_available : bool[] pop_data {
-            command_fifo.pop()
-            int start_align, int end_align, bool is_last, bool is_empty_burst = command_tuple.unpack(pop_data)
-
-            chunk_offset = start_align
-            stored_end_align = end_align
-            stored_is_last = is_last
-            stored_is_empty_burst = is_empty_burst
-
-            rready = !is_empty_burst
-        } else {
-            rready = false
-        }
-    }
-
     bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
     for int I in 0..NUM_PARALLEL_ELEMENTS {
         elements[I] = rdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
     }
 
     int chunk_length
-    bool is_final_last = rlast & stored_is_last
-    when is_final_last {
-        chunk_length = IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS + 1)(stored_end_align + 1 - chunk_offset)
+    bool is_final_last
+    when stored_is_empty_burst{
+        is_final_last = true
+        chunk_length = 0
     } else {
-        chunk_length = NUM_PARALLEL_ELEMENTS - chunk_offset
+        is_final_last = rlast & stored_is_last
+        when is_final_last {
+            chunk_length = IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS + 1)(stored_end_align + 1 - chunk_offset)
+        } else {
+            chunk_length = NUM_PARALLEL_ELEMENTS - chunk_offset
+        }
     }
     when rready & rvalid | stored_is_empty_burst {
         element_packet_valid(elements, chunk_length, chunk_offset, is_final_last)
@@ -915,6 +905,23 @@ module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUN
         stored_is_empty_burst = false
     }
     
+    bool should_get_new_burst = rready & rvalid & rlast | stored_is_empty_burst | !rready
+    when should_get_new_burst {
+        when command_fifo.pop_available : bool[] pop_data {
+            command_fifo.pop()
+            int start_align, int end_align, bool is_last, bool is_empty_burst = command_tuple.unpack(pop_data)
+
+            chunk_offset = start_align // Takes prescedence over the setting to 0 when sending the last one
+            stored_end_align = end_align
+            stored_is_last = is_last
+            stored_is_empty_burst = is_empty_burst // Takes prescedence over the setting to false when sending the last one
+
+            rready = !is_empty_burst
+        } else {
+            rready = false
+        }
+    }
+
     domain reset
     action rst {
         cur_transfers_in_flight = 0

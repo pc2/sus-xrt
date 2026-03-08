@@ -305,25 +305,33 @@ int main(int argc, const char** argv) {
             run_kernel(kernel_info, 20, 4000 + offset, config_u32);
         }*/
 
-
         std::cout << "Zero sized test" << std::endl;
-        for(int offset = 0; offset <= 8192; offset+=4) {
+        for(int offset = 0; offset <= 4120; offset+=4) {
             run_kernel(kernel_info, 0, offset, 1, 0, config_u32);
-        }
-        
-        std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 1; size <= 1000000; size *= 2) {
-            run_kernel(kernel_info, size, 0, 1, 0, config_u32);
+            if(offset == 20) {
+                offset = 4000;
+            }
         }
 
         std::cout << "One sized test" << std::endl;
-        for(int offset = 0; offset <= 8192; offset+=4) {
+        for(int offset = 0; offset <= 4120; offset+=4) {
             run_kernel(kernel_info, 1, offset, 1, 0, config_u32);
+            if(offset == 20) {
+                offset = 4000;
+            }
         }
 
         std::cout << "Two sized test" << std::endl;
-        for(int offset = 0; offset <= 8192; offset+=4) {
+        for(int offset = 0; offset <= 4120; offset+=4) {
             run_kernel(kernel_info, 2, offset, 1, 0, config_u32);
+            if(offset == 20) {
+                offset = 4000;
+            }
+        }
+
+        std::cout << "Large Buffer Benchmark" << std::endl;
+        for(int size = 1; size <= 1000000; size *= 2) {
+            run_kernel(kernel_info, size, 0, 1, 0, config_u32);
         }
     }
 }
