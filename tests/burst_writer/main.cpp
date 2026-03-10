@@ -16,6 +16,8 @@
 #include <string>
 #include <sstream>
 #include <cstdint>
+#include <fstream>
+#include <algorithm>
 
 #include <unistd.h>
 
@@ -67,7 +69,7 @@ void printKernelRegs(const char* kernel_name) {
     std::cout << "Result: " << user_manage.read_register(0x03c) << std::endl;
 }
 
-constexpr size_t BUFFER_CAPACITY = 2000000;
+size_t BUFFER_CAPACITY = 200000000 / sizeof(uint32_t);
 
 double clock_freq; // In Hz
 
@@ -79,28 +81,24 @@ struct KernelInfo {
 };
 
 std::vector<KernelInfo> kernel_infos;
-/*
-    KernelInfo{"burst_writer32:{burst_writer32_1}", 32, false},
-    KernelInfo{"burst_writer64:{burst_writer64_1}", 64, false},
-    KernelInfo{"burst_writer128:{burst_writer128_1}", 128, false},
-    KernelInfo{"burst_writer256:{burst_writer256_1}", 256, false},
-    KernelInfo{"burst_writer512:{burst_writer512_1}", 512, false},
-    KernelInfo{"burst_writer256:{burst_writer256_2}", 256, false},
-    KernelInfo{"burst_writer512:{burst_writer512_2}", 512, false},
-    KernelInfo{"burst_writer256:{burst_writer256_3}", 256, true},
-    KernelInfo{"burst_writer512:{burst_writer512_3}", 512, true},
-*/
+
+struct BenchmarkResult {
+    double bandwidth;
+    double time_in_seconds;
+    double bytes_per_cycle;
+    uint32_t num_cycles;
+};
 
 uint32_t* default_buffer;
 uint32_t* host_side;
 uint32_t* expected_buffer;
-void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, uint32_t config_u32) {
+BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, uint32_t config_u32) {
     xrt::bo& b = info.bo;
     std::cout << "Kernel " << info.name << std::endl;
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
     b.write(default_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    size_t total_data = num_elems * num_repeats * sizeof(uint32_t);
+    size_t total_data = uint64_t(num_elems) * num_repeats * sizeof(uint32_t);
     double time_in_seconds;
     {
         xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, info.name.c_str());
@@ -119,12 +117,12 @@ void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t 
         xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, info.name.c_str());
         num_cycles = user_manage.read_register(0x02c);
     }
-    double bw = total_data / 1000000000.0 / time_in_seconds; // GB/s
+    double bandwidth = total_data / 1000000000.0 / time_in_seconds; // GB/s
     double bytes_per_cycle = double(total_data) / num_cycles;
-    std::cout << "    Time taken: " << time_in_seconds << "s" << std::endl;
-    std::cout << "    BW: " << bw << "GB/s" << std::endl;
-    std::cout << "    Cycles: " << num_cycles << std::endl;
-    std::cout << "    Bytes/cy: " << bytes_per_cycle << std::endl;
+    std::cout << "    Time taken: " << time_in_seconds << "s\n";
+    std::cout << "    BW: " << bandwidth << "GB/s" << "\n";
+    std::cout << "    Cycles: " << num_cycles << "\n";
+    std::cout << "    Bytes/cy: " << bytes_per_cycle << "\n";
     std::cout << "    @" << (clock_freq / 1000000) << "MHz" << std::endl;
 
     size_t offset_elem = offset / 4;
@@ -163,6 +161,7 @@ void run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t 
     } else {
         std::cout << "\033[32mChecked " << BUFFER_CAPACITY << " elements.\033[0m" << std::endl;
     }
+    return BenchmarkResult{bandwidth, time_in_seconds, bytes_per_cycle, num_cycles};
 }
 
 int main(int argc, const char** argv) {
@@ -199,6 +198,8 @@ int main(int argc, const char** argv) {
         device = xrt::device(0);
         std::cout << "Got Device in emu" << std::endl;
         xclbin_file = "overlay_hw_emu.xclbin";
+        std::cout << "Overwriting BUFFER_CAPACITY=5000 to speed up emulation" << std::endl;
+        BUFFER_CAPACITY = 5000;
         break;
     default:
         std::cout << "UNKNOWN OPTION: " << argv[1] << std::endl;
@@ -288,6 +289,13 @@ int main(int argc, const char** argv) {
             kernel_infos.push_back(KernelInfo{full_name, AXI_WIDTH, typ, bo});
         }
     }
+
+    std::sort(kernel_infos.begin(), kernel_infos.end(),
+        [](const KernelInfo& a, const KernelInfo& b) {
+            if (a.typ != b.typ)
+                return a.typ < b.typ;
+            return a.AXI_WIDTH < b.AXI_WIDTH;
+        });
     std::cout << "Made Buffer" << std::endl;
     //xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
 
@@ -295,43 +303,90 @@ int main(int argc, const char** argv) {
     uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
 
     for(KernelInfo kernel_info : kernel_infos) {
-        /*std::cout << "Small Buffers" << std::endl;
-        for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(kernel_info, 19, offset, config_u32);
+        if(kernel_info.typ == "ddr") {
+            continue; // Skip faulty DDR? 
         }
-
-        std::cout << "Small Buffers on Crossover" << std::endl;
-        for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-            run_kernel(kernel_info, 20, 4000 + offset, config_u32);
-        }*/
-
+        // std::cout << "Small Buffers" << std::endl;
+        // for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
+        //     run_kernel(kernel_info, 19, offset, config_u32);
+        // }
+        // std::cout << "Small Buffers on Crossover" << std::endl;
+        // for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
+        //     run_kernel(kernel_info, 20, 4000 + offset, config_u32);
+        // }
+/*
         std::cout << "Zero sized test" << std::endl;
-        for(int offset = 0; offset <= 4120; offset+=4) {
+        for(int offset = 0; offset <= 4108; offset+=4) {
             run_kernel(kernel_info, 0, offset, 1, 0, config_u32);
-            if(offset == 20) {
-                offset = 4000;
+            if(offset == 12) {
+                offset = 4080;
             }
         }
 
         std::cout << "One sized test" << std::endl;
-        for(int offset = 0; offset <= 4120; offset+=4) {
+        for(int offset = 0; offset <= 4108; offset+=4) {
             run_kernel(kernel_info, 1, offset, 1, 0, config_u32);
-            if(offset == 20) {
-                offset = 4000;
+            if(offset == 12) {
+                offset = 4080;
             }
         }
 
         std::cout << "Two sized test" << std::endl;
-        for(int offset = 0; offset <= 4120; offset+=4) {
+        for(int offset = 0; offset <= 4108; offset+=4) {
             run_kernel(kernel_info, 2, offset, 1, 0, config_u32);
-            if(offset == 20) {
-                offset = 4000;
+            if(offset == 12) {
+                offset = 4080;
             }
         }
+*/
+        
+        /*for(int i = 0; i < 2000; i++) {
+            run_kernel(kernel_info, 2, 0, 19, 4, config_u32);
+        }*/
+        /*run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
+        run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
+        run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
+        run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
+        run_kernel(kernel_info, 2, 0, 24, 4, config_u32);*/
+        
 
-        std::cout << "Large Buffer Benchmark" << std::endl;
-        for(int size = 1; size <= 1000000; size *= 2) {
-            run_kernel(kernel_info, size, 0, 1, 0, config_u32);
+        std::cout << "Repeated Two sized tests" << std::endl;
+        for(uint32_t repeats = 1; repeats < 1200; repeats++) {
+            run_kernel(kernel_info, 2, 0, repeats, 4, config_u32);
         }
+    }
+
+    // Actual benchmarks
+
+
+    std::ofstream bench_file = std::ofstream("benchFile.csv");
+    bench_file << "Large Buffer Benchmark,Bandwidth,TimeInSeconds,BytesPerCycle,NumCycles" << std::endl;
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, BUFFER_CAPACITY, 0, 100, 0, config_u32);
+        bench_file << kernel_info.name << ",";
+        bench_file << result.bandwidth << ",";
+        bench_file << result.time_in_seconds << ",";
+        bench_file << result.bytes_per_cycle << ",";
+        bench_file << result.num_cycles << std::endl;
+    }
+
+    bench_file << "Many Small Writes To Same Location,Bandwidth,TimeInSeconds,BytesPerCycle,NumCycles" << std::endl;
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 100, 0, config_u32);
+        bench_file << kernel_info.name << ",";
+        bench_file << result.bandwidth << ",";
+        bench_file << result.time_in_seconds << ",";
+        bench_file << result.bytes_per_cycle << ",";
+        bench_file << result.num_cycles << std::endl;
+    }
+
+    bench_file << "Many Small Writes Ascending Locations,Bandwidth,TimeInSeconds,BytesPerCycle,NumCycles" << std::endl;
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 100, 4, config_u32);
+        bench_file << kernel_info.name << ",";
+        bench_file << result.bandwidth << ",";
+        bench_file << result.time_in_seconds << ",";
+        bench_file << result.bytes_per_cycle << ",";
+        bench_file << result.num_cycles << std::endl;
     }
 }

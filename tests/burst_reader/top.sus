@@ -113,8 +113,6 @@ module bench_burst_reader#(int AXI_WIDTH) {
     output bool                     m_axi_arlock'0 = config_bits_r[11]
     output int#(FROM: 0, TO: 16)    m_axi_arregion'0 = BitsToUInt(config_bits_r[12:16])
 
-    reader.MAX_IN_FLIGHT = BitsToUInt(config_bits_r[16:32])
-    
     state int cycles_since_reset
     cycles_since_reset = cycles_since_reset + 1 mod pow2#(E: 64)
 
@@ -138,6 +136,7 @@ module bench_burst_reader#(int AXI_WIDTH) {
         num_cycles_running = 0
         cycles_since_reset_at_start = cycles_since_reset_bits
         hash = 32'h00000000
+        reader.initialize_max_in_flight(BitsToUInt(config_bits_r[16:32]))
     }
 
     when num_repeats_remaining != 0 {

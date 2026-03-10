@@ -68,7 +68,8 @@ void printKernelRegs(const char* kernel_name) {
     std::cout << "Cycles going by reset?: " << read_64_bit_reg(user_manage, 0x03c) - read_64_bit_reg(user_manage, 0x034) << std::endl;
 }
 
-constexpr size_t BUFFER_CAPACITY = 20000;
+//constexpr size_t BUFFER_CAPACITY = 200000000 / sizeof(uint32_t);
+constexpr size_t BUFFER_CAPACITY = 5000;
 
 double clock_freq; // In Hz
 
@@ -302,29 +303,32 @@ int main(int argc, const char** argv) {
             run_kernel(kernel_info, 20, 4000 + offset, config_u32);
         }*/
 
-        std::cout << "Zero sized test" << std::endl;
-        for(int offset = 0; offset <= 4120; offset+=4) {
+        /*std::cout << "Zero sized test" << std::endl;
+        for(int offset = 0; offset <= 4108; offset+=4) {
             run_kernel(kernel_info, 0, offset, 1, 0, config_u32);
-            if(offset == 20) {
-                offset = 4000;
+            if(offset == 12) {
+                offset = 4080;
             }
-        }
+        }*/
 
         std::cout << "One sized test" << std::endl;
-        for(int offset = 0; offset <= 4120; offset+=4) {
+        for(int offset = 0; offset <= 4108; offset+=4) {
             run_kernel(kernel_info, 1, offset, 1, 0, config_u32);
-            if(offset == 20) {
-                offset = 4000;
+            if(offset == 12) {
+                offset = 4080;
             }
         }
 
         std::cout << "Two sized test" << std::endl;
-        for(int offset = 0; offset <= 4120; offset+=4) {
+        for(int offset = 0; offset <= 4108; offset+=4) {
             run_kernel(kernel_info, 2, offset, 1, 0, config_u32);
-            if(offset == 20) {
-                offset = 4000;
+            if(offset == 12) {
+                offset = 4080;
             }
         }
+
+        std::cout << "Repeated Two sized tests" << std::endl;
+        run_kernel(kernel_info, 2, 0, 1200, 4, config_u32);
 
         std::cout << "Large Buffer Benchmark" << std::endl;
         for(int size = 1; size <= BUFFER_CAPACITY; size *= 2) {
