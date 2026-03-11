@@ -1,4 +1,48 @@
 
+extern module ila_crc_counter{
+    domain clk
+    domain d0
+    input bool probe0'0
+    domain d1
+    input bool probe1'0
+    domain d2
+    input bool probe2'0
+    domain d3
+    input bool probe3'0
+    domain d4
+    input bool probe4'0
+    domain d5
+    input int#(FROM: 0, TO: 256) probe5'0
+    domain d6
+    input bool probe6'0
+    domain d7
+    input bool probe7'0
+    domain d8
+    input bool probe8'0
+    domain d9
+    input bool probe9'0
+    domain d10
+    input bool probe10'0
+    domain d11
+    input bool[2] probe11'0
+    domain d12
+    input bool probe12'0
+    domain d13
+    input bool probe13'0
+    domain d14
+    input int#(FROM: 0, TO: 32) probe14'0
+    domain d15
+    input bool probe15'0
+    domain d16
+    input bool probe16'0
+    domain d17
+    input bool probe17'0
+    domain d18
+    input int#(FROM: 0, TO: pow2#(E: 32)) probe18'0
+    domain d19
+    input int#(FROM: 0, TO: pow2#(E: 32)) probe19'0
+}
+
 module bench_burst_writer#(int AXI_WIDTH) {
 
     domain aclk
@@ -129,7 +173,9 @@ module bench_burst_writer#(int AXI_WIDTH) {
     state int#(FROM: 0, TO: pow2#(E: 32)) num_cycles_running
 
     SlowState#(T: type int#(FROM: 0, TO: pow2#(E: 64)), RESET_TO: 0) cur_experiment_addr
+    bool ila_start = false
     when ctrl.start {
+        ila_start = true
         num_repeats_remaining = num_repeats
         num_repeats_remaining_to_finish = num_repeats
         cur_experiment_addr.update(start_addr + offset mod pow2#(E: 64))
@@ -157,23 +203,29 @@ module bench_burst_writer#(int AXI_WIDTH) {
         num_cycles_running = num_cycles_running + 1 mod pow2#(E: 32)
     }
 
+    ila_crc_counter ila
+    ila.probe12 = writer.may_write
+    ila.probe13 = false // Write
     bool grab_new_transfer = false
     when num_left_to_transfer_valid & writer.may_write {
         bool[32][NUM_PARALLEL_ELEMENTS] write_data
         for int I in 0..NUM_PARALLEL_ELEMENTS {
             write_data[I] = UIntToBits(cur_idx + I)
         }
-        int extra_idx
-        when num_left_to_transfer <= NUM_PARALLEL_ELEMENTS {
-            writer.write(write_data, IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1)(num_left_to_transfer), 0, true)
+        int transfer_num
+        bool is_last = num_left_to_transfer <= NUM_PARALLEL_ELEMENTS
+        when is_last {
+            transfer_num = IntNarrow#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1)(num_left_to_transfer)
             grab_new_transfer = true
-            extra_idx = num_left_to_transfer
         } else {
-            writer.write(write_data, NUM_PARALLEL_ELEMENTS, 0, false)
+            transfer_num = NUM_PARALLEL_ELEMENTS
             num_left_to_transfer = num_left_to_transfer - NUM_PARALLEL_ELEMENTS mod pow2#(E: 32)
-            extra_idx = NUM_PARALLEL_ELEMENTS
         }
-        cur_idx = IntNarrow#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMENTS)(cur_idx + extra_idx)
+        ila.probe13 = true // Write
+        ila.probe14 = transfer_num
+        ila.probe15 = is_last
+        writer.write(write_data, transfer_num, 0, is_last)
+        cur_idx = IntNarrow#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMENTS)(cur_idx + transfer_num)
     }
     when !num_left_to_transfer_valid {
         grab_new_transfer = true
@@ -188,9 +240,11 @@ module bench_burst_writer#(int AXI_WIDTH) {
         }
     }
 
+    bool ila_finish = false
     when writer.write_has_been_committed {
         when num_repeats_remaining_to_finish == 1 {
             running = false
+            ila_finish = true
             ctrl.finish([UIntToBits(num_cycles_running), cycles_since_reset_at_start[:32], cycles_since_reset_at_start[32:], cycles_since_reset_bits[:32], cycles_since_reset_bits[32:]])
         }
         num_repeats_remaining_to_finish = IntNarrow#(FROM: 0, TO: pow2#(E: 32))(num_repeats_remaining_to_finish - 1)
@@ -209,6 +263,32 @@ module bench_burst_writer#(int AXI_WIDTH) {
         queued_transfers.rst()
         cur_experiment_addr.rst()
     }
+
+    ila.probe0 = aresetn
+    ila.probe1 = ila_start
+    ila.probe2 = ila_finish
+
+    ila.probe3 = m_axi_awvalid
+    ila.probe4 = m_axi_awready
+    ila.probe5 = m_axi_awlen
+
+    ila.probe6 = m_axi_wvalid
+    ila.probe7 = m_axi_wready
+    ila.probe8 = m_axi_wlast
+
+    ila.probe9 = m_axi_bvalid
+    ila.probe10 = m_axi_bready
+    ila.probe11 = m_axi_bresp
+
+    // ila.probe12 = writer.may_write
+    // ila.probe13 = writer.write
+    // ila.probe14 = writer.element_count
+    // ila.probe15 = writer.write_is_last
+
+    ila.probe16 = grab_new_transfer
+    ila.probe17 = num_left_to_transfer_valid
+    ila.probe18 = num_left_to_transfer
+    ila.probe19 = num_repeats_remaining_to_finish
 }
 
 module all_write_benchmarks {

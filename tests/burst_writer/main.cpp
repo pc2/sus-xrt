@@ -164,6 +164,11 @@ BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset
     return BenchmarkResult{bandwidth, time_in_seconds, bytes_per_cycle, num_cycles};
 }
 
+void debug_pause() {
+    std::cout << "Paused, press ENTER to continue..." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
+
 int main(int argc, const char** argv) {
     char mode;
     if(argc <= 1) {
@@ -214,6 +219,7 @@ int main(int argc, const char** argv) {
     // Workaround for dumb missing default constructor
     xrt::xclbin xclbin = xrt::xclbin(xclbin_file);
     xclbin_handle_ptr = std::make_unique<xrt::uuid>(device.load_xclbin(xclbin));
+
     //std::cout << "clocks: " << xclbin.get_axlf_section<const char*>(axlf_section_kind::CLOCK_FREQ_TOPOLOGY) << std::endl;
 
     const clock_freq_topology* clocks = xclbin.get_axlf_section<const clock_freq_topology*>(axlf_section_kind::CLOCK_FREQ_TOPOLOGY);
@@ -301,11 +307,18 @@ int main(int argc, const char** argv) {
 
     
     uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
+    
+    debug_pause();
+    run_kernel(kernel_infos[0], 2, 0, 10, 4, config_u32);
 
+    debug_pause();
+    run_kernel(kernel_infos[0], 2, 0, 30, 4, config_u32);
+    debug_pause();
+    
     for(KernelInfo kernel_info : kernel_infos) {
-        if(kernel_info.typ == "ddr") {
+        /*if(kernel_info.typ == "ddr") {
             continue; // Skip faulty DDR? 
-        }
+        }*/
         // std::cout << "Small Buffers" << std::endl;
         // for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
         //     run_kernel(kernel_info, 19, offset, config_u32);

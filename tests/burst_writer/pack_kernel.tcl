@@ -15,6 +15,8 @@ add_files -norecurse \
     ../../sus_codegen.sv \
 }
 
+import_ip /pc2/users/l/lennartv/sus-xrt/tests/burst_writer/ip_creation/ila_crc_counter/ila_crc_counter.xci
+
 # ???
 set_property top bench_burst_writer_AXI_WIDTH_${AXI_WIDTH} [current_fileset]
 

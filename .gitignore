@@ -21,6 +21,7 @@
 **/emconfig.json
 tests/*/VCK5000*/
 tests/*/U280*/
+tests/*/ip_creation
 .Xil/
 .analytics
 .metadata/
