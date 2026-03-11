@@ -1532,7 +1532,7 @@ module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_
     domain aclk
 
     domain axi4
-    output state bool                     awvalid'0 = false
+    output state bool                     awvalid'0
     input  bool                           awready'0
     state int#(FROM: 0, TO: ATO / (AXI_WIDTH / 8)) awaddr_transfer
     output int#(FROM: 0, TO: ATO)         awaddr'0 = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH / 8))(awaddr_transfer, 0)
