@@ -103,7 +103,7 @@ BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
     b.write(default_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    size_t total_data = uint64_t(num_elems) * num_repeats * sizeof(uint32_t);
+    uint64_t total_data = uint64_t(num_elems) * num_repeats * sizeof(uint32_t);
     double time_in_seconds;
     {
         xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, info.name.c_str());
