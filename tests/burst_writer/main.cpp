@@ -93,6 +93,11 @@ uint32_t* default_buffer;
 uint32_t* host_side;
 uint32_t* expected_buffer;
 BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, uint32_t config_u32) {
+    uint64_t last_elem_idx = offset + num_repeats * experiment_offset + num_elems - 1;
+    if(last_elem_idx >= BUFFER_CAPACITY) {
+        std::cout << "ERROR: Element index " << last_elem_idx << " lies outside the buffer size " << BUFFER_CAPACITY << std::endl;
+        exit(1);
+    }
     xrt::bo& b = info.bo;
     std::cout << "Kernel " << info.name << std::endl;
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
@@ -350,43 +355,53 @@ int main(int argc, const char** argv) {
         run_kernel(kernel_info, 2, 0, 24, 4, config_u32);*/
         
 
-        std::cout << "Repeated Two sized tests" << std::endl;
+        /*std::cout << "Repeated Two sized tests" << std::endl;
         for(uint32_t repeats = 1; repeats < 1200; repeats++) {
             run_kernel(kernel_info, 2, 0, repeats, 4, config_u32);
-        }
+        }*/
     }
 
     // Actual benchmarks
 
-
     std::ofstream bench_file = std::ofstream("benchFile.csv");
-    bench_file << "Large Buffer Benchmark,Bandwidth,TimeInSeconds,BytesPerCycle,NumCycles" << std::endl;
+
+    bench_file << "Many Small Writes To Same Location\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 1200, 0, config_u32);
+        bench_file << kernel_info.name << "\t";
+        bench_file << result.bandwidth << "\t";
+        bench_file << result.time_in_seconds << "\t";
+        bench_file << result.bytes_per_cycle << "\t";
+        bench_file << result.num_cycles << std::endl;
+    }
+
+    bench_file << "Many Small Sequential Writes\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 1200, 4, config_u32);
+        bench_file << kernel_info.name << "\t";
+        bench_file << result.bandwidth << "\t";
+        bench_file << result.time_in_seconds << "\t";
+        bench_file << result.bytes_per_cycle << "\t";
+        bench_file << result.num_cycles << std::endl;
+    }
+
+    bench_file << "Many Small Writes On Different Pages\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 4096, config_u32);
+        bench_file << kernel_info.name << "\t";
+        bench_file << result.bandwidth << "\t";
+        bench_file << result.time_in_seconds << "\t";
+        bench_file << result.bytes_per_cycle << "\t";
+        bench_file << result.num_cycles << std::endl;
+    }
+
+    bench_file << "Large Buffer Benchmark\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
     for(KernelInfo kernel_info : kernel_infos) {
         BenchmarkResult result = run_kernel(kernel_info, BUFFER_CAPACITY, 0, 100, 0, config_u32);
-        bench_file << kernel_info.name << ",";
-        bench_file << result.bandwidth << ",";
-        bench_file << result.time_in_seconds << ",";
-        bench_file << result.bytes_per_cycle << ",";
-        bench_file << result.num_cycles << std::endl;
-    }
-
-    bench_file << "Many Small Writes To Same Location,Bandwidth,TimeInSeconds,BytesPerCycle,NumCycles" << std::endl;
-    for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 100, 0, config_u32);
-        bench_file << kernel_info.name << ",";
-        bench_file << result.bandwidth << ",";
-        bench_file << result.time_in_seconds << ",";
-        bench_file << result.bytes_per_cycle << ",";
-        bench_file << result.num_cycles << std::endl;
-    }
-
-    bench_file << "Many Small Writes Ascending Locations,Bandwidth,TimeInSeconds,BytesPerCycle,NumCycles" << std::endl;
-    for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 100, 4, config_u32);
-        bench_file << kernel_info.name << ",";
-        bench_file << result.bandwidth << ",";
-        bench_file << result.time_in_seconds << ",";
-        bench_file << result.bytes_per_cycle << ",";
+        bench_file << kernel_info.name << "\t";
+        bench_file << result.bandwidth << "\t";
+        bench_file << result.time_in_seconds << "\t";
+        bench_file << result.bytes_per_cycle << "\t";
         bench_file << result.num_cycles << std::endl;
     }
 }
