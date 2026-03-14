@@ -71,7 +71,7 @@ void printKernelRegs(const char* kernel_name) {
 
 size_t BUFFER_CAPACITY = 200000000 / sizeof(uint32_t);
 
-double clock_freq; // In Hz
+double clock_freq_MHz;
 
 struct KernelInfo {
     std::string kernel_id;
@@ -87,6 +87,9 @@ struct BenchmarkResult {
     double time_in_seconds;
     double bytes_per_cycle;
     uint64_t num_cycles;
+    uint64_t total_data;
+    double kernel_measured_runtime;
+    double kernel_measured_bandwidth;
 };
 
 uint32_t* reference_buffer;
@@ -123,11 +126,13 @@ BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset
     }
     double bandwidth = total_data / 1000000000.0 / time_in_seconds; // GB/s
     double bytes_per_cycle = double(total_data) / num_cycles;
+    double kernel_measured_runtime = num_cycles / (clock_freq_MHz * 1000000.0);
+    double kernel_measured_bandwidth = total_data / kernel_measured_runtime / 1000000000.0;
     std::cout << "    Time taken: " << time_in_seconds << "s" << std::endl;
     std::cout << "    BW: " << bandwidth << "GB/s" << std::endl;
     std::cout << "    Cycles: " << num_cycles << std::endl;
     std::cout << "    Bytes/cy: " << bytes_per_cycle << std::endl;
-    std::cout << "    @" << (clock_freq / 1000000) << "MHz" << std::endl;
+    std::cout << "    @" << clock_freq_MHz << "MHz" << std::endl;
 
     size_t offset_elem = offset / 4;
     uint32_t expected_hash = 0;
@@ -142,7 +147,35 @@ BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset
     } else {
         std::cout << "\033[32mHash is correct: " << hash << "\033[0m" << std::endl;
     }
-    return BenchmarkResult{bandwidth, time_in_seconds, bytes_per_cycle, num_cycles};
+    return BenchmarkResult{
+        bandwidth,
+        time_in_seconds,
+        bytes_per_cycle,
+        num_cycles,
+        total_data,
+        kernel_measured_runtime,
+        kernel_measured_bandwidth
+    };
+}
+
+void benchmark_header(std::ofstream& bench_file, const char* name, AXIConfig& config) {
+    bench_file << name << "\t";
+    bench_file << "arprot: " << config.arprot << "\t";
+    bench_file << "arcache: " << config.arcache << "\t";
+    bench_file << "arqos: " << config.arqos << "\t";
+    bench_file << "arlock: " << config.arlock << "\t";
+    bench_file << "arregion: " << config.arregion << "\t";
+    bench_file << "max_in_flight: " << config.max_in_flight;
+    bench_file << "\nName\tCycles\tBytes Per Cycle\tTime (s)\tKernel Time (s)\tBandwidth (GB/s)\tKernel Measured Bandwidth (GB/s)" << std::endl;
+}
+void print_benchmark(std::ofstream& bench_file, KernelInfo& kernel_info, BenchmarkResult& result) {
+    bench_file << kernel_info.cu_name << "\t";
+    bench_file << result.num_cycles << "\t";
+    bench_file << result.bytes_per_cycle << "\t";
+    bench_file << result.time_in_seconds << "\t";
+    bench_file << result.kernel_measured_runtime << "\t";
+    bench_file << result.bandwidth << "\t";
+    bench_file << result.kernel_measured_bandwidth << std::endl;
 }
 
 int main(int argc, const char** argv) {
@@ -202,7 +235,7 @@ int main(int argc, const char** argv) {
         auto cf = &clocks->m_clock_freq[i];
         std::cout << cf->m_name << "(" << cf->m_type << "): " << cf->m_freq_Mhz << "MHz" << std::endl;
         if(cf->m_type == CLOCK_TYPE::CT_DATA) {
-            clock_freq = cf->m_freq_Mhz * 1000000.0;
+            clock_freq_MHz = cf->m_freq_Mhz;
         }
     }
 
@@ -362,44 +395,27 @@ int main(int argc, const char** argv) {
     // Actual benchmarks
 
     std::ofstream bench_file = std::ofstream("../benchFile.csv");
-
-    bench_file << "Small Reads Same Location\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    benchmark_header(bench_file, "Small Reads Same Location", config);
     for(KernelInfo kernel_info : kernel_infos) {
         BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 0, config_u32);
-        bench_file << kernel_info.cu_name << "\t";
-        bench_file << result.bandwidth << "\t";
-        bench_file << result.time_in_seconds << "\t";
-        bench_file << result.bytes_per_cycle << "\t";
-        bench_file << result.num_cycles << std::endl;
+        print_benchmark(bench_file, kernel_info, result);
     }
 
-    bench_file << "Small Sequential Reads\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    benchmark_header(bench_file, "Small Sequential Reads", config);
     for(KernelInfo kernel_info : kernel_infos) {
         BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 4, config_u32);
-        bench_file << kernel_info.cu_name << "\t";
-        bench_file << result.bandwidth << "\t";
-        bench_file << result.time_in_seconds << "\t";
-        bench_file << result.bytes_per_cycle << "\t";
-        bench_file << result.num_cycles << std::endl;
+        print_benchmark(bench_file, kernel_info, result);
     }
 
-    bench_file << "Small Reads Different Pages\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    benchmark_header(bench_file, "Small Reads Different Pages", config);
     for(KernelInfo kernel_info : kernel_infos) {
         BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 1 << 12, config_u32);
-        bench_file << kernel_info.cu_name << "\t";
-        bench_file << result.bandwidth << "\t";
-        bench_file << result.time_in_seconds << "\t";
-        bench_file << result.bytes_per_cycle << "\t";
-        bench_file << result.num_cycles << std::endl;
+        print_benchmark(bench_file, kernel_info, result);
     }
 
-    bench_file << "Large Buffer Read\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    benchmark_header(bench_file, "Large Buffer Read", config);
     for(KernelInfo kernel_info : kernel_infos) {
         BenchmarkResult result = run_kernel(kernel_info, BUFFER_CAPACITY, 0, 100, 0, config_u32);
-        bench_file << kernel_info.cu_name << "\t";
-        bench_file << result.bandwidth << "\t";
-        bench_file << result.time_in_seconds << "\t";
-        bench_file << result.bytes_per_cycle << "\t";
-        bench_file << result.num_cycles << std::endl;
+        print_benchmark(bench_file, kernel_info, result);
     }
 }
