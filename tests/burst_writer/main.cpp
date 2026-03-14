@@ -74,7 +74,8 @@ size_t BUFFER_CAPACITY = 200000000 / sizeof(uint32_t);
 double clock_freq; // In Hz
 
 struct KernelInfo {
-    std::string name;
+    std::string kernel_id;
+    std::string cu_name;
     int AXI_WIDTH;
     std::string typ;
     xrt::bo bo;
@@ -86,7 +87,7 @@ struct BenchmarkResult {
     double bandwidth;
     double time_in_seconds;
     double bytes_per_cycle;
-    uint32_t num_cycles;
+    uint64_t num_cycles;
 };
 
 uint32_t* default_buffer;
@@ -99,14 +100,14 @@ BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset
         exit(1);
     }
     xrt::bo& b = info.bo;
-    std::cout << "Kernel " << info.name << std::endl;
+    std::cout << "Kernel " << info.kernel_id << std::endl;
     std::cout << "Write initial data for buffer " << BUFFER_CAPACITY << " elements." << std::endl;
     b.write(default_buffer, sizeof(uint32_t) * BUFFER_CAPACITY, 0);
     b.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     uint64_t total_data = uint64_t(num_elems) * num_repeats * sizeof(uint32_t);
     double time_in_seconds;
     {
-        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, info.name.c_str());
+        xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, info.kernel_id.c_str());
         std::cout << "Start Write " << num_elems << " from " << offset << " (x" << num_repeats << " repeats at offset " << experiment_offset << ")" << std::endl;
         auto start_time = std::chrono::high_resolution_clock::now();
         xrt::run r = k(b, num_elems, offset, num_repeats, experiment_offset, config_u32);
@@ -117,10 +118,10 @@ BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset
     }
     //printKernelRegs(chosen_kernel);
     //printKernelRegs(chosen_kernel);
-    uint32_t num_cycles;
+    uint64_t num_cycles;
     {
-        xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, info.name.c_str());
-        num_cycles = user_manage.read_register(0x02c);
+        xrt::ip user_manage = xrt::ip(device, *xclbin_handle_ptr, info.kernel_id.c_str());
+        num_cycles = read_64_bit_reg(user_manage, 0x038) - read_64_bit_reg(user_manage, 0x030);
     }
     double bandwidth = total_data / 1000000000.0 / time_in_seconds; // GB/s
     double bytes_per_cycle = double(total_data) / num_cycles;
@@ -238,7 +239,7 @@ int main(int argc, const char** argv) {
         .arqos = 0,
         .arlock = 0,
         .arregion = 0,
-        .max_in_flight = 2000,
+        .max_in_flight = (1 << 16) - 1,
     };
     printConfig(config);
 
@@ -277,9 +278,9 @@ int main(int argc, const char** argv) {
             auto addr_mem_typ = addr_mems[0].get_type();
             
             std::string cu_name = cu.get_name().substr(kernel_name.length() + 1);
-            std::string full_name = kernel_name + ":{" + cu_name + "}";
+            std::string kernel_id = kernel_name + ":{" + cu_name + "}";
             std::string typ = cu_name.substr(kernel_name.length() + 1);
-            std::cout << "    " << full_name << " is a " << typ << std::endl;
+            std::cout << "    " << kernel_id << " is a " << typ << std::endl;
             xrt::bo::flags buf_flags;
             std::cout << "addr_mem_typ:" << static_cast<uint32_t>(addr_mem_typ) << std::endl; 
             // doesn't work, sadly, have to check buf_flags
@@ -289,9 +290,9 @@ int main(int argc, const char** argv) {
             } else {
                 buf_flags = xrt::bo::flags::normal;
             }
-            xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, full_name);
+            xrt::kernel k = xrt::kernel(device, *xclbin_handle_ptr, kernel_id);
             xrt::bo bo = xrt::bo(device, sizeof(uint32_t) * BUFFER_CAPACITY, buf_flags, k.group_id(0));
-            kernel_infos.push_back(KernelInfo{full_name, AXI_WIDTH, typ, bo});
+            kernel_infos.push_back(KernelInfo{kernel_id, cu_name, AXI_WIDTH, typ, bo});
         }
     }
 
@@ -363,42 +364,42 @@ int main(int argc, const char** argv) {
 
     // Actual benchmarks
 
-    std::ofstream bench_file = std::ofstream("benchFile.csv");
+    std::ofstream bench_file = std::ofstream("../benchFile.csv");
 
-    bench_file << "Many Small Writes To Same Location\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    bench_file << "Small Writes Same Location\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
     for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 1200, 0, config_u32);
-        bench_file << kernel_info.name << "\t";
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 0, config_u32);
+        bench_file << kernel_info.cu_name << "\t";
         bench_file << result.bandwidth << "\t";
         bench_file << result.time_in_seconds << "\t";
         bench_file << result.bytes_per_cycle << "\t";
         bench_file << result.num_cycles << std::endl;
     }
 
-    bench_file << "Many Small Sequential Writes\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    bench_file << "Small Sequential Writes\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
     for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 1200, 4, config_u32);
-        bench_file << kernel_info.name << "\t";
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 4, config_u32);
+        bench_file << kernel_info.cu_name << "\t";
         bench_file << result.bandwidth << "\t";
         bench_file << result.time_in_seconds << "\t";
         bench_file << result.bytes_per_cycle << "\t";
         bench_file << result.num_cycles << std::endl;
     }
 
-    bench_file << "Many Small Writes On Different Pages\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    bench_file << "Small Writes Different Pages\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
     for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 4096, config_u32);
-        bench_file << kernel_info.name << "\t";
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 1 << 12, config_u32);
+        bench_file << kernel_info.cu_name << "\t";
         bench_file << result.bandwidth << "\t";
         bench_file << result.time_in_seconds << "\t";
         bench_file << result.bytes_per_cycle << "\t";
         bench_file << result.num_cycles << std::endl;
     }
 
-    bench_file << "Large Buffer Benchmark\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
+    bench_file << "Large Buffer Write\tBandwidth\tTimeInSeconds\tBytesPerCycle\tNumCycles" << std::endl;
     for(KernelInfo kernel_info : kernel_infos) {
         BenchmarkResult result = run_kernel(kernel_info, BUFFER_CAPACITY, 0, 100, 0, config_u32);
-        bench_file << kernel_info.name << "\t";
+        bench_file << kernel_info.cu_name << "\t";
         bench_file << result.bandwidth << "\t";
         bench_file << result.time_in_seconds << "\t";
         bench_file << result.bytes_per_cycle << "\t";
