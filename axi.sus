@@ -522,8 +522,8 @@ module MakeStrobe #(int STROBE_WIDTH) {
     strobe = RotateRight(MakeMask(chunk_length), chunk_offset)
 }
 
-/// Similar interface to [axi_array_burst_reader]. Used to determine optimal values for [axi_array_burst_reader::MAX_IN_FLIGHT]
-module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO) {
+/// Similar interface to [axi_burst_reader]. Used to determine optimal values for [axi_burst_reader::MAX_IN_FLIGHT]
+module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO) {
     domain aclk
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
@@ -736,7 +736,7 @@ module axi_array_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int A
 
 
 /*
-Vivado Utiliziation report for axi_array_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64))
+Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64))
 +-------------------------+------+-------+------------+-----------+-------+
 |        Site Type        | Used | Fixed | Prohibited | Available | Util% |
 +-------------------------+------+-------+------------+-----------+-------+
@@ -764,7 +764,7 @@ Vivado Utiliziation report for axi_array_burst_reader#(AXI_WIDTH: 512, ADDR_ALIG
 /// XXXXXXXX
 /// XXXXX...
 /// due to alignment of address
-module axi_array_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, int MAX_IN_FLIGHT) {
+module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, int MAX_IN_FLIGHT) {
     domain aclk
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
@@ -967,7 +967,7 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
     // When T is bigger than AXI_WIDTH, multiple output cycles would be needed per input transfer. But with this AXI reader, we cannot provide backpressure (without a FIFO that is, of course)
     assert#(C: AXI_WIDTH <= sizeof#(T))
-    axi_array_burst_reader #(AXI_WIDTH, ADDR_ALIGN, ATO, COUNT_TO: COUNT_TO * NUM_ELEMENTS_PER_VALUE, MAX_IN_FLIGHT) parent
+    axi_burst_reader #(AXI_WIDTH, ADDR_ALIGN, ATO, COUNT_TO: COUNT_TO * NUM_ELEMENTS_PER_VALUE, MAX_IN_FLIGHT) parent
 
     // export axi interface
     domain axi4_read
@@ -1476,7 +1476,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
 /// 
 /// Once a burst has been requested, wait until [burst_accepted] goes high before writing data through [may_write] and [write].
 /// It is guaranteed that [burst_accepted] goes high after a fixed number of clock cycles, no need for state management around it. 
-module axi_array_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_LATENCY, int ADDR_MAY_PUSH_LATENCY) {
+module axi_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_LATENCY, int ADDR_MAY_PUSH_LATENCY) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 

@@ -43,7 +43,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
     ctrl.rready  =         s_axi_control_rready
 
     axi_memory_reader_tie_off reader
-    axi_array_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
+    axi_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
 
     domain mem_write
     output bool                     m_axi_awvalid = writer.awvalid

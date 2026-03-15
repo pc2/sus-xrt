@@ -56,7 +56,7 @@ logic request_new_burst = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
-axi_array_burst_reader_AXI_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_ATO_18446744073709551616 dut(
+axi_burst_reader_AXI_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_ATO_18446744073709551616 dut(
     .aclk(clk),
     .aresetn(aresetn),
 

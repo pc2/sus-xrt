@@ -95,7 +95,7 @@ set_property size           {32}              [ipx::get_registers PARAM_B  -of_o
 ```
 Output parameters can't be declared since XRT doesn't expose those for `xrt::kernel`. For those you have to use `xrt::ip`, and call `ip.read_register(0x018)` yourself. 
 
-### `axi_array_burst_writer`
+### `axi_burst_writer`
 
 **Usage example:**
 ```sus
@@ -114,7 +114,7 @@ module MemoryZeroer {
     domain axi_control
     // ...
 
-    axi_array_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
+    axi_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
     domain mem_write
     output bool                        m_axi_awvalid = writer.awvalid
     input  bool                        m_axi_awready

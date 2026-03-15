@@ -44,7 +44,7 @@ module bench_burst_reader#(int AXI_WIDTH) {
     ctrl.arvalid =         s_axi_control_arvalid
     ctrl.rready  =         s_axi_control_rready
 
-    axi_array_burst_reader_benchmarker#(AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64)) reader
+    axi_burst_reader_benchmarker#(AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64)) reader
     axi_memory_writer_tie_off writer
 
     domain mem_write

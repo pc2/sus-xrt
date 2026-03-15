@@ -42,8 +42,8 @@ module memory_doubler#(int AXI_WIDTH) {
     ctrl.arvalid =         s_axi_control_arvalid
     ctrl.rready  =         s_axi_control_rready
 
-    axi_array_burst_reader#(ATO: MEM_ATO, ADDR_ALIGN: 4) reader
-    axi_array_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
+    axi_burst_reader#(ATO: MEM_ATO, ADDR_ALIGN: 4) reader
+    axi_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
 
     domain mem_write
     output bool                     m_axi_awvalid = writer.awvalid
