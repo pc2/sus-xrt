@@ -95,8 +95,13 @@ set_property size           {32}              [ipx::get_registers PARAM_B  -of_o
 ```
 Output parameters can't be declared since XRT doesn't expose those for `xrt::kernel`. For those you have to use `xrt::ip`, and call `ip.read_register(0x018)` yourself. 
 
-### `axi_burst_writer`
+### `axi_burst_reader`
+![img/burst_reader.png](img/burst_reader.png)
 
+TODO
+
+### `axi_burst_writer`
+![img/burst_writer.png](img/burst_writer.png)
 **Usage example:**
 ```sus
 module MemoryZeroer {
