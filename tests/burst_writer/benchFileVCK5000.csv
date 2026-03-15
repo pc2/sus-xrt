@@ -1,0 +1,560 @@
+Small Writes Same Location	awprot: 0	awcache: 0	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000183129	7.0356e-05	0.218425	0.568537
+burst_writer64_ddr	30050	1.33111	0.000186788	7.03747e-05	0.214147	0.568386
+burst_writer128_ddr	30040	1.33156	0.000190188	7.03513e-05	0.210318	0.568575
+burst_writer256_ddr	30044	1.33138	0.000189759	7.03607e-05	0.210794	0.5685
+burst_writer512_ddr	30043	1.33142	0.000187408	7.03583e-05	0.213438	0.568518
+Small Sequential Writes	awprot: 0	awcache: 0	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30103	1.32877	0.000189798	7.04988e-05	0.21075	0.567385
+burst_writer64_ddr	30138	1.32723	0.000173329	7.05808e-05	0.230775	0.566726
+burst_writer128_ddr	30084	1.32961	0.000200039	7.04543e-05	0.199961	0.567744
+burst_writer256_ddr	30152	1.32661	0.000191778	7.06136e-05	0.208574	0.566463
+burst_writer512_ddr	30143	1.32701	0.000195089	7.05925e-05	0.205035	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 0	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000750875	0.0005796	0.0532712	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000834894	0.000659536	0.0479103	0.0606487
+burst_writer128_ddr	238968	0.167386	0.000730755	0.000559644	0.0547379	0.071474
+burst_writer256_ddr	298708	0.13391	0.000870444	0.00069955	0.0459536	0.0571796
+burst_writer512_ddr	281658	0.142016	0.000835614	0.000659621	0.047869	0.0606409
+Single Write Latency	awprot: 0	awcache: 0	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000110999	1.05386e-07	3.60364e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.0001226	1.24122e-07	3.26264e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000117799	1.00703e-07	3.39561e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.0001094	1.1007e-07	3.65631e-05	0.0363404
+burst_writer512_ddr	46	0.0869565	0.000111809	1.07728e-07	3.57753e-05	0.0371304
+Large Buffer Write	awprot: 0	awcache: 0	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187205	3.9084	11.9938	11.984	1.66753	1.66889
+burst_writer64_ddr	2640625163	7.57396	6.18924	6.18413	3.23141	3.23408
+burst_writer128_ddr	1375003063	14.5454	3.22289	3.22015	6.2056	6.2109
+burst_writer256_ddr	792830670	25.2261	1.85844	1.85675	10.7617	10.7715
+burst_writer512_ddr	719610567	27.7928	1.687	1.68527	11.8553	11.8675
+Small Writes Same Location	awprot: 0	awcache: 1	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000209569	7.0356e-05	0.190868	0.568537
+burst_writer64_ddr	30050	1.33111	0.000202488	7.03747e-05	0.197543	0.568386
+burst_writer128_ddr	30040	1.33156	0.000193149	7.03513e-05	0.207094	0.568575
+burst_writer256_ddr	30044	1.33138	0.000196529	7.03607e-05	0.203532	0.5685
+burst_writer512_ddr	30043	1.33142	0.000200798	7.03583e-05	0.199205	0.568518
+Small Sequential Writes	awprot: 0	awcache: 1	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30103	1.32877	0.000198129	7.04988e-05	0.201889	0.567385
+burst_writer64_ddr	30138	1.32723	0.000195468	7.05808e-05	0.204637	0.566726
+burst_writer128_ddr	30084	1.32961	0.000191639	7.04543e-05	0.208726	0.567744
+burst_writer256_ddr	30151	1.32666	0.000190859	7.06112e-05	0.209579	0.566482
+burst_writer512_ddr	30143	1.32701	0.000199968	7.05925e-05	0.200032	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 1	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000761254	0.0005796	0.0525449	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000839034	0.000659536	0.0476739	0.0606487
+burst_writer128_ddr	238968	0.167386	0.000725715	0.000559644	0.0551181	0.071474
+burst_writer256_ddr	298713	0.133908	0.000862744	0.000699562	0.0463637	0.0571786
+burst_writer512_ddr	281658	0.142016	0.000845534	0.000659621	0.0473074	0.0606409
+Single Write Latency	awprot: 0	awcache: 1	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000123499	1.05386e-07	3.23889e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000125629	1.24122e-07	3.18398e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.00012476	1.00703e-07	3.20616e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000119829	1.1007e-07	3.33809e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.000105809	1.05386e-07	3.7804e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 1	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187453	3.9084	11.9936	11.984	1.66755	1.66889
+burst_writer64_ddr	2640625485	7.57396	6.18922	6.18413	3.23143	3.23408
+burst_writer128_ddr	1375005889	14.5454	3.22303	3.22015	6.20535	6.21088
+burst_writer256_ddr	792834116	25.226	1.85856	1.85675	10.761	10.7715
+burst_writer512_ddr	719620879	27.7924	1.68686	1.68529	11.8563	11.8674
+Small Writes Same Location	awprot: 0	awcache: 2	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000204678	7.0356e-05	0.195429	0.568537
+burst_writer64_ddr	30050	1.33111	0.000203058	7.03747e-05	0.196988	0.568386
+burst_writer128_ddr	30040	1.33156	0.000200439	7.03513e-05	0.199562	0.568575
+burst_writer256_ddr	30044	1.33138	0.000193399	7.03607e-05	0.206826	0.5685
+burst_writer512_ddr	30043	1.33142	0.000203619	7.03583e-05	0.196445	0.568518
+Small Sequential Writes	awprot: 0	awcache: 2	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30104	1.32873	0.000198789	7.05012e-05	0.201218	0.567366
+burst_writer64_ddr	30137	1.32727	0.000196849	7.05785e-05	0.203201	0.566745
+burst_writer128_ddr	30083	1.32965	0.000193689	7.0452e-05	0.206517	0.567763
+burst_writer256_ddr	30152	1.32661	0.000203818	7.06136e-05	0.196254	0.566463
+burst_writer512_ddr	30144	1.32696	0.000188789	7.05948e-05	0.211877	0.566614
+Small Writes Different Pages	awprot: 0	awcache: 2	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000757954	0.0005796	0.0527737	0.0690132
+burst_writer64_ddr	281623	0.142034	0.000846584	0.000659539	0.0472487	0.0606485
+burst_writer128_ddr	238977	0.16738	0.000742715	0.000559665	0.0538565	0.0714713
+burst_writer256_ddr	298708	0.13391	0.000833114	0.00069955	0.0480126	0.0571796
+burst_writer512_ddr	281659	0.142016	0.000819754	0.000659623	0.0487951	0.0606407
+Single Write Latency	awprot: 0	awcache: 2	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000120259	1.05386e-07	3.32615e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000120059	1.24122e-07	3.3317e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000125499	1.00703e-07	3.18728e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000130039	1.1007e-07	3.076e-05	0.0363404
+burst_writer512_ddr	46	0.0869565	0.000129039	1.07728e-07	3.09984e-05	0.0371304
+Large Buffer Write	awprot: 0	awcache: 2	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117186516	3.9084	11.9938	11.984	1.66752	1.66889
+burst_writer64_ddr	2640625319	7.57396	6.18923	6.18413	3.23142	3.23408
+burst_writer128_ddr	1375001964	14.5454	3.22295	3.22015	6.2055	6.2109
+burst_writer256_ddr	792830360	25.2261	1.85843	1.85675	10.7618	10.7715
+burst_writer512_ddr	719623285	27.7923	1.68699	1.6853	11.8554	11.8673
+Small Writes Same Location	awprot: 0	awcache: 3	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000210359	7.0356e-05	0.190151	0.568537
+burst_writer64_ddr	30050	1.33111	0.000204349	7.03747e-05	0.195744	0.568386
+burst_writer128_ddr	30040	1.33156	0.000194548	7.03513e-05	0.205605	0.568575
+burst_writer256_ddr	30044	1.33138	0.000196348	7.03607e-05	0.20372	0.5685
+burst_writer512_ddr	30043	1.33142	0.000196829	7.03583e-05	0.203222	0.568518
+Small Sequential Writes	awprot: 0	awcache: 3	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30104	1.32873	0.000191278	7.05012e-05	0.20912	0.567366
+burst_writer64_ddr	30138	1.32723	0.000198569	7.05808e-05	0.201441	0.566726
+burst_writer128_ddr	30083	1.32965	0.000185568	7.0452e-05	0.215554	0.567763
+burst_writer256_ddr	30151	1.32666	0.000191689	7.06112e-05	0.208671	0.566482
+burst_writer512_ddr	30142	1.32705	0.000200379	7.05902e-05	0.199622	0.566651
+Small Writes Different Pages	awprot: 0	awcache: 3	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000764115	0.0005796	0.0523481	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000834785	0.000659536	0.0479165	0.0606487
+burst_writer128_ddr	238975	0.167382	0.000744205	0.00055966	0.0537486	0.0714719
+burst_writer256_ddr	298718	0.133906	0.000879114	0.000699574	0.0455004	0.0571777
+burst_writer512_ddr	281665	0.142013	0.000851184	0.000659637	0.0469934	0.0606394
+Single Write Latency	awprot: 0	awcache: 3	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000128809	1.05386e-07	3.10537e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000135859	1.24122e-07	2.94423e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000124429	1.00703e-07	3.21468e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.00013389	1.1007e-07	2.98753e-05	0.0363404
+burst_writer512_ddr	46	0.0869565	0.00012368	1.07728e-07	3.23415e-05	0.0371304
+Large Buffer Write	awprot: 0	awcache: 3	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117186145	3.9084	11.9938	11.984	1.66752	1.66889
+burst_writer64_ddr	2640625388	7.57396	6.18929	6.18413	3.23139	3.23408
+burst_writer128_ddr	1375002966	14.5454	3.22292	3.22015	6.20555	6.2109
+burst_writer256_ddr	792855843	25.2253	1.85853	1.85681	10.7612	10.7712
+burst_writer512_ddr	719593991	27.7935	1.68688	1.68523	11.8562	11.8678
+Small Writes Same Location	awprot: 0	awcache: 4	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000210868	7.0356e-05	0.189692	0.568537
+burst_writer64_ddr	30050	1.33111	0.000202628	7.03747e-05	0.197406	0.568386
+burst_writer128_ddr	30040	1.33156	0.000215578	7.03513e-05	0.185548	0.568575
+burst_writer256_ddr	30044	1.33138	0.000207298	7.03607e-05	0.192959	0.5685
+burst_writer512_ddr	30042	1.33147	0.000196568	7.0356e-05	0.203492	0.568537
+Small Sequential Writes	awprot: 0	awcache: 4	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30102	1.32882	0.000200449	7.04965e-05	0.199552	0.567404
+burst_writer64_ddr	30138	1.32723	0.000195738	7.05808e-05	0.204355	0.566726
+burst_writer128_ddr	30083	1.32965	0.000187829	7.0452e-05	0.21296	0.567763
+burst_writer256_ddr	30151	1.32666	0.000194859	7.06112e-05	0.205277	0.566482
+burst_writer512_ddr	30143	1.32701	0.000221718	7.05925e-05	0.180409	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 4	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000760985	0.0005796	0.0525635	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000841854	0.000659536	0.0475142	0.0606487
+burst_writer128_ddr	238972	0.167384	0.000730175	0.000559653	0.0547814	0.0714728
+burst_writer256_ddr	298709	0.13391	0.000881454	0.000699553	0.0453796	0.0571794
+burst_writer512_ddr	281663	0.142014	0.000840914	0.000659632	0.0475673	0.0606398
+Single Write Latency	awprot: 0	awcache: 4	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000125009	1.05386e-07	3.19977e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000113859	1.24122e-07	3.51312e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000113219	1.00703e-07	3.53298e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000122549	1.1007e-07	3.264e-05	0.0363404
+burst_writer512_ddr	46	0.0869565	0.000122059	1.07728e-07	3.2771e-05	0.0371304
+Large Buffer Write	awprot: 0	awcache: 4	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187179	3.9084	11.9937	11.984	1.66755	1.66889
+burst_writer64_ddr	2640625309	7.57396	6.18937	6.18413	3.23135	3.23408
+burst_writer128_ddr	1375003850	14.5454	3.223	3.22015	6.20539	6.21089
+burst_writer256_ddr	792835848	25.2259	1.85845	1.85676	10.7617	10.7715
+burst_writer512_ddr	719622285	27.7924	1.68702	1.6853	11.8552	11.8673
+Small Writes Same Location	awprot: 0	awcache: 5	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000214109	7.0356e-05	0.186821	0.568537
+burst_writer64_ddr	30050	1.33111	0.000198949	7.03747e-05	0.201057	0.568386
+burst_writer128_ddr	30040	1.33156	0.000199408	7.03513e-05	0.200594	0.568575
+burst_writer256_ddr	30045	1.33134	0.000194648	7.0363e-05	0.205499	0.568481
+burst_writer512_ddr	30042	1.33147	0.000196429	7.0356e-05	0.203636	0.568537
+Small Sequential Writes	awprot: 0	awcache: 5	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30101	1.32886	0.000192099	7.04941e-05	0.208226	0.567423
+burst_writer64_ddr	30138	1.32723	0.000186909	7.05808e-05	0.214008	0.566726
+burst_writer128_ddr	30084	1.32961	0.000199589	7.04543e-05	0.200412	0.567744
+burst_writer256_ddr	30151	1.32666	0.000193428	7.06112e-05	0.206795	0.566482
+burst_writer512_ddr	30144	1.32696	0.000189139	7.05948e-05	0.211485	0.566614
+Small Writes Different Pages	awprot: 0	awcache: 5	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000763155	0.0005796	0.052414	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000844264	0.000659536	0.0473785	0.0606487
+burst_writer128_ddr	238981	0.167377	0.000734426	0.000559674	0.0544643	0.0714701
+burst_writer256_ddr	298712	0.133908	0.000882594	0.00069956	0.045321	0.0571788
+burst_writer512_ddr	281656	0.142017	0.000841034	0.000659616	0.0475605	0.0606413
+Single Write Latency	awprot: 0	awcache: 5	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000105989	1.05386e-07	3.77398e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000123959	1.24122e-07	3.22687e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000141699	1.00703e-07	2.82289e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000139349	1.1007e-07	2.87049e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.00011477	1.05386e-07	3.48523e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 5	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187440	3.9084	11.9938	11.984	1.66753	1.66889
+burst_writer64_ddr	2640625167	7.57396	6.18937	6.18413	3.23135	3.23408
+burst_writer128_ddr	1375004887	14.5454	3.22289	3.22015	6.20561	6.21089
+burst_writer256_ddr	792831135	25.2261	1.85855	1.85675	10.7611	10.7715
+burst_writer512_ddr	719609005	27.7929	1.68688	1.68527	11.8562	11.8676
+Small Writes Same Location	awprot: 0	awcache: 6	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000217019	7.0356e-05	0.184316	0.568537
+burst_writer64_ddr	30050	1.33111	0.000207069	7.03747e-05	0.193172	0.568386
+burst_writer128_ddr	30040	1.33156	0.000195029	7.03513e-05	0.205098	0.568575
+burst_writer256_ddr	30044	1.33138	0.000198209	7.03607e-05	0.201807	0.5685
+burst_writer512_ddr	30043	1.33142	0.000196889	7.03583e-05	0.20316	0.568518
+Small Sequential Writes	awprot: 0	awcache: 6	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30103	1.32877	0.000196649	7.04988e-05	0.203408	0.567385
+burst_writer64_ddr	30138	1.32723	0.000194739	7.05808e-05	0.205403	0.566726
+burst_writer128_ddr	30083	1.32965	0.000188829	7.0452e-05	0.211832	0.567763
+burst_writer256_ddr	30150	1.3267	0.000191639	7.06089e-05	0.208726	0.566501
+burst_writer512_ddr	30144	1.32696	0.000197698	7.05948e-05	0.202329	0.566614
+Small Writes Different Pages	awprot: 0	awcache: 6	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000755595	0.0005796	0.0529384	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000846595	0.000659536	0.0472481	0.0606487
+burst_writer128_ddr	238974	0.167382	0.000729345	0.000559658	0.0548437	0.0714722
+burst_writer256_ddr	298705	0.133911	0.000862425	0.000699543	0.0463808	0.0571802
+burst_writer512_ddr	281663	0.142014	0.000846695	0.000659632	0.0472425	0.0606398
+Single Write Latency	awprot: 0	awcache: 6	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000120079	1.05386e-07	3.33114e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.00011935	1.24122e-07	3.35149e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000123259	1.00703e-07	3.2452e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000123879	1.1007e-07	3.22896e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.000117839	1.05386e-07	3.39446e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 6	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187022	3.9084	11.9938	11.984	1.66752	1.66889
+burst_writer64_ddr	2640625383	7.57396	6.18923	6.18413	3.23142	3.23408
+burst_writer128_ddr	1375001953	14.5454	3.22291	3.22015	6.20557	6.2109
+burst_writer256_ddr	792836365	25.2259	1.85845	1.85676	10.7617	10.7715
+burst_writer512_ddr	719641226	27.7916	1.68691	1.68534	11.856	11.867
+Small Writes Same Location	awprot: 0	awcache: 7	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000211949	7.0356e-05	0.188725	0.568537
+burst_writer64_ddr	30050	1.33111	0.000203198	7.03747e-05	0.196852	0.568386
+burst_writer128_ddr	30040	1.33156	0.000197469	7.03513e-05	0.202563	0.568575
+burst_writer256_ddr	30044	1.33138	0.000194669	7.03607e-05	0.205477	0.5685
+burst_writer512_ddr	30043	1.33142	0.000206999	7.03583e-05	0.193238	0.568518
+Small Sequential Writes	awprot: 0	awcache: 7	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30103	1.32877	0.000188918	7.04988e-05	0.211732	0.567385
+burst_writer64_ddr	30138	1.32723	0.000191988	7.05808e-05	0.208346	0.566726
+burst_writer128_ddr	30083	1.32965	0.000193449	7.0452e-05	0.206773	0.567763
+burst_writer256_ddr	30151	1.32666	0.000189949	7.06112e-05	0.210583	0.566482
+burst_writer512_ddr	30144	1.32696	0.000179339	7.05948e-05	0.223041	0.566614
+Small Writes Different Pages	awprot: 0	awcache: 7	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000756965	0.0005796	0.0528426	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000845714	0.000659536	0.0472973	0.0606487
+burst_writer128_ddr	238973	0.167383	0.000747815	0.000559656	0.0534892	0.0714725
+burst_writer256_ddr	298719	0.133905	0.000882873	0.000699576	0.0453066	0.0571775
+burst_writer512_ddr	281665	0.142013	0.000855814	0.000659637	0.0467391	0.0606394
+Single Write Latency	awprot: 0	awcache: 7	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000128929	1.05386e-07	3.10248e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000129228	1.24122e-07	3.0953e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000117989	1.00703e-07	3.39015e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000137228	1.1007e-07	2.91486e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.000125389	1.05386e-07	3.19007e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 7	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117185859	3.9084	11.9936	11.984	1.66755	1.66889
+burst_writer64_ddr	2640625190	7.57396	6.1892	6.18413	3.23143	3.23408
+burst_writer128_ddr	1375004906	14.5454	3.22291	3.22015	6.20557	6.21089
+burst_writer256_ddr	792830675	25.2261	1.85862	1.85675	10.7607	10.7715
+burst_writer512_ddr	719596811	27.7933	1.68692	1.68524	11.8559	11.8678
+Small Writes Same Location	awprot: 0	awcache: 8	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000210349	7.0356e-05	0.19016	0.568537
+burst_writer64_ddr	30050	1.33111	0.000202339	7.03747e-05	0.197688	0.568386
+burst_writer128_ddr	30040	1.33156	0.000204699	7.03513e-05	0.195409	0.568575
+burst_writer256_ddr	30044	1.33138	0.000194699	7.03607e-05	0.205445	0.5685
+burst_writer512_ddr	30043	1.33142	0.000186969	7.03583e-05	0.213939	0.568518
+Small Sequential Writes	awprot: 0	awcache: 8	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30101	1.32886	0.000190039	7.04941e-05	0.210483	0.567423
+burst_writer64_ddr	30138	1.32723	0.000196839	7.05808e-05	0.203212	0.566726
+burst_writer128_ddr	30083	1.32965	0.000197419	7.0452e-05	0.202615	0.567763
+burst_writer256_ddr	30151	1.32666	0.000191679	7.06112e-05	0.208682	0.566482
+burst_writer512_ddr	30143	1.32701	0.000195629	7.05925e-05	0.204469	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 8	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000761285	0.0005796	0.0525427	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000834244	0.000659536	0.0479476	0.0606487
+burst_writer128_ddr	238977	0.16738	0.000728075	0.000559665	0.0549394	0.0714713
+burst_writer256_ddr	298701	0.133913	0.000877214	0.000699534	0.0455989	0.0571809
+burst_writer512_ddr	281667	0.142012	0.000847024	0.000659642	0.0472242	0.060639
+Single Write Latency	awprot: 0	awcache: 8	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000121949	1.05386e-07	3.28006e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.00011702	1.24122e-07	3.41822e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000128229	1.00703e-07	3.11942e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.00012478	1.1007e-07	3.20564e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.000120399	1.05386e-07	3.32229e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 8	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187241	3.9084	11.9938	11.984	1.66753	1.66889
+burst_writer64_ddr	2640625166	7.57396	6.1892	6.18413	3.23143	3.23408
+burst_writer128_ddr	1375006895	14.5454	3.22309	3.22016	6.20523	6.21088
+burst_writer256_ddr	792835395	25.2259	1.85845	1.85676	10.7617	10.7715
+burst_writer512_ddr	719656285	27.791	1.68702	1.68538	11.8552	11.8668
+Small Writes Same Location	awprot: 0	awcache: 9	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000213509	7.0356e-05	0.187346	0.568537
+burst_writer64_ddr	30050	1.33111	0.00020065	7.03747e-05	0.199352	0.568386
+burst_writer128_ddr	30040	1.33156	0.000192789	7.03513e-05	0.207481	0.568575
+burst_writer256_ddr	30044	1.33138	0.000196149	7.03607e-05	0.203927	0.5685
+burst_writer512_ddr	30042	1.33147	0.000192669	7.0356e-05	0.20761	0.568537
+Small Sequential Writes	awprot: 0	awcache: 9	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30102	1.32882	0.00017325	7.04965e-05	0.23088	0.567404
+burst_writer64_ddr	30138	1.32723	0.00018823	7.05808e-05	0.212506	0.566726
+burst_writer128_ddr	30083	1.32965	0.000190289	7.0452e-05	0.210207	0.567763
+burst_writer256_ddr	30151	1.32666	0.000192029	7.06112e-05	0.208302	0.566482
+burst_writer512_ddr	30143	1.32701	0.000188609	7.05925e-05	0.212079	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 9	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000778157	0.0005796	0.0514035	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000846777	0.000659536	0.0472379	0.0606487
+burst_writer128_ddr	238970	0.167385	0.000736437	0.000559649	0.0543156	0.0714734
+burst_writer256_ddr	298708	0.13391	0.000895566	0.00069955	0.0446645	0.0571796
+burst_writer512_ddr	281657	0.142017	0.000842207	0.000659618	0.0474943	0.0606411
+Single Write Latency	awprot: 0	awcache: 9	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.0001192	1.05386e-07	3.3557e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.00012402	1.24122e-07	3.22529e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.00012735	1.00703e-07	3.14095e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.00011666	1.1007e-07	3.42877e-05	0.0363404
+burst_writer512_ddr	46	0.0869565	0.00012168	1.07728e-07	3.28731e-05	0.0371304
+Large Buffer Write	awprot: 0	awcache: 9	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187497	3.9084	11.9937	11.984	1.66754	1.66889
+burst_writer64_ddr	2640625322	7.57396	6.18929	6.18413	3.23139	3.23408
+burst_writer128_ddr	1375006485	14.5454	3.22292	3.22016	6.20554	6.21088
+burst_writer256_ddr	792830816	25.2261	1.8586	1.85675	10.7608	10.7715
+burst_writer512_ddr	719599108	27.7933	1.68684	1.68524	11.8565	11.8677
+Small Writes Same Location	awprot: 0	awcache: 10	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000217999	7.0356e-05	0.183487	0.568537
+burst_writer64_ddr	30050	1.33111	0.000212258	7.03747e-05	0.18845	0.568386
+burst_writer128_ddr	30040	1.33156	0.000193599	7.03513e-05	0.206613	0.568575
+burst_writer256_ddr	30044	1.33138	0.000196749	7.03607e-05	0.203305	0.5685
+burst_writer512_ddr	30043	1.33142	0.000191928	7.03583e-05	0.208411	0.568518
+Small Sequential Writes	awprot: 0	awcache: 10	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30104	1.32873	0.000190679	7.05012e-05	0.209777	0.567366
+burst_writer64_ddr	30138	1.32723	0.000186999	7.05808e-05	0.213905	0.566726
+burst_writer128_ddr	30083	1.32965	0.000190209	7.0452e-05	0.210295	0.567763
+burst_writer256_ddr	30151	1.32666	0.000188459	7.06112e-05	0.212248	0.566482
+burst_writer512_ddr	30143	1.32701	0.000193239	7.05925e-05	0.206998	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 10	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000762455	0.0005796	0.0524621	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000813134	0.000659536	0.0491924	0.0606487
+burst_writer128_ddr	238973	0.167383	0.000740005	0.000559656	0.0540537	0.0714725
+burst_writer256_ddr	298715	0.133907	0.000874654	0.000699567	0.0457324	0.0571782
+burst_writer512_ddr	281662	0.142014	0.000847804	0.00065963	0.0471807	0.0606401
+Single Write Latency	awprot: 0	awcache: 10	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000128049	1.05386e-07	3.1238e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000128239	1.24122e-07	3.11918e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000135079	1.00703e-07	2.96123e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000126989	1.1007e-07	3.14988e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.00012319	1.05386e-07	3.24702e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 10	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187186	3.9084	11.9936	11.984	1.66755	1.66889
+burst_writer64_ddr	2640625605	7.57396	6.18925	6.18413	3.23141	3.23408
+burst_writer128_ddr	1375003028	14.5454	3.2229	3.22015	6.2056	6.2109
+burst_writer256_ddr	792862499	25.2251	1.85864	1.85682	10.7606	10.7711
+burst_writer512_ddr	719649197	27.7913	1.68709	1.68536	11.8547	11.8669
+Small Writes Same Location	awprot: 0	awcache: 11	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000212068	7.0356e-05	0.188619	0.568537
+burst_writer64_ddr	30050	1.33111	0.000191918	7.03747e-05	0.208422	0.568386
+burst_writer128_ddr	30040	1.33156	0.000195979	7.03513e-05	0.204104	0.568575
+burst_writer256_ddr	30044	1.33138	0.000197388	7.03607e-05	0.202647	0.5685
+burst_writer512_ddr	30042	1.33147	0.000197449	7.0356e-05	0.202584	0.568537
+Small Sequential Writes	awprot: 0	awcache: 11	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30103	1.32877	0.000199449	7.04988e-05	0.200553	0.567385
+burst_writer64_ddr	30138	1.32723	0.000194809	7.05808e-05	0.205329	0.566726
+burst_writer128_ddr	30083	1.32965	0.000209709	7.0452e-05	0.190741	0.567763
+burst_writer256_ddr	30151	1.32666	0.000197999	7.06112e-05	0.202021	0.566482
+burst_writer512_ddr	30143	1.32701	0.000190398	7.05925e-05	0.210086	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 11	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247490	0.161623	0.000766235	0.000579602	0.0522033	0.0690129
+burst_writer64_ddr	281622	0.142034	0.000842115	0.000659536	0.0474995	0.0606487
+burst_writer128_ddr	238973	0.167383	0.000726695	0.000559656	0.0550437	0.0714725
+burst_writer256_ddr	298704	0.133912	0.000877464	0.000699541	0.0455859	0.0571804
+burst_writer512_ddr	281657	0.142017	0.000840375	0.000659618	0.0475978	0.0606411
+Single Write Latency	awprot: 0	awcache: 11	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000117019	1.05386e-07	3.41825e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000128599	1.24122e-07	3.11044e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000119419	1.00703e-07	3.34955e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000117739	1.1007e-07	3.39734e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.000127529	1.05386e-07	3.13654e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 11	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117186053	3.9084	11.9938	11.984	1.66753	1.66889
+burst_writer64_ddr	2640625325	7.57396	6.18937	6.18413	3.23134	3.23408
+burst_writer128_ddr	1375003618	14.5454	3.22288	3.22015	6.20563	6.21089
+burst_writer256_ddr	792830624	25.2261	1.85844	1.85675	10.7617	10.7715
+burst_writer512_ddr	719618265	27.7925	1.68699	1.68529	11.8554	11.8674
+Small Writes Same Location	awprot: 0	awcache: 12	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000209209	7.0356e-05	0.191196	0.568537
+burst_writer64_ddr	30050	1.33111	0.000210028	7.03747e-05	0.190451	0.568386
+burst_writer128_ddr	30040	1.33156	0.000196099	7.03513e-05	0.203979	0.568575
+burst_writer256_ddr	30044	1.33138	0.000205379	7.03607e-05	0.194762	0.5685
+burst_writer512_ddr	30042	1.33147	0.000198089	7.0356e-05	0.201929	0.568537
+Small Sequential Writes	awprot: 0	awcache: 12	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30103	1.32877	0.000192088	7.04988e-05	0.208238	0.567385
+burst_writer64_ddr	30138	1.32723	0.000198879	7.05808e-05	0.201127	0.566726
+burst_writer128_ddr	30083	1.32965	0.000196089	7.0452e-05	0.203989	0.567763
+burst_writer256_ddr	30151	1.32666	0.000190929	7.06112e-05	0.209502	0.566482
+burst_writer512_ddr	30143	1.32701	0.000195149	7.05925e-05	0.204972	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 12	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000754155	0.0005796	0.0530395	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000839754	0.000659536	0.047633	0.0606487
+burst_writer128_ddr	238974	0.167382	0.000722755	0.000559658	0.0553438	0.0714722
+burst_writer256_ddr	298710	0.133909	0.000868594	0.000699555	0.0460514	0.0571792
+burst_writer512_ddr	281663	0.142014	0.000846444	0.000659632	0.0472565	0.0606398
+Single Write Latency	awprot: 0	awcache: 12	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000123779	1.05386e-07	3.23157e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000129499	1.24122e-07	3.08883e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.00011106	1.00703e-07	3.60166e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000123929	1.1007e-07	3.22765e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.000117589	1.05386e-07	3.40168e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 12	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187197	3.9084	11.9938	11.984	1.66752	1.66889
+burst_writer64_ddr	2640625444	7.57396	6.18936	6.18413	3.23135	3.23408
+burst_writer128_ddr	1375006119	14.5454	3.22309	3.22015	6.20522	6.21088
+burst_writer256_ddr	792830705	25.2261	1.85844	1.85675	10.7617	10.7715
+burst_writer512_ddr	719648858	27.7913	1.68703	1.68536	11.8551	11.8669
+Small Writes Same Location	awprot: 0	awcache: 13	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000208808	7.0356e-05	0.191564	0.568537
+burst_writer64_ddr	30050	1.33111	0.000200919	7.03747e-05	0.199085	0.568386
+burst_writer128_ddr	30040	1.33156	0.000194958	7.03513e-05	0.205172	0.568575
+burst_writer256_ddr	30044	1.33138	0.000196249	7.03607e-05	0.203823	0.5685
+burst_writer512_ddr	30043	1.33142	0.000205989	7.03583e-05	0.194185	0.568518
+Small Sequential Writes	awprot: 0	awcache: 13	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30104	1.32873	0.000193899	7.05012e-05	0.206293	0.567366
+burst_writer64_ddr	30137	1.32727	0.000195389	7.05785e-05	0.20472	0.566745
+burst_writer128_ddr	30083	1.32965	0.000199338	7.0452e-05	0.200664	0.567763
+burst_writer256_ddr	30151	1.32666	0.000194888	7.06112e-05	0.205246	0.566482
+burst_writer512_ddr	30143	1.32701	0.000197309	7.05925e-05	0.202728	0.566632
+Small Writes Different Pages	awprot: 0	awcache: 13	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000764305	0.0005796	0.0523351	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000836985	0.000659536	0.0477906	0.0606487
+burst_writer128_ddr	238984	0.167375	0.000745685	0.000559681	0.053642	0.0714692
+burst_writer256_ddr	298708	0.13391	0.000871124	0.00069955	0.0459177	0.0571796
+burst_writer512_ddr	281662	0.142014	0.000850815	0.00065963	0.0470137	0.0606401
+Single Write Latency	awprot: 0	awcache: 13	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.00012356	1.05386e-07	3.23729e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000131329	1.24122e-07	3.04579e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000123579	1.00703e-07	3.2368e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.00012204	1.1007e-07	3.27761e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.000125719	1.05386e-07	3.1817e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 13	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187478	3.9084	11.9938	11.984	1.66752	1.66889
+burst_writer64_ddr	2640625217	7.57396	6.18937	6.18413	3.23134	3.23408
+burst_writer128_ddr	1375003248	14.5454	3.22291	3.22015	6.20557	6.21089
+burst_writer256_ddr	792831036	25.2261	1.85854	1.85675	10.7611	10.7715
+burst_writer512_ddr	719610759	27.7928	1.68692	1.68527	11.8559	11.8675
+Small Writes Same Location	awprot: 0	awcache: 14	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000205698	7.0356e-05	0.19446	0.568537
+burst_writer64_ddr	30050	1.33111	0.000210539	7.03747e-05	0.189989	0.568386
+burst_writer128_ddr	30040	1.33156	0.000184529	7.03513e-05	0.216768	0.568575
+burst_writer256_ddr	30044	1.33138	0.000203118	7.03607e-05	0.19693	0.5685
+burst_writer512_ddr	30043	1.33142	0.000195749	7.03583e-05	0.204343	0.568518
+Small Sequential Writes	awprot: 0	awcache: 14	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30103	1.32877	0.000200098	7.04988e-05	0.199902	0.567385
+burst_writer64_ddr	30138	1.32723	0.000194008	7.05808e-05	0.206177	0.566726
+burst_writer128_ddr	30085	1.32957	0.000196378	7.04567e-05	0.203689	0.567725
+burst_writer256_ddr	30150	1.3267	0.000192458	7.06089e-05	0.207838	0.566501
+burst_writer512_ddr	30144	1.32696	0.000190368	7.05948e-05	0.210119	0.566614
+Small Writes Different Pages	awprot: 0	awcache: 14	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000756755	0.0005796	0.0528573	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000839315	0.000659536	0.0476579	0.0606487
+burst_writer128_ddr	238976	0.167381	0.000742885	0.000559663	0.0538441	0.0714716
+burst_writer256_ddr	298707	0.13391	0.000867414	0.000699548	0.0461141	0.0571798
+burst_writer512_ddr	281664	0.142013	0.000833894	0.000659635	0.0479677	0.0606396
+Single Write Latency	awprot: 0	awcache: 14	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.000114059	1.05386e-07	3.50696e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000126949	1.24122e-07	3.15087e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.00011875	1.00703e-07	3.36842e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000126419	1.1007e-07	3.16408e-05	0.0363404
+burst_writer512_ddr	45	0.0888889	0.00012758	1.05386e-07	3.13529e-05	0.0379556
+Large Buffer Write	awprot: 0	awcache: 14	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117187011	3.9084	11.9938	11.984	1.66753	1.66889
+burst_writer64_ddr	2640626186	7.57396	6.18925	6.18414	3.23141	3.23408
+burst_writer128_ddr	1375002832	14.5454	3.22301	3.22015	6.20538	6.2109
+burst_writer256_ddr	792830570	25.2261	1.85845	1.85675	10.7617	10.7715
+burst_writer512_ddr	719624377	27.7923	1.68688	1.6853	11.8562	11.8673
+Small Writes Same Location	awprot: 0	awcache: 15	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30042	1.33147	0.000225758	7.0356e-05	0.177181	0.568537
+burst_writer64_ddr	30050	1.33111	0.000204248	7.03747e-05	0.19584	0.568386
+burst_writer128_ddr	30040	1.33156	0.000193519	7.03513e-05	0.206698	0.568575
+burst_writer256_ddr	30044	1.33138	0.000200058	7.03607e-05	0.199942	0.5685
+burst_writer512_ddr	30043	1.33142	0.000195338	7.03583e-05	0.204773	0.568518
+Small Sequential Writes	awprot: 0	awcache: 15	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	30101	1.32886	0.000216959	7.04941e-05	0.184367	0.567423
+burst_writer64_ddr	30138	1.32723	0.000202089	7.05808e-05	0.197933	0.566726
+burst_writer128_ddr	30084	1.32961	0.000189919	7.04543e-05	0.210616	0.567744
+burst_writer256_ddr	30150	1.3267	0.000195649	7.06089e-05	0.204448	0.566501
+burst_writer512_ddr	30144	1.32696	0.000184739	7.05948e-05	0.216522	0.566614
+Small Writes Different Pages	awprot: 0	awcache: 15	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	247489	0.161623	0.000761295	0.0005796	0.0525421	0.0690132
+burst_writer64_ddr	281622	0.142034	0.000837834	0.000659536	0.0477422	0.0606487
+burst_writer128_ddr	238976	0.167381	0.000742445	0.000559663	0.053876	0.0714716
+burst_writer256_ddr	298713	0.133908	0.000874404	0.000699562	0.0457454	0.0571786
+burst_writer512_ddr	281666	0.142012	0.000827574	0.000659639	0.048334	0.0606392
+Single Write Latency	awprot: 0	awcache: 15	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	45	0.0888889	0.00011097	1.05386e-07	3.60458e-05	0.0379556
+burst_writer64_ddr	53	0.0754717	0.000124919	1.24122e-07	3.20207e-05	0.0322264
+burst_writer128_ddr	43	0.0930233	0.000125899	1.00703e-07	3.17715e-05	0.0397209
+burst_writer256_ddr	47	0.0851064	0.000129259	1.1007e-07	3.09456e-05	0.0363404
+burst_writer512_ddr	46	0.0869565	0.00011686	1.07728e-07	3.4229e-05	0.0371304
+Large Buffer Write	awprot: 0	awcache: 15	awqos: 0	awlock: 0	awregion: 0	clock_freq (MHz): 427
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_writer32_ddr	5117186510	3.9084	11.9938	11.984	1.66753	1.66889
+burst_writer64_ddr	2640625277	7.57396	6.18935	6.18413	3.23136	3.23408
+burst_writer128_ddr	1375006594	14.5454	3.22294	3.22016	6.20552	6.21088
+burst_writer256_ddr	792835623	25.2259	1.85856	1.85676	10.761	10.7715
+burst_writer512_ddr	719590152	27.7936	1.6868	1.68522	11.8568	11.8679

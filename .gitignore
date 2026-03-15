@@ -8,7 +8,6 @@
 **/*.protoinst
 **/*.wcfg
 **/*.wdb
-**/*.csv
 **/*.xml
 **/*.out
 **/*.bif

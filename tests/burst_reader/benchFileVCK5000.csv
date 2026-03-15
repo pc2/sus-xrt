@@ -1,0 +1,560 @@
+Small Reads Same Location	arprot: 0	arcache: 0	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30056	1.33085	0.000169429	6.97355e-05	0.236087	0.573596
+burst_reader64_ddr	30146	1.32688	0.000174459	6.99443e-05	0.22928	0.571884
+burst_reader128_ddr	30052	1.33103	0.00016533	6.97262e-05	0.24194	0.573672
+burst_reader256_ddr	30115	1.32824	0.000172749	6.98724e-05	0.23155	0.572472
+burst_reader512_ddr	30952	1.29232	0.000157419	7.18144e-05	0.254099	0.556991
+Small Sequential Reads	arprot: 0	arcache: 0	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30133	1.32745	0.000141619	6.99142e-05	0.282448	0.57213
+burst_reader64_ddr	30093	1.32921	0.000154639	6.98213e-05	0.258667	0.572891
+burst_reader128_ddr	30072	1.33014	0.000161588	6.97726e-05	0.247543	0.573291
+burst_reader256_ddr	30098	1.32899	0.000142319	6.98329e-05	0.281059	0.572796
+burst_reader512_ddr	30987	1.29086	0.000166169	7.18956e-05	0.240719	0.556362
+Small Reads Different Pages	arprot: 0	arcache: 0	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30331	1.31878	0.000140549	7.03735e-05	0.284598	0.568395
+burst_reader64_ddr	30213	1.32393	0.000154329	7.00998e-05	0.259187	0.570615
+burst_reader128_ddr	30443	1.31393	0.000162659	7.06334e-05	0.245913	0.566304
+burst_reader256_ddr	30326	1.319	0.000148799	7.03619e-05	0.268819	0.568489
+burst_reader512_ddr	33587	1.19094	0.000166209	7.79281e-05	0.240661	0.513294
+Single Read Latency	arprot: 0	arcache: 0	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.333e-05	1.48492e-07	5.45479e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	8.2229e-05	1.71694e-07	4.86446e-05	0.0232973
+burst_reader128_ddr	176	0.0227273	8.409e-05	4.08353e-07	4.75681e-05	0.00979545
+burst_reader256_ddr	70	0.0571429	8.0129e-05	1.62413e-07	4.99195e-05	0.0246286
+burst_reader512_ddr	70	0.0571429	8.1189e-05	1.62413e-07	4.92678e-05	0.0246286
+Large Buffer Read	arprot: 0	arcache: 0	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500057044	7.99982	5.8144	5.8006	3.43973	3.44792
+burst_reader128_ddr	1295582588	15.4371	3.01318	3.00599	6.6375	6.65338
+burst_reader256_ddr	682371144	29.3096	1.58719	1.58323	12.6009	12.6324
+burst_reader512_ddr	682371235	29.3096	1.58717	1.58323	12.601	12.6324
+Small Reads Same Location	arprot: 0	arcache: 1	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30055	1.33089	0.000188809	6.97332e-05	0.211854	0.573615
+burst_reader64_ddr	30177	1.32551	0.000189548	7.00162e-05	0.211028	0.571296
+burst_reader128_ddr	30052	1.33103	0.000167109	6.97262e-05	0.239365	0.573672
+burst_reader256_ddr	30115	1.32824	0.000160219	6.98724e-05	0.249658	0.572472
+burst_reader512_ddr	31080	1.287	0.000179559	7.21114e-05	0.222768	0.554698
+Small Sequential Reads	arprot: 0	arcache: 1	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30081	1.32974	0.000152869	6.97935e-05	0.261662	0.573119
+burst_reader64_ddr	30083	1.32965	0.000154069	6.97981e-05	0.259624	0.573081
+burst_reader128_ddr	30136	1.32732	0.00014529	6.99211e-05	0.275311	0.572073
+burst_reader256_ddr	30102	1.32882	0.000160639	6.98422e-05	0.249006	0.572719
+burst_reader512_ddr	30887	1.29504	0.000154389	7.16636e-05	0.259086	0.558164
+Small Reads Different Pages	arprot: 0	arcache: 1	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30252	1.32223	0.000142189	7.01903e-05	0.281316	0.56988
+burst_reader64_ddr	30222	1.32354	0.000157799	7.01206e-05	0.253487	0.570445
+burst_reader128_ddr	30243	1.32262	0.000163319	7.01694e-05	0.244919	0.570049
+burst_reader256_ddr	30346	1.31813	0.000152429	7.04084e-05	0.262417	0.568114
+burst_reader512_ddr	33588	1.1909	0.000161839	7.79304e-05	0.247159	0.513279
+Single Read Latency	arprot: 0	arcache: 1	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.277e-05	1.48492e-07	5.49677e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	8.6339e-05	1.71694e-07	4.6329e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	9.463e-05	1.41531e-07	4.22699e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	9.497e-05	1.62413e-07	4.21186e-05	0.0246286
+burst_reader512_ddr	69	0.057971	8.56e-05	1.60093e-07	4.6729e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 1	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500056752	7.99982	5.81431	5.8006	3.43979	3.44792
+burst_reader128_ddr	1295715254	15.4355	3.01367	3.0063	6.63644	6.6527
+burst_reader256_ddr	682371122	29.3096	1.58713	1.58323	12.6014	12.6324
+burst_reader512_ddr	682371355	29.3096	1.58732	1.58323	12.5998	12.6324
+Small Reads Same Location	arprot: 0	arcache: 2	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30215	1.32385	0.000184108	7.01044e-05	0.217264	0.570578
+burst_reader64_ddr	30182	1.32529	0.000187269	7.00278e-05	0.213596	0.571201
+burst_reader128_ddr	30053	1.33098	0.000175329	6.97285e-05	0.228143	0.573653
+burst_reader256_ddr	30115	1.32824	0.000157459	6.98724e-05	0.254034	0.572472
+burst_reader512_ddr	30979	1.2912	0.000157349	7.1877e-05	0.254212	0.556506
+Small Sequential Reads	arprot: 0	arcache: 2	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30078	1.32988	0.000146189	6.97865e-05	0.273618	0.573176
+burst_reader64_ddr	30094	1.32917	0.000160819	6.98237e-05	0.248727	0.572872
+burst_reader128_ddr	30082	1.3297	0.000149679	6.97958e-05	0.267239	0.5731
+burst_reader256_ddr	30101	1.32886	0.000155059	6.98399e-05	0.257966	0.572738
+burst_reader512_ddr	30997	1.29045	0.000159239	7.19188e-05	0.251195	0.556183
+Small Reads Different Pages	arprot: 0	arcache: 2	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30491	1.31186	0.000146599	7.07448e-05	0.272853	0.565413
+burst_reader64_ddr	30274	1.32127	0.00015669	7.02413e-05	0.255281	0.569466
+burst_reader128_ddr	30436	1.31423	0.000164779	7.06172e-05	0.242749	0.566434
+burst_reader256_ddr	30231	1.32315	0.000153528	7.01415e-05	0.260539	0.570276
+burst_reader512_ddr	33654	1.18857	0.000170519	7.80835e-05	0.234578	0.512272
+Single Read Latency	arprot: 0	arcache: 2	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	6.98e-05	1.48492e-07	5.73066e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	8.3889e-05	1.71694e-07	4.76821e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	7.7899e-05	1.41531e-07	5.13485e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	8.1259e-05	1.62413e-07	4.92253e-05	0.0246286
+burst_reader512_ddr	70	0.0571429	7.1729e-05	1.62413e-07	5.57655e-05	0.0246286
+Large Buffer Read	arprot: 0	arcache: 2	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500057216	7.99982	5.81433	5.8006	3.43977	3.44792
+burst_reader128_ddr	1295544355	15.4375	3.01313	3.0059	6.63762	6.65357
+burst_reader256_ddr	682371134	29.3096	1.58725	1.58323	12.6004	12.6324
+burst_reader512_ddr	682371624	29.3095	1.58714	1.58323	12.6013	12.6324
+Small Reads Same Location	arprot: 0	arcache: 3	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30056	1.33085	0.000180019	6.97355e-05	0.222199	0.573596
+burst_reader64_ddr	30262	1.32179	0.000186879	7.02135e-05	0.214042	0.569691
+burst_reader128_ddr	30052	1.33103	0.000164039	6.97262e-05	0.243844	0.573672
+burst_reader256_ddr	30115	1.32824	0.000167919	6.98724e-05	0.23821	0.572472
+burst_reader512_ddr	30950	1.29241	0.000158779	7.18097e-05	0.251922	0.557027
+Small Sequential Reads	arprot: 0	arcache: 3	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30087	1.32948	0.000150909	6.98074e-05	0.26506	0.573005
+burst_reader64_ddr	30084	1.32961	0.000152599	6.98005e-05	0.262125	0.573062
+burst_reader128_ddr	30077	1.32992	0.000161329	6.97842e-05	0.247941	0.573195
+burst_reader256_ddr	30107	1.32859	0.000149939	6.98538e-05	0.266775	0.572624
+burst_reader512_ddr	31016	1.28966	0.000158019	7.19629e-05	0.253134	0.555842
+Small Reads Different Pages	arprot: 0	arcache: 3	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30523	1.31049	0.000143119	7.0819e-05	0.279488	0.56482
+burst_reader64_ddr	30338	1.31848	0.000154759	7.03898e-05	0.258466	0.568264
+burst_reader128_ddr	30224	1.32345	0.000145569	7.01253e-05	0.274784	0.570408
+burst_reader256_ddr	30245	1.32253	0.000153879	7.0174e-05	0.259945	0.570012
+burst_reader512_ddr	33718	1.18631	0.000162058	7.8232e-05	0.246825	0.5113
+Single Read Latency	arprot: 0	arcache: 3	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	65	0.0615385	7.218e-05	1.50812e-07	5.5417e-05	0.0265231
+burst_reader64_ddr	73	0.0547945	7.8629e-05	1.69374e-07	5.08718e-05	0.0236164
+burst_reader128_ddr	61	0.0655738	9.5649e-05	1.41531e-07	4.18196e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	8.5449e-05	1.62413e-07	4.68115e-05	0.0246286
+burst_reader512_ddr	69	0.057971	8.256e-05	1.60093e-07	4.84496e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 3	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500056634	7.99982	5.81451	5.8006	3.43967	3.44792
+burst_reader128_ddr	1295559231	15.4373	3.01316	3.00594	6.63754	6.6535
+burst_reader256_ddr	682371106	29.3096	1.58727	1.58323	12.6002	12.6324
+burst_reader512_ddr	682371146	29.3096	1.58711	1.58323	12.6015	12.6324
+Small Reads Same Location	arprot: 0	arcache: 4	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30057	1.3308	0.000190599	6.97378e-05	0.209865	0.573577
+burst_reader64_ddr	30145	1.32692	0.000191179	6.9942e-05	0.209228	0.571902
+burst_reader128_ddr	30052	1.33103	0.000165709	6.97262e-05	0.241387	0.573672
+burst_reader256_ddr	30111	1.32842	0.000176928	6.98631e-05	0.226081	0.572548
+burst_reader512_ddr	30950	1.29241	0.000159039	7.18097e-05	0.251511	0.557027
+Small Sequential Reads	arprot: 0	arcache: 4	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30089	1.32939	0.000142659	6.98121e-05	0.280389	0.572967
+burst_reader64_ddr	30093	1.32921	0.000169299	6.98213e-05	0.236268	0.572891
+burst_reader128_ddr	30076	1.32996	0.000161559	6.97819e-05	0.247588	0.573215
+burst_reader256_ddr	30098	1.32899	0.000164719	6.98329e-05	0.242838	0.572796
+burst_reader512_ddr	30988	1.29082	0.000148129	7.18979e-05	0.270035	0.556344
+Small Reads Different Pages	arprot: 0	arcache: 4	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30193	1.32481	0.000145579	7.00534e-05	0.274765	0.570993
+burst_reader64_ddr	30233	1.32306	0.000154379	7.01462e-05	0.259103	0.570238
+burst_reader128_ddr	30400	1.31579	0.000164348	7.05336e-05	0.243386	0.567105
+burst_reader256_ddr	30262	1.32179	0.00015347	7.02135e-05	0.260637	0.569691
+burst_reader512_ddr	33586	1.19097	0.000161069	7.79258e-05	0.248341	0.513309
+Single Read Latency	arprot: 0	arcache: 4	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.295e-05	1.48492e-07	5.48321e-05	0.0269375
+burst_reader64_ddr	73	0.0547945	8.467e-05	1.69374e-07	4.72422e-05	0.0236164
+burst_reader128_ddr	61	0.0655738	8.8049e-05	1.41531e-07	4.54292e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	8.4899e-05	1.62413e-07	4.71148e-05	0.0246286
+burst_reader512_ddr	69	0.057971	7.3479e-05	1.60093e-07	5.44373e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 4	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000064	4	11.6283	11.6009	1.71995	1.724
+burst_reader64_ddr	2500056897	7.99982	5.81432	5.8006	3.43978	3.44792
+burst_reader128_ddr	1295674457	15.436	3.01355	3.00621	6.6367	6.65291
+burst_reader256_ddr	682371270	29.3096	1.5873	1.58323	12.6	12.6324
+burst_reader512_ddr	682370857	29.3096	1.58709	1.58323	12.6017	12.6324
+Small Reads Same Location	arprot: 0	arcache: 5	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30056	1.33085	0.000179858	6.97355e-05	0.222398	0.573596
+burst_reader64_ddr	30145	1.32692	0.000212858	6.9942e-05	0.187919	0.571902
+burst_reader128_ddr	30165	1.32604	0.000152099	6.99884e-05	0.262987	0.571523
+burst_reader256_ddr	30207	1.3242	0.000163849	7.00858e-05	0.244127	0.570729
+burst_reader512_ddr	30944	1.29266	0.000162749	7.17958e-05	0.245777	0.557135
+Small Sequential Reads	arprot: 0	arcache: 5	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30080	1.32979	0.000141039	6.97912e-05	0.283609	0.573138
+burst_reader64_ddr	30083	1.32965	0.00016001	6.97981e-05	0.249984	0.573081
+burst_reader128_ddr	30079	1.32983	0.000164939	6.97889e-05	0.242514	0.573157
+burst_reader256_ddr	30098	1.32899	0.000151569	6.98329e-05	0.263906	0.572796
+burst_reader512_ddr	30986	1.29091	0.000154699	7.18933e-05	0.258567	0.55638
+Small Reads Different Pages	arprot: 0	arcache: 5	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30398	1.31588	0.00013987	7.0529e-05	0.28598	0.567143
+burst_reader64_ddr	30220	1.32363	0.000153369	7.0116e-05	0.260809	0.570483
+burst_reader128_ddr	30247	1.32245	0.000162269	7.01787e-05	0.246504	0.569974
+burst_reader256_ddr	30215	1.32385	0.000152489	7.01044e-05	0.262314	0.570578
+burst_reader512_ddr	33597	1.19058	0.00016029	7.79513e-05	0.249548	0.513141
+Single Read Latency	arprot: 0	arcache: 5	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	6.8259e-05	1.48492e-07	5.86003e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	8.5179e-05	1.71694e-07	4.69599e-05	0.0232973
+burst_reader128_ddr	120	0.0333333	9.0519e-05	2.78422e-07	4.41896e-05	0.0143667
+burst_reader256_ddr	71	0.056338	0.000102999	1.64733e-07	3.88353e-05	0.0242817
+burst_reader512_ddr	70	0.0571429	7.796e-05	1.62413e-07	5.13084e-05	0.0246286
+Large Buffer Read	arprot: 0	arcache: 5	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500056950	7.99982	5.81432	5.8006	3.43979	3.44792
+burst_reader128_ddr	1295680692	15.4359	3.01349	3.00622	6.63682	6.65287
+burst_reader256_ddr	682371387	29.3096	1.58717	1.58323	12.6011	12.6324
+burst_reader512_ddr	682371042	29.3096	1.58717	1.58323	12.601	12.6324
+Small Reads Same Location	arprot: 0	arcache: 6	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30056	1.33085	0.000177819	6.97355e-05	0.224948	0.573596
+burst_reader64_ddr	30152	1.32661	0.000189738	6.99582e-05	0.210817	0.57177
+burst_reader128_ddr	30197	1.32463	0.000170559	7.00626e-05	0.234523	0.570918
+burst_reader256_ddr	30115	1.32824	0.000158429	6.98724e-05	0.252479	0.572472
+burst_reader512_ddr	31041	1.28862	0.000176019	7.20209e-05	0.227248	0.555394
+Small Sequential Reads	arprot: 0	arcache: 6	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30081	1.32974	0.000145889	6.97935e-05	0.274181	0.573119
+burst_reader64_ddr	30082	1.3297	0.000165139	6.97958e-05	0.24222	0.5731
+burst_reader128_ddr	30092	1.32926	0.000165769	6.9819e-05	0.2413	0.57291
+burst_reader256_ddr	30107	1.32859	0.000173269	6.98538e-05	0.230855	0.572624
+burst_reader512_ddr	30958	1.29207	0.000159799	7.18283e-05	0.250314	0.556884
+Small Reads Different Pages	arprot: 0	arcache: 6	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30386	1.3164	0.000145559	7.05012e-05	0.274803	0.567367
+burst_reader64_ddr	30371	1.31705	0.000161039	7.04664e-05	0.248387	0.567647
+burst_reader128_ddr	30445	1.31384	0.000164399	7.06381e-05	0.24331	0.566267
+burst_reader256_ddr	30188	1.32503	0.000153119	7.00418e-05	0.261235	0.571088
+burst_reader512_ddr	33646	1.18885	0.000152199	7.8065e-05	0.262814	0.512394
+Single Read Latency	arprot: 0	arcache: 6	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.4279e-05	1.48492e-07	5.3851e-05	0.0269375
+burst_reader64_ddr	73	0.0547945	8.432e-05	1.69374e-07	4.74383e-05	0.0236164
+burst_reader128_ddr	61	0.0655738	7.661e-05	1.41531e-07	5.22125e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	8.133e-05	1.62413e-07	4.91823e-05	0.0246286
+burst_reader512_ddr	70	0.0571429	8.4439e-05	1.62413e-07	4.73715e-05	0.0246286
+Large Buffer Read	arprot: 0	arcache: 6	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500056944	7.99982	5.81433	5.8006	3.43978	3.44792
+burst_reader128_ddr	1295614185	15.4367	3.01337	3.00607	6.63708	6.65322
+burst_reader256_ddr	682371284	29.3096	1.58728	1.58323	12.6002	12.6324
+burst_reader512_ddr	682371033	29.3096	1.58727	1.58323	12.6002	12.6324
+Small Reads Same Location	arprot: 0	arcache: 7	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30055	1.33089	0.000181809	6.97332e-05	0.220011	0.573615
+burst_reader64_ddr	30146	1.32688	0.000198029	6.99443e-05	0.201991	0.571884
+burst_reader128_ddr	30052	1.33103	0.000169749	6.97262e-05	0.235642	0.573672
+burst_reader256_ddr	30116	1.3282	0.000164469	6.98747e-05	0.243207	0.572453
+burst_reader512_ddr	30950	1.29241	0.000167049	7.18097e-05	0.239451	0.557027
+Small Sequential Reads	arprot: 0	arcache: 7	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30084	1.32961	0.000140419	6.98005e-05	0.284862	0.573062
+burst_reader64_ddr	30090	1.32935	0.000151208	6.98144e-05	0.264536	0.572948
+burst_reader128_ddr	30077	1.32992	0.000161089	6.97842e-05	0.24831	0.573195
+burst_reader256_ddr	30116	1.3282	0.000151409	6.98747e-05	0.264185	0.572453
+burst_reader512_ddr	31073	1.28729	0.000154989	7.20951e-05	0.258083	0.554823
+Small Reads Different Pages	arprot: 0	arcache: 7	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30215	1.32385	0.000143189	7.01044e-05	0.279351	0.570578
+burst_reader64_ddr	30503	1.31135	0.000157559	7.07726e-05	0.253873	0.56519
+burst_reader128_ddr	30430	1.31449	0.000145859	7.06032e-05	0.274237	0.566546
+burst_reader256_ddr	30195	1.32472	0.000152959	7.0058e-05	0.261508	0.570955
+burst_reader512_ddr	33603	1.19037	0.000161508	7.79652e-05	0.247666	0.513049
+Single Read Latency	arprot: 0	arcache: 7	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	84	0.047619	7.35e-05	1.94896e-07	5.44218e-05	0.0205238
+burst_reader64_ddr	74	0.0540541	8.2529e-05	1.71694e-07	4.84678e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	8.263e-05	1.41531e-07	4.84086e-05	0.0282623
+burst_reader256_ddr	71	0.056338	8.0109e-05	1.64733e-07	4.9932e-05	0.0242817
+burst_reader512_ddr	69	0.057971	6.8789e-05	1.60093e-07	5.81488e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 7	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6283	11.6009	1.71995	1.724
+burst_reader64_ddr	2500056611	7.99982	5.81444	5.8006	3.43971	3.44792
+burst_reader128_ddr	1295696479	15.4357	3.01344	3.00626	6.63694	6.65279
+burst_reader256_ddr	682370942	29.3096	1.58732	1.58323	12.5999	12.6324
+burst_reader512_ddr	682370905	29.3096	1.58714	1.58323	12.6013	12.6324
+Small Reads Same Location	arprot: 0	arcache: 8	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30092	1.32926	0.000179668	6.9819e-05	0.222633	0.57291
+burst_reader64_ddr	30147	1.32683	0.000188309	6.99466e-05	0.212417	0.571865
+burst_reader128_ddr	30052	1.33103	0.000170929	6.97262e-05	0.234015	0.573672
+burst_reader256_ddr	30115	1.32824	0.000173179	6.98724e-05	0.230975	0.572472
+burst_reader512_ddr	30951	1.29237	0.000161979	7.18121e-05	0.246946	0.557009
+Small Sequential Reads	arprot: 0	arcache: 8	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30081	1.32974	0.000151849	6.97935e-05	0.26342	0.573119
+burst_reader64_ddr	30101	1.32886	0.000163468	6.98399e-05	0.244696	0.572738
+burst_reader128_ddr	30080	1.32979	0.000166779	6.97912e-05	0.239838	0.573138
+burst_reader256_ddr	30161	1.32622	0.000158559	6.99791e-05	0.252272	0.571599
+burst_reader512_ddr	31011	1.28986	0.000167849	7.19513e-05	0.238309	0.555932
+Small Reads Different Pages	arprot: 0	arcache: 8	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30382	1.31657	0.000139429	7.04919e-05	0.286884	0.567441
+burst_reader64_ddr	30498	1.31156	0.000143769	7.0761e-05	0.278224	0.565283
+burst_reader128_ddr	30224	1.32345	0.000167629	7.01253e-05	0.238622	0.570408
+burst_reader256_ddr	30278	1.32109	0.000154059	7.02506e-05	0.259641	0.56939
+burst_reader512_ddr	33597	1.19058	0.000174439	7.79513e-05	0.229307	0.513141
+Single Read Latency	arprot: 0	arcache: 8	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	65	0.0615385	6.81e-05	1.50812e-07	5.87372e-05	0.0265231
+burst_reader64_ddr	74	0.0540541	8.3759e-05	1.71694e-07	4.77561e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	7.259e-05	1.41531e-07	5.5104e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	8.274e-05	1.62413e-07	4.83442e-05	0.0246286
+burst_reader512_ddr	70	0.0571429	8.107e-05	1.62413e-07	4.93401e-05	0.0246286
+Large Buffer Read	arprot: 0	arcache: 8	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500056677	7.99982	5.81435	5.8006	3.43977	3.44792
+burst_reader128_ddr	1295712526	15.4355	3.01349	3.00629	6.63683	6.65271
+burst_reader256_ddr	682371274	29.3096	1.58715	1.58323	12.6012	12.6324
+burst_reader512_ddr	682371066	29.3096	1.58729	1.58323	12.6001	12.6324
+Small Reads Same Location	arprot: 0	arcache: 9	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30057	1.3308	0.000181739	6.97378e-05	0.220096	0.573577
+burst_reader64_ddr	30176	1.32556	0.000187619	7.00139e-05	0.213198	0.571315
+burst_reader128_ddr	30086	1.32952	0.000175009	6.98051e-05	0.22856	0.573024
+burst_reader256_ddr	30117	1.32815	0.000178049	6.9877e-05	0.224657	0.572434
+burst_reader512_ddr	31049	1.28829	0.000157389	7.20394e-05	0.254147	0.555251
+Small Sequential Reads	arprot: 0	arcache: 9	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30086	1.32952	0.000149229	6.98051e-05	0.268044	0.573024
+burst_reader64_ddr	30094	1.32917	0.000166009	6.98237e-05	0.240951	0.572872
+burst_reader128_ddr	30081	1.32974	0.000147149	6.97935e-05	0.271833	0.573119
+burst_reader256_ddr	30120	1.32802	0.000166049	6.9884e-05	0.240893	0.572377
+burst_reader512_ddr	30887	1.29504	0.000154989	7.16636e-05	0.258083	0.558164
+Small Reads Different Pages	arprot: 0	arcache: 9	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30280	1.321	0.000144779	7.02552e-05	0.276283	0.569353
+burst_reader64_ddr	30232	1.3231	0.000158149	7.01439e-05	0.252926	0.570257
+burst_reader128_ddr	30207	1.3242	0.000171489	7.00858e-05	0.233251	0.570729
+burst_reader256_ddr	30285	1.32079	0.000167989	7.02668e-05	0.238111	0.569259
+burst_reader512_ddr	33618	1.18984	0.000164379	7.8e-05	0.24334	0.512821
+Single Read Latency	arprot: 0	arcache: 9	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.6069e-05	1.48492e-07	5.25838e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	7.5039e-05	1.71694e-07	5.33056e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	8.279e-05	1.41531e-07	4.8315e-05	0.0282623
+burst_reader256_ddr	71	0.056338	7.289e-05	1.64733e-07	5.48772e-05	0.0242817
+burst_reader512_ddr	69	0.057971	8.2949e-05	1.60093e-07	4.82224e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 9	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000063	4	11.6282	11.6009	1.71995	1.724
+burst_reader64_ddr	2500056922	7.99982	5.81434	5.8006	3.43977	3.44792
+burst_reader128_ddr	1295623614	15.4366	3.01328	3.00609	6.63728	6.65317
+burst_reader256_ddr	682371259	29.3096	1.58713	1.58323	12.6013	12.6324
+burst_reader512_ddr	682370963	29.3096	1.58713	1.58323	12.6013	12.6324
+Small Reads Same Location	arprot: 0	arcache: 10	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30095	1.32912	0.000187179	6.9826e-05	0.213699	0.572853
+burst_reader64_ddr	30145	1.32692	0.000185798	6.9942e-05	0.215288	0.571902
+burst_reader128_ddr	30052	1.33103	0.000169358	6.97262e-05	0.236186	0.573672
+burst_reader256_ddr	30154	1.32652	0.000154079	6.99629e-05	0.259607	0.571732
+burst_reader512_ddr	30952	1.29232	0.000152119	7.18144e-05	0.262952	0.556991
+Small Sequential Reads	arprot: 0	arcache: 10	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30222	1.32354	0.000142389	7.01206e-05	0.280921	0.570445
+burst_reader64_ddr	30092	1.32926	0.000154569	6.9819e-05	0.258784	0.57291
+burst_reader128_ddr	30078	1.32988	0.000159939	6.97865e-05	0.250095	0.573176
+burst_reader256_ddr	30107	1.32859	0.000155279	6.98538e-05	0.257601	0.572624
+burst_reader512_ddr	30921	1.29362	0.000144599	7.17425e-05	0.276627	0.55755
+Small Reads Different Pages	arprot: 0	arcache: 10	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30262	1.32179	0.000145649	7.02135e-05	0.274633	0.569691
+burst_reader64_ddr	30202	1.32442	0.000154579	7.00742e-05	0.258767	0.570823
+burst_reader128_ddr	30341	1.31835	0.000159789	7.03968e-05	0.25033	0.568208
+burst_reader256_ddr	30220	1.32363	0.000153899	7.0116e-05	0.259911	0.570483
+burst_reader512_ddr	33644	1.18892	0.000151139	7.80603e-05	0.264657	0.512424
+Single Read Latency	arprot: 0	arcache: 10	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.743e-05	1.48492e-07	5.16596e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	7.4219e-05	1.71694e-07	5.38946e-05	0.0232973
+burst_reader128_ddr	67	0.0597015	8.732e-05	1.55452e-07	4.58085e-05	0.0257313
+burst_reader256_ddr	70	0.0571429	8.3289e-05	1.62413e-07	4.80255e-05	0.0246286
+burst_reader512_ddr	69	0.057971	7.989e-05	1.60093e-07	5.00688e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 10	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000064	4	11.6282	11.6009	1.71996	1.724
+burst_reader64_ddr	2500057547	7.99982	5.8145	5.8006	3.43968	3.44792
+burst_reader128_ddr	1295553195	15.4374	3.01313	3.00592	6.63761	6.65353
+burst_reader256_ddr	682371145	29.3096	1.58711	1.58323	12.6015	12.6324
+burst_reader512_ddr	682370983	29.3096	1.58729	1.58323	12.6001	12.6324
+Small Reads Same Location	arprot: 0	arcache: 11	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30055	1.33089	0.000182129	6.97332e-05	0.219625	0.573615
+burst_reader64_ddr	30146	1.32688	0.000184649	6.99443e-05	0.216627	0.571884
+burst_reader128_ddr	30185	1.32516	0.000161379	7.00348e-05	0.247864	0.571145
+burst_reader256_ddr	30115	1.32824	0.000176559	6.98724e-05	0.226553	0.572472
+burst_reader512_ddr	30951	1.29237	0.000156199	7.18121e-05	0.256084	0.557009
+Small Sequential Reads	arprot: 0	arcache: 11	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30087	1.32948	0.000139089	6.98074e-05	0.287586	0.573005
+burst_reader64_ddr	30182	1.32529	0.000154419	7.00278e-05	0.259035	0.571201
+burst_reader128_ddr	30211	1.32402	0.000144699	7.00951e-05	0.276436	0.570653
+burst_reader256_ddr	30095	1.32912	0.000142188	6.9826e-05	0.281318	0.572853
+burst_reader512_ddr	31033	1.28895	0.000144479	7.20023e-05	0.276857	0.555538
+Small Reads Different Pages	arprot: 0	arcache: 11	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30230	1.32319	0.000143319	7.01392e-05	0.279098	0.570294
+burst_reader64_ddr	30209	1.32411	0.000145419	7.00905e-05	0.275067	0.570691
+burst_reader128_ddr	30326	1.319	0.000145249	7.03619e-05	0.275389	0.568489
+burst_reader256_ddr	30197	1.32463	0.000144169	7.00626e-05	0.277452	0.570918
+burst_reader512_ddr	33617	1.18987	0.000154609	7.79977e-05	0.258717	0.512836
+Single Read Latency	arprot: 0	arcache: 11	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.0849e-05	1.48492e-07	5.64581e-05	0.0269375
+burst_reader64_ddr	80	0.05	8.2279e-05	1.85615e-07	4.86151e-05	0.02155
+burst_reader128_ddr	61	0.0655738	8.7979e-05	1.41531e-07	4.54654e-05	0.0282623
+burst_reader256_ddr	71	0.056338	8.1519e-05	1.64733e-07	4.90683e-05	0.0242817
+burst_reader512_ddr	69	0.057971	8.161e-05	1.60093e-07	4.90136e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 11	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000079	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500057158	7.99982	5.81447	5.8006	3.43969	3.44792
+burst_reader128_ddr	1295548476	15.4375	3.01312	3.00591	6.63764	6.65355
+burst_reader256_ddr	682371020	29.3096	1.58714	1.58323	12.6013	12.6324
+burst_reader512_ddr	682371093	29.3096	1.58714	1.58323	12.6013	12.6324
+Small Reads Same Location	arprot: 0	arcache: 12	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30055	1.33089	0.000188099	6.97332e-05	0.212654	0.573615
+burst_reader64_ddr	30145	1.32692	0.000188679	6.9942e-05	0.212	0.571902
+burst_reader128_ddr	30052	1.33103	0.000172769	6.97262e-05	0.231523	0.573672
+burst_reader256_ddr	30115	1.32824	0.000159509	6.98724e-05	0.25077	0.572472
+burst_reader512_ddr	30967	1.2917	0.000172179	7.18492e-05	0.232316	0.556722
+Small Sequential Reads	arprot: 0	arcache: 12	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30081	1.32974	0.000145899	6.97935e-05	0.274162	0.573119
+burst_reader64_ddr	30090	1.32935	0.000153919	6.98144e-05	0.259877	0.572948
+burst_reader128_ddr	30075	1.33001	0.000168608	6.97796e-05	0.237237	0.573234
+burst_reader256_ddr	30100	1.3289	0.000155279	6.98376e-05	0.257601	0.572757
+burst_reader512_ddr	30879	1.29538	0.000158019	7.1645e-05	0.253134	0.558308
+Small Reads Different Pages	arprot: 0	arcache: 12	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30239	1.3228	0.000150369	7.01601e-05	0.266012	0.570125
+burst_reader64_ddr	30215	1.32385	0.000150309	7.01044e-05	0.266118	0.570578
+burst_reader128_ddr	30242	1.32266	0.000165389	7.01671e-05	0.241854	0.570068
+burst_reader256_ddr	30221	1.32358	0.000150779	7.01183e-05	0.265289	0.570464
+burst_reader512_ddr	33558	1.19197	0.000165689	7.78608e-05	0.241416	0.513737
+Single Read Latency	arprot: 0	arcache: 12	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.3119e-05	1.48492e-07	5.47053e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	8.481e-05	1.71694e-07	4.71642e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	7.363e-05	1.41531e-07	5.43257e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	7.957e-05	1.62413e-07	5.02702e-05	0.0246286
+burst_reader512_ddr	70	0.0571429	8.254e-05	1.62413e-07	4.84614e-05	0.0246286
+Large Buffer Read	arprot: 0	arcache: 12	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000064	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500057276	7.99982	5.81437	5.8006	3.43975	3.44792
+burst_reader128_ddr	1295664056	15.4361	3.01339	3.00618	6.63704	6.65296
+burst_reader256_ddr	682371387	29.3096	1.58714	1.58323	12.6013	12.6324
+burst_reader512_ddr	682371458	29.3095	1.58727	1.58323	12.6002	12.6324
+Small Reads Same Location	arprot: 0	arcache: 13	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30056	1.33085	0.000187139	6.97355e-05	0.213745	0.573596
+burst_reader64_ddr	30146	1.32688	0.000184579	6.99443e-05	0.216709	0.571884
+burst_reader128_ddr	30052	1.33103	0.000175319	6.97262e-05	0.228156	0.573672
+burst_reader256_ddr	30115	1.32824	0.000168439	6.98724e-05	0.237475	0.572472
+burst_reader512_ddr	30950	1.29241	0.000160449	7.18097e-05	0.2493	0.557027
+Small Sequential Reads	arprot: 0	arcache: 13	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30089	1.32939	0.000141209	6.98121e-05	0.283268	0.572967
+burst_reader64_ddr	30098	1.32899	0.000157119	6.98329e-05	0.254584	0.572796
+burst_reader128_ddr	30071	1.33019	0.000162908	6.97703e-05	0.245537	0.57331
+burst_reader256_ddr	30096	1.32908	0.000153169	6.98283e-05	0.261149	0.572834
+burst_reader512_ddr	31047	1.28837	0.000155439	7.20348e-05	0.257336	0.555287
+Small Reads Different Pages	arprot: 0	arcache: 13	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30185	1.32516	0.000146089	7.00348e-05	0.273806	0.571145
+burst_reader64_ddr	30285	1.32079	0.000157689	7.02668e-05	0.253664	0.569259
+burst_reader128_ddr	30570	1.30847	0.000163719	7.09281e-05	0.244321	0.563952
+burst_reader256_ddr	30215	1.32385	0.000154799	7.01044e-05	0.2584	0.570578
+burst_reader512_ddr	33623	1.18966	0.000158478	7.80116e-05	0.252401	0.512744
+Single Read Latency	arprot: 0	arcache: 13	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	65	0.0615385	7.336e-05	1.50812e-07	5.45256e-05	0.0265231
+burst_reader64_ddr	74	0.0540541	8.3659e-05	1.71694e-07	4.78131e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	7.785e-05	1.41531e-07	5.13809e-05	0.0282623
+burst_reader256_ddr	71	0.056338	9.1349e-05	1.64733e-07	4.37881e-05	0.0242817
+burst_reader512_ddr	69	0.057971	7.4249e-05	1.60093e-07	5.38728e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 13	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000064	4	11.6283	11.6009	1.71994	1.724
+burst_reader64_ddr	2500057294	7.99982	5.81437	5.8006	3.43975	3.44792
+burst_reader128_ddr	1295671955	15.436	3.01338	3.0062	6.63706	6.65292
+burst_reader256_ddr	682371205	29.3096	1.58721	1.58323	12.6007	12.6324
+burst_reader512_ddr	682371404	29.3096	1.5871	1.58323	12.6016	12.6324
+Small Reads Same Location	arprot: 0	arcache: 14	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30056	1.33085	0.000187039	6.97355e-05	0.213859	0.573596
+burst_reader64_ddr	30146	1.32688	0.000194549	6.99443e-05	0.205604	0.571884
+burst_reader128_ddr	30072	1.33014	0.000163338	6.97726e-05	0.244891	0.573291
+burst_reader256_ddr	30116	1.3282	0.000183589	6.98747e-05	0.217878	0.572453
+burst_reader512_ddr	30951	1.29237	0.000169789	7.18121e-05	0.235587	0.557009
+Small Sequential Reads	arprot: 0	arcache: 14	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30089	1.32939	0.000144029	6.98121e-05	0.277722	0.572967
+burst_reader64_ddr	30091	1.3293	0.000156039	6.98167e-05	0.256346	0.572929
+burst_reader128_ddr	30076	1.32996	0.000156339	6.97819e-05	0.255854	0.573215
+burst_reader256_ddr	30101	1.32886	0.00015725	6.98399e-05	0.254372	0.572738
+burst_reader512_ddr	30984	1.29099	0.000155829	7.18886e-05	0.256692	0.556416
+Small Reads Different Pages	arprot: 0	arcache: 14	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30190	1.32494	0.000144189	7.00464e-05	0.277414	0.57105
+burst_reader64_ddr	30209	1.32411	0.000155549	7.00905e-05	0.257154	0.570691
+burst_reader128_ddr	30416	1.3151	0.000159179	7.05708e-05	0.251289	0.566807
+burst_reader256_ddr	30219	1.32367	0.000153429	7.01137e-05	0.260707	0.570502
+burst_reader512_ddr	33608	1.19019	0.000159099	7.79768e-05	0.251416	0.512973
+Single Read Latency	arprot: 0	arcache: 14	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	64	0.0625	7.251e-05	1.48492e-07	5.51648e-05	0.0269375
+burst_reader64_ddr	74	0.0540541	8.719e-05	1.71694e-07	4.58768e-05	0.0232973
+burst_reader128_ddr	61	0.0655738	8.728e-05	1.41531e-07	4.58295e-05	0.0282623
+burst_reader256_ddr	70	0.0571429	8.4769e-05	1.62413e-07	4.71871e-05	0.0246286
+burst_reader512_ddr	70	0.0571429	7.062e-05	1.62413e-07	5.66412e-05	0.0246286
+Large Buffer Read	arprot: 0	arcache: 14	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000064	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500056590	7.99982	5.81435	5.8006	3.43977	3.44792
+burst_reader128_ddr	1295661644	15.4361	3.01338	3.00618	6.63707	6.65297
+burst_reader256_ddr	682372053	29.3095	1.58723	1.58323	12.6006	12.6324
+burst_reader512_ddr	682371244	29.3096	1.58716	1.58323	12.6011	12.6324
+Small Reads Same Location	arprot: 0	arcache: 15	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30092	1.32926	0.000181639	6.9819e-05	0.220217	0.57291
+burst_reader64_ddr	30231	1.32315	0.000195569	7.01415e-05	0.204531	0.570276
+burst_reader128_ddr	30052	1.33103	0.000163199	6.97262e-05	0.2451	0.573672
+burst_reader256_ddr	30152	1.32661	0.000156189	6.99582e-05	0.2561	0.57177
+burst_reader512_ddr	30942	1.29274	0.000163369	7.17912e-05	0.244844	0.557171
+Small Sequential Reads	arprot: 0	arcache: 15	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30081	1.32974	0.00014865	6.97935e-05	0.269088	0.573119
+burst_reader64_ddr	30105	1.32868	0.000163189	6.98492e-05	0.245115	0.572662
+burst_reader128_ddr	30167	1.32595	0.000162848	6.9993e-05	0.245628	0.571485
+burst_reader256_ddr	30101	1.32886	0.000154679	6.98399e-05	0.2586	0.572738
+burst_reader512_ddr	30946	1.29257	0.000143539	7.18005e-05	0.27867	0.557099
+Small Reads Different Pages	arprot: 0	arcache: 15	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	30318	1.31935	0.000146749	7.03434e-05	0.272574	0.568639
+burst_reader64_ddr	30448	1.31372	0.000156699	7.0645e-05	0.255266	0.566211
+burst_reader128_ddr	30275	1.32122	0.000159719	7.02436e-05	0.25044	0.569447
+burst_reader256_ddr	30245	1.32253	0.000177299	7.0174e-05	0.225608	0.570012
+burst_reader512_ddr	33614	1.18998	0.000176659	7.79907e-05	0.226425	0.512882
+Single Read Latency	arprot: 0	arcache: 15	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	65	0.0615385	7.824e-05	1.50812e-07	5.11247e-05	0.0265231
+burst_reader64_ddr	74	0.0540541	9.2899e-05	1.71694e-07	4.30575e-05	0.0232973
+burst_reader128_ddr	62	0.0645161	9.047e-05	1.43852e-07	4.42136e-05	0.0278065
+burst_reader256_ddr	71	0.056338	8.2139e-05	1.64733e-07	4.86979e-05	0.0242817
+burst_reader512_ddr	69	0.057971	9.0969e-05	1.60093e-07	4.3971e-05	0.0249855
+Large Buffer Read	arprot: 0	arcache: 15	arqos: 0	arlock: 0	arregion: 0	max_in_flight: 65535	clock_freq (MHz): 431
+Name	Cycles	Bytes Per Cycle	Time (s)	Kernel Time (s)	Bandwidth (GB/s)	Kernel Measured Bandwidth (GB/s)
+burst_reader32_ddr	5000000064	4	11.6281	11.6009	1.71997	1.724
+burst_reader64_ddr	2500057180	7.99982	5.81447	5.8006	3.43969	3.44792
+burst_reader128_ddr	1295627702	15.4365	3.0133	3.0061	6.63725	6.65315
+burst_reader256_ddr	682371140	29.3096	1.58714	1.58323	12.6013	12.6324
+burst_reader512_ddr	682371273	29.3096	1.58733	1.58323	12.5997	12.6324
