@@ -96,12 +96,125 @@ set_property size           {32}              [ipx::get_registers PARAM_B  -of_o
 Output parameters can't be declared since XRT doesn't expose those for `xrt::kernel`. For those you have to use `xrt::ip`, and call `ip.read_register(0x018)` yourself. 
 
 ### `axi_burst_reader`
-![img/burst_reader.png](img/burst_reader.png)
+<p align="center">
+    <img src="img/burst_reader.png" alt="img/burst_reader.png" style="width:30%">
+</p>
 
-TODO
+**Usage example:**
+```sus
+module bench_burst_reader {
+    domain aclk
+    input bool aresetn
+
+    gen int MTO = pow2#(E: 64)
+    gen int AXI_WIDTH = 512
+    gen int ELEM_BITWIDTH = 32
+    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEM_BITWIDTH
+
+    axi_ctrl_slave #(NUM_INPUT_REGS: 3, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
+    domain axi_control
+    // ...
+
+    axi_burst_reader#(AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64), MAX_IN_FLIGHT: 110) reader
+    domain mem_read
+    output bool                     m_axi_arvalid'0 = reader.arvalid
+    input  bool                     m_axi_arready
+    output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
+    output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
+    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
+    output bool[2]                  m_axi_arburst = reader.arburst
+    output bool[3]                  m_axi_arprot = reader.arprot
+    output bool[4]                  m_axi_arcache = reader.arcache
+    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    output bool                     m_axi_arlock = reader.arlock
+    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
+    input  bool                     m_axi_rvalid
+    output bool                     m_axi_rready = reader.rready
+    input  bool[AXI_WIDTH]          m_axi_rdata
+    input  bool[2]                  m_axi_rresp
+    input  bool                     m_axi_rlast
+    reader.arready =                m_axi_arready
+    reader.rvalid =                 m_axi_rvalid
+    reader.rdata =                  m_axi_rdata
+    reader.rresp =                  m_axi_rresp
+    reader.rlast =                  m_axi_rlast
+
+    axi_memory_writer_tie_off writer
+    domain mem_write
+    // ...  tie off the write half of the AXI4-Full interface
+
+    state bool[32] hash
+    when ctrl.start {
+        bool[64] addr_bits
+        addr_bits[:32] = ctrl.input_regs[0]
+        addr_bits[32:] = ctrl.input_regs[1]
+        int num_to_transfer = BitsToUInt(ctrl.input_regs[2])
+        reader.request_new_read(BitsToUInt(addr_bits), num_to_transfer)
+
+        hash = 32'h00000000
+    }
+
+    when reader.element_packet_valid :
+        bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements,
+        int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length,
+        int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset,
+        bool last {
+
+        reg reg bool[NUM_PARALLEL_ELEMENTS] mask = MakeStrobe(chunk_length, chunk_offset)
+        bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] masked_elements
+        for int i in 0..NUM_PARALLEL_ELEMENTS {
+            when mask[i] {
+                reg masked_elements[i] = elements[i]
+            } else {
+                reg masked_elements[i] = RepeatGen#(SIZE: ELEM_BITWIDTH, T: type bool, V: false)
+            }
+        }
+        bool[32] new_hash_contrib
+        for int i in 0..32 {
+            reg reg new_hash_contrib[i] = ^(masked_elements[:][i])
+        }
+        bool[32] new_hash = hash ^ new_hash_contrib
+        when last {
+            ctrl.finish([new_hash])
+        }
+        hash = new_hash
+    }
+    when !aresetn {
+        reader.rst()
+        ctrl.rst()
+    }
+}
+```
+
+`pack_kernel.tcl`:
+```tcl
+# ... other kernel packing stuff
+set CTRL_ADDR_BLOCK [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]
+
+ipx::add_register CTRL $CTRL_ADDR_BLOCK
+set_property description    {Control Signals} [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x00}            [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}              [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+
+ipx::add_register ADDR $CTRL_ADDR_BLOCK
+set_property description    {buffer addr}     [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x010}           [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {64}              [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+ipx::add_register_parameter ASSOCIATED_BUSIF  [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+set_property value          {m_axi}           [ipx::get_register_parameters ASSOCIATED_BUSIF -of_objects [ipx::get_registers ADDR -of_objects $CTRL_ADDR_BLOCK]]
+
+ipx::add_register ELEMENT_COUNT $CTRL_ADDR_BLOCK
+set_property description    {element count}   [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x018}           [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}              [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+# ... other kernel packing stuff
+```
 
 ### `axi_burst_writer`
-![img/burst_writer.png](img/burst_writer.png)
+
+<p align="center">
+    <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:30%">
+</p>
 **Usage example:**
 ```sus
 module MemoryZeroer {
@@ -119,7 +232,7 @@ module MemoryZeroer {
     domain axi_control
     // ...
 
-    axi_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
+    axi_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4) writer
     domain mem_write
     output bool                        m_axi_awvalid = writer.awvalid
     input  bool                        m_axi_awready
