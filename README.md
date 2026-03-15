@@ -8,6 +8,196 @@ This Library Provides:
 - High-bandwidth bursting AXI reader
 - High-bandwidth bursting AXI writer
 
+## Usage
+### `axi_ctrl_slave`
+This module is the interface of your [XRT kernel](https://xilinx.github.io/XRT/master/html/xrt_native_apis.html#kernel-and-run). It is responsible the starting and stopping of your kernel, and for accepting the parameters your kernel has, as well as returning the results. (Note: This is only for small results. If you wish to work with larger data structures you should use the memory interfaces instead.)
+
+The control slave maps the incoming AXI4-Lite address space to an array of 32-bit registers. Register `0x000` is used as the control register, to which `0x00000001` is written to start the kernel. Once running, the control register is continuously polled, until it returns `0x00000004` to indicate it is done. 
+
+Input registers start from `0x010`, and increment by 4 bytes for each register. So going `0x010`, `0x014`, `0x018`, etc. Output registers start after the last input register, and continue similarly. 
+
+**Usage example:**
+```sus
+module SumExample {
+    domain aclk
+    input bool aresetn
+    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
+
+    gen int ATO = pow2#(E: 12)
+    
+    // Export AXI4-Lite interface
+    domain axi_control
+    input  int#(FROM: 0, TO: ATO)   s_axi_control_awaddr
+    input  bool                     s_axi_control_awvalid
+    output bool                     s_axi_control_awready = ctrl.awready
+    input  bool[32]                 s_axi_control_wdata
+    input  bool[4]                  s_axi_control_wstrb
+    input  bool                     s_axi_control_wvalid
+    output bool                     s_axi_control_wready  = ctrl.wready
+    output bool[2]                  s_axi_control_bresp   = ctrl.bresp
+    output bool                     s_axi_control_bvalid  = ctrl.bvalid
+    input  bool                     s_axi_control_bready
+    input  int#(FROM: 0, TO: ATO)   s_axi_control_araddr
+    input  bool                     s_axi_control_arvalid
+    output bool                     s_axi_control_arready = ctrl.arready
+    output bool[32]                 s_axi_control_rdata   = ctrl.rdata
+    output bool[2]                  s_axi_control_rresp   = ctrl.rresp
+    output bool                     s_axi_control_rvalid  = ctrl.rvalid
+    input  bool                     s_axi_control_rready
+    ctrl.awaddr  = s_axi_control_awaddr
+    ctrl.awvalid = s_axi_control_awvalid
+    ctrl.wdata   = s_axi_control_wdata
+    ctrl.wstrb   = s_axi_control_wstrb
+    ctrl.wvalid  = s_axi_control_wvalid
+    ctrl.bready  = s_axi_control_bready
+    ctrl.araddr  = s_axi_control_araddr
+    ctrl.arvalid = s_axi_control_arvalid
+    ctrl.rready  = s_axi_control_rready
+
+    state bool stored_sum_valid
+    state int stored_sum
+    when ctrl.start {
+        stored_sum_valid = true
+        stored_sum = ctrl.input_regs[0] + ctrl.output_regs[0] mod pow2#(E: 32)
+    }
+
+    when stored_sum_valid {
+        ctrl.finish([stored_sum])
+        stored_sum_valid = false
+    }
+
+    when !aresetn {
+        ctrl.rst()
+        stored_sum_valid = false
+    }
+}
+```
+To make your kernel parameters visible to XRT, you must declare them in your `pack_kernel.tcl`, like so:
+```tcl
+# ... other kernel packing stuff
+set CTRL_ADDR_BLOCK [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]
+
+ipx::add_register CTRL $CTRL_ADDR_BLOCK
+set_property description    {Control Signals} [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x00}            [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}              [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+
+ipx::add_register PARAM_A $CTRL_ADDR_BLOCK
+set_property description    {Sum Param B}     [ipx::get_registers PARAM_A  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x010}           [ipx::get_registers PARAM_A  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}              [ipx::get_registers PARAM_A  -of_objects $CTRL_ADDR_BLOCK]
+
+ipx::add_register PARAM_B $CTRL_ADDR_BLOCK
+set_property description    {Sum Param B}     [ipx::get_registers PARAM_B  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x014}           [ipx::get_registers PARAM_B  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}              [ipx::get_registers PARAM_B  -of_objects $CTRL_ADDR_BLOCK]
+# ... other kernel packing stuff
+```
+Output parameters can't be declared since XRT doesn't expose those for `xrt::kernel`. For those you have to use `xrt::ip`, and call `ip.read_register(0x018)` yourself. 
+
+### `axi_array_burst_writer`
+
+**Usage example:**
+```sus
+module MemoryZeroer {
+    domain aclk
+    input bool aresetn
+
+    gen int AXI_WIDTH = 256
+    gen int MEM_ATO = pow2#(E: 64)
+
+    gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / 32
+
+    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 0, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
+
+    // Export AXI4-Lite interface
+    domain axi_control
+    // ...
+
+    axi_array_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
+    domain mem_write
+    output bool                        m_axi_awvalid = writer.awvalid
+    input  bool                        m_axi_awready
+    output int#(FROM: 0, TO: MEM_ATO)  m_axi_awaddr = writer.awaddr
+    output int#(FROM: 0, TO: 256)      m_axi_awlen = writer.awlen
+    output int#(FROM: 0, TO: 8)        m_axi_awsize  = writer.awsize
+    output bool[2]                     m_axi_awburst = writer.awburst
+    output bool[3]                     m_axi_awprot = writer.awprot
+    output bool[4]                     m_axi_awcache = writer.awcache
+    output int#(FROM: 0, TO: 16)       m_axi_awqos = writer.awqos
+    output bool                        m_axi_awlock = writer.awlock
+    output int#(FROM: 0, TO: 16)       m_axi_awregion = writer.awregion
+    output bool                        m_axi_wvalid = writer.wvalid
+    input  bool                        m_axi_wready
+    output bool[AXI_WIDTH]             m_axi_wdata = writer.wdata
+    output bool[AXI_WIDTH / 8]         m_axi_wstrb = writer.wstrb
+    output bool                        m_axi_wlast = writer.wlast
+    input  bool                        m_axi_bvalid
+    output bool                        m_axi_bready = writer.bready
+    input  bool[2]                     m_axi_bresp
+    writer.awready = m_axi_awready
+    writer.wready  = m_axi_wready
+    writer.bvalid  = m_axi_bvalid
+    writer.bresp   = m_axi_bresp
+
+    axi_memory_reader_tie_off reader
+    domain mem_read
+    // ...  tie off the read half of the AXI4-Full interface
+
+
+    state int left_to_transfer
+    when ctrl.start {
+        bool[64] addr_bits
+        addr_bits[:32] = ctrl.input_regs[0]
+        addr_bits[32:] = ctrl.input_regs[1]
+        
+        left_to_transfer = BitsToUInt(ctrl.input_regs[2])
+        writer.request_new_write(BitsToUInt(addr_bits))
+    }
+    when left_to_transfer > 0 & writer.may_write {
+        when num_left_to_transfer > 8 {
+            writer.write([32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000], 8, 0, false)
+            left_to_transfer = num_left_to_transfer - 8
+        } else {
+            writer.write([32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000, 32'h00000000], left_to_transfer mod 8, 0, true)
+            left_to_transfer = 0
+        }
+    }
+    when writer.write_has_been_committed {
+        ctrl.finish([])
+    }
+
+    when !aresetn {
+        ctrl.rst()
+        writer.rst()
+        left_to_transfer = 0
+    }
+```
+
+`pack_kernel.tcl`:
+```tcl
+# ... other kernel packing stuff
+set CTRL_ADDR_BLOCK [ipx::get_address_blocks reg0 -of_objects [ipx::get_memory_maps s_axi_control -of_objects [ipx::current_core]]]
+
+ipx::add_register CTRL $CTRL_ADDR_BLOCK
+set_property description    {Control Signals} [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x00}            [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}              [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
+
+ipx::add_register ADDR $CTRL_ADDR_BLOCK
+set_property description    {buffer addr}     [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x010}           [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {64}              [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+ipx::add_register_parameter ASSOCIATED_BUSIF  [ipx::get_registers ADDR  -of_objects $CTRL_ADDR_BLOCK]
+set_property value          {m_axi}           [ipx::get_register_parameters ASSOCIATED_BUSIF -of_objects [ipx::get_registers ADDR -of_objects $CTRL_ADDR_BLOCK]]
+
+ipx::add_register ELEMENT_COUNT $CTRL_ADDR_BLOCK
+set_property description    {element count}   [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+set_property address_offset {0x018}           [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+set_property size           {32}              [ipx::get_registers ELEMENT_COUNT  -of_objects $CTRL_ADDR_BLOCK]
+# ... other kernel packing stuff
+```
+
 ## Lessons Learned - VCK5000
 Extrapolated from various benchmarks, more info in [MIXED.md](measurements/MIXED.md), [24x512.md](measurements/24x512.md), [20x256.md](measurements/20x256.md)
 
@@ -87,4 +277,6 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 - **There is only one Memory Bank**
 - **No Host DMA is supported**
 - **Rarely XRT has a 'blip', which includes a 500ms delay after a set of kernels finish**
+
+## Lessons Learned - U280
 - **On the U280, grouping multiple HBM banks together (a la `sp=burst_reader512_hbm_2x.m_axi:HBM[16:17]`) does not actually improve bandwidth, yet does introduce lots of cruft around the HBM interfaces**
