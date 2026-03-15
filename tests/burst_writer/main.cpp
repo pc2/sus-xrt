@@ -23,24 +23,24 @@
 
 
 struct AXIConfig {
-    uint32_t arprot : 3;
-    uint32_t arcache : 4;
-    uint32_t arqos : 4;
-    uint32_t arlock : 1;
-    uint32_t arregion : 4;
-    uint32_t max_in_flight: 16;
+    uint32_t awprot : 3;
+    uint32_t awcache : 4;
+    uint32_t awqos : 4;
+    uint32_t awlock : 1;
+    uint32_t awregion : 4;
+    uint32_t _pad: 16;
 };
 
 void printConfig(AXIConfig config) {
     std::cout << "Current AXIConfig:\n"
-              << "  arprot        = " << config.arprot << "\n"
-              << "  arcache       = " << config.arcache << "\n"
-              << "  arqos         = " << config.arqos << "\n"
-              << "  arlock        = " << config.arlock << "\n"
-              << "  arregion      = " << config.arregion << "\n"
-              << "  max_in_flight = " << config.max_in_flight << std::endl;
+              << "  awprot        = " << config.awprot << "\n"
+              << "  awcache       = " << config.awcache << "\n"
+              << "  awqos         = " << config.awqos << "\n"
+              << "  awlock        = " << config.awlock << "\n"
+              << "  awregion      = " << config.awregion << std::endl;
 }
 
+std::string device_name;
 xrt::device device;
 std::unique_ptr<xrt::uuid>   xclbin_handle_ptr;
 
@@ -96,7 +96,9 @@ struct BenchmarkResult {
 uint32_t* default_buffer;
 uint32_t* host_side;
 uint32_t* expected_buffer;
-BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, uint32_t config_u32) {
+BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, AXIConfig config) {
+    uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
+
     uint64_t last_elem_idx = offset + num_repeats * experiment_offset + num_elems - 1;
     if(last_elem_idx >= BUFFER_CAPACITY) {
         std::cout << "ERROR: Element index " << last_elem_idx << " lies outside the buffer size " << BUFFER_CAPACITY << std::endl;
@@ -185,12 +187,12 @@ BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset
 
 void benchmark_header(std::ofstream& bench_file, const char* name, AXIConfig& config) {
     bench_file << name << "\t";
-    bench_file << "arprot: " << config.arprot << "\t";
-    bench_file << "arcache: " << config.arcache << "\t";
-    bench_file << "arqos: " << config.arqos << "\t";
-    bench_file << "arlock: " << config.arlock << "\t";
-    bench_file << "arregion: " << config.arregion << "\t";
-    bench_file << "max_in_flight: " << config.max_in_flight;
+    bench_file << "awprot: " << config.awprot << "\t";
+    bench_file << "awcache: " << config.awcache << "\t";
+    bench_file << "awqos: " << config.awqos << "\t";
+    bench_file << "awlock: " << config.awlock << "\t";
+    bench_file << "awregion: " << config.awregion << "\t";
+    bench_file << "clock_freq (MHz): " << clock_freq_MHz;
     bench_file << "\nName\tCycles\tBytes Per Cycle\tTime (s)\tKernel Time (s)\tBandwidth (GB/s)\tKernel Measured Bandwidth (GB/s)" << std::endl;
 }
 void print_benchmark(std::ofstream& bench_file, KernelInfo& kernel_info, BenchmarkResult& result) {
@@ -201,6 +203,40 @@ void print_benchmark(std::ofstream& bench_file, KernelInfo& kernel_info, Benchma
     bench_file << result.kernel_measured_runtime << "\t";
     bench_file << result.bandwidth << "\t";
     bench_file << result.kernel_measured_bandwidth << std::endl;
+}
+
+void run_benchmarks(std::ofstream& bench_file, AXIConfig config) {
+    printConfig(config);
+
+    benchmark_header(bench_file, "Small Writes Same Location", config);
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 0, config);
+        print_benchmark(bench_file, kernel_info, result);
+    }
+
+    benchmark_header(bench_file, "Small Sequential Writes", config);
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 4, config);
+        print_benchmark(bench_file, kernel_info, result);
+    }
+
+    benchmark_header(bench_file, "Small Writes Different Pages", config);
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 1 << 12, config);
+        print_benchmark(bench_file, kernel_info, result);
+    }
+
+    benchmark_header(bench_file, "Single Write Latency", config);
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 1, 0, config);
+        print_benchmark(bench_file, kernel_info, result);
+    }
+
+    benchmark_header(bench_file, "Large Buffer Write", config);
+    for(KernelInfo kernel_info : kernel_infos) {
+        BenchmarkResult result = run_kernel(kernel_info, BUFFER_CAPACITY, 0, 100, 0, config);
+        print_benchmark(bench_file, kernel_info, result);
+    }
 }
 
 int main(int argc, const char** argv) {
@@ -247,8 +283,16 @@ int main(int argc, const char** argv) {
     if(argc >= 3) {
         xclbin_file = argv[2];
     }
-    std::cout << "device name:     " << device.get_info<xrt::info::device::name>() << std::endl;
+    device_name = device.get_info<xrt::info::device::name>();
+    std::cout << "device name:     " << device_name << std::endl;
     std::cout << "device bdf:      " << device.get_info<xrt::info::device::bdf>() << std::endl;
+    
+    if(device_name == "xilinx_u280_gen3x16_xdma_base_1") {
+        device_name = std::string("U280");
+    } else if(device_name == "xilinx_vck5000_gen4x8_qdma_base_2") {
+        device_name = std::string("VCK5000");
+        //BUFFER_CAPACITY = 1000000000 / sizeof(uint32_t);
+    }
 
     // Workaround for dumb missing default constructor
     xrt::xclbin xclbin = xrt::xclbin(xclbin_file);
@@ -265,16 +309,6 @@ int main(int argc, const char** argv) {
     }
 
     std::cout << "Got XCLBIN" << std::endl;
-
-    AXIConfig config = AXIConfig{
-        .arprot = 0,
-        .arcache = 2,
-        .arqos = 0,
-        .arlock = 0,
-        .arregion = 0,
-        .max_in_flight = (1 << 16) - 1,
-    };
-    printConfig(config);
 
     std::cout << "Made Kernel" << std::endl;
     default_buffer = new uint32_t[BUFFER_CAPACITY];
@@ -339,24 +373,22 @@ int main(int argc, const char** argv) {
     //xrt::bo bench_buffer = xrt::bo(device, sizeof(uint32_t) * num_buffer_elems, XCL_BO_FLAGS_HOST_ONLY, 0);
 
     
-    uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
-
     for(KernelInfo kernel_info : kernel_infos) {
         if(kernel_info.typ == "ddr") {
             continue; // Skip faulty DDR? 
         }
         // std::cout << "Small Buffers" << std::endl;
         // for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-        //     run_kernel(kernel_info, 19, offset, config_u32);
+        //     run_kernel(kernel_info, 19, offset, config);
         // }
         // std::cout << "Small Buffers on Crossover" << std::endl;
         // for(int offset = 0; offset < 64; offset += sizeof(uint32_t)) {
-        //     run_kernel(kernel_info, 20, 4000 + offset, config_u32);
+        //     run_kernel(kernel_info, 20, 4000 + offset, config);
         // }
 /*
         std::cout << "Zero sized test" << std::endl;
         for(int offset = 0; offset <= 4108; offset+=4) {
-            run_kernel(kernel_info, 0, offset, 1, 0, config_u32);
+            run_kernel(kernel_info, 0, offset, 1, 0, config);
             if(offset == 12) {
                 offset = 4080;
             }
@@ -364,7 +396,7 @@ int main(int argc, const char** argv) {
 
         std::cout << "One sized test" << std::endl;
         for(int offset = 0; offset <= 4108; offset+=4) {
-            run_kernel(kernel_info, 1, offset, 1, 0, config_u32);
+            run_kernel(kernel_info, 1, offset, 1, 0, config);
             if(offset == 12) {
                 offset = 4080;
             }
@@ -372,7 +404,7 @@ int main(int argc, const char** argv) {
 
         std::cout << "Two sized test" << std::endl;
         for(int offset = 0; offset <= 4108; offset+=4) {
-            run_kernel(kernel_info, 2, offset, 1, 0, config_u32);
+            run_kernel(kernel_info, 2, offset, 1, 0, config);
             if(offset == 12) {
                 offset = 4080;
             }
@@ -380,45 +412,35 @@ int main(int argc, const char** argv) {
 */
         
         /*for(int i = 0; i < 2000; i++) {
-            run_kernel(kernel_info, 2, 0, 19, 4, config_u32);
+            run_kernel(kernel_info, 2, 0, 19, 4, config);
         }*/
-        /*run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
-        run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
-        run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
-        run_kernel(kernel_info, 2, 0, 23, 4, config_u32);
-        run_kernel(kernel_info, 2, 0, 24, 4, config_u32);*/
+        /*run_kernel(kernel_info, 2, 0, 23, 4, config);
+        run_kernel(kernel_info, 2, 0, 23, 4, config);
+        run_kernel(kernel_info, 2, 0, 23, 4, config);
+        run_kernel(kernel_info, 2, 0, 23, 4, config);
+        run_kernel(kernel_info, 2, 0, 24, 4, config);*/
         
 
         /*std::cout << "Repeated Two sized tests" << std::endl;
         for(uint32_t repeats = 1; repeats < 1200; repeats++) {
-            run_kernel(kernel_info, 2, 0, repeats, 4, config_u32);
+            run_kernel(kernel_info, 2, 0, repeats, 4, config);
         }*/
     }
 
     // Actual benchmarks
 
-    std::ofstream bench_file = std::ofstream("../benchFile.csv");
-    benchmark_header(bench_file, "Small Writes Same Location", config);
-    for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 0, config_u32);
-        print_benchmark(bench_file, kernel_info, result);
-    }
+    std::ofstream bench_file = std::ofstream("../benchFile" + device_name + ".csv");
+    AXIConfig config = AXIConfig{
+        .awprot = 0,
+        .awcache = 0b0010,
+        .awqos = 0,
+        .awlock = 0,
+        .awregion = 0,
+        ._pad = 0,
+    };
 
-    benchmark_header(bench_file, "Small Sequential Writes", config);
-    for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 4, config_u32);
-        print_benchmark(bench_file, kernel_info, result);
-    }
-
-    benchmark_header(bench_file, "Small Writes Different Pages", config);
-    for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, 1, 0, 10000, 1 << 12, config_u32);
-        print_benchmark(bench_file, kernel_info, result);
-    }
-
-    benchmark_header(bench_file, "Large Buffer Write", config);
-    for(KernelInfo kernel_info : kernel_infos) {
-        BenchmarkResult result = run_kernel(kernel_info, BUFFER_CAPACITY, 0, 100, 0, config_u32);
-        print_benchmark(bench_file, kernel_info, result);
+    for(int awcache = 0; awcache < 16; awcache++) {
+        config.awcache = awcache;
+        run_benchmarks(bench_file, config);
     }
 }

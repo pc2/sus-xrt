@@ -846,7 +846,7 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
     } else {
         extra_burst_arlen = 0
     }
-    cur_transfers_in_flight = cur_transfers_in_flight + extra_burst_arlen - BoolToInt(rready & rvalid) mod pow2#(E: 16)
+    cur_transfers_in_flight = IntNarrow#(FROM: 0, TO: MAX_IN_FLIGHT + 1)(cur_transfers_in_flight + extra_burst_arlen - BoolToInt(rready & rvalid))
 
     domain data
     input bool is_ready_to_receive_lots_of_data'noinfer#(V: -MAX_IN_FLIGHT)

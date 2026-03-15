@@ -90,7 +90,7 @@ VCK5000/emulate: XRT_INI := xrt_gui.ini
 VCK5000/emulate: _emu
 VCK5000/emulate_batch: XRT_INI := xrt_batch.ini
 VCK5000/emulate_batch: _emu
-VCK5000/run: ARGS := a
+VCK5000/run: ARGS := e
 VCK5000/run: _run
 
 .PHONY: clean cleantmp
