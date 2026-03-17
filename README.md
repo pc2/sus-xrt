@@ -102,7 +102,7 @@ Output parameters can't be declared since XRT doesn't expose those for `xrt::ker
 
 **Usage example:**
 ```sus
-module bench_burst_reader {
+module BasicHash {
     domain aclk
     input bool aresetn
 
@@ -211,10 +211,10 @@ set_property size           {32}              [ipx::get_registers ELEMENT_COUNT 
 ```
 
 ### `axi_burst_writer`
-
 <p align="center">
     <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:30%">
 </p>
+
 **Usage example:**
 ```sus
 module MemoryZeroer {
