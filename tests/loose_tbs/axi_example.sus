@@ -32,7 +32,6 @@ module axi_ctrl_slave_example {
     gen int DATA_WIDTH = 32
 
     axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 500, ADDR_WIDTH) ctrl
-    ctrl.aresetn = aresetn
 
     domain axi4
     // Export AXI4-Lite interface
@@ -103,6 +102,7 @@ module axi_ctrl_slave_example {
     when !aresetn {
         outstream_tvalid = false 
         //bits_to_transmit = Repeat(true)
+        ctrl.rst()
     }
 }
 
@@ -117,7 +117,6 @@ module combined_axi_ctrl_plus_reader {
     gen int AXI_WIDTH = 32
 
     axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 1, ADDR_WIDTH) ctrl
-    ctrl.aresetn = aresetn
 
     domain axi_control
     // Export AXI4-Lite interface
@@ -263,6 +262,7 @@ module combined_axi_ctrl_plus_reader {
         outstream_tvalid = false
         reader.rst()
         writer.rst()
+        ctrl.rst()
     }
 }
 
@@ -280,7 +280,6 @@ module combined_axi_ctrl_reader_writer {
     gen int NUM_VALUES = 8
 
     axi_ctrl_slave #(NUM_INPUT_REGS: 8, NUM_OUTPUT_REGS: 1, ADDR_WIDTH) ctrl
-    ctrl.aresetn = aresetn
 
     // Export AXI4-Lite interface
     domain axi_control
@@ -442,6 +441,7 @@ module combined_axi_ctrl_reader_writer {
         data_state = STM_IDLE
         reader.rst()
         writer.rst()
+        ctrl.rst()
     }
 }
 
