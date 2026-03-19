@@ -97,7 +97,7 @@ Output parameters can't be declared since XRT doesn't expose those for `xrt::ker
 
 ### `axi_burst_reader`
 <p align="center">
-    <img src="img/burst_reader.png" alt="img/burst_reader.png" style="width:30%">
+    <img src="img/burst_reader.png" alt="img/burst_reader.png" style="width:60%">
 </p>
 
 **Usage example:**
@@ -212,7 +212,7 @@ set_property size           {32}              [ipx::get_registers ELEMENT_COUNT 
 
 ### `axi_burst_writer`
 <p align="center">
-    <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:30%">
+    <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:60%">
 </p>
 
 **Usage example:**
