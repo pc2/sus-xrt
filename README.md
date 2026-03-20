@@ -402,3 +402,17 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 ## AxCACHE has no effect
 ![img/arcache_reader.png](img/arcache_reader.png)
 ![img/awcache_writer.png](img/awcache_writer.png)
+
+## Finding optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`
+Using `axi_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter to find the lowest value that still produces optimal bandwidth. These benchmarks are run at very high frequencies, such that we have a confident upper bound. 
+
+![img/max_in_flight_study.png](img/max_in_flight_study.png)
+
+Interpreting these results, we recommend the following values:
+| AXI_WIDTH | U280 DDR | U280 HBM | U280 Host Mem | VCK5000 DDR |
+| --- | --- | --- | ---       | --- |
+| 32  | 512 | 512 | don't use | 320 | 
+| 64  | 512 | 512 | don't use | 320 |
+| 128 | 512 | 512 | don't use | 320 |
+| 256 | 448 | 256 | 512       | 192 |
+| 512 | 128 | 128 | 384       | 110 |

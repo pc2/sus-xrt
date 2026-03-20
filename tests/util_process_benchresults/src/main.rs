@@ -42,11 +42,11 @@ fn main() {
         
         let first_part = line_parts.next().unwrap();
 
-        if line.contains("cache") {
+        if line.contains("max_in_flight") {
             sections.idx_of(first_part);
             let mut total_setting = String::new();
             for p in line_parts {
-                if p.contains("cache") {
+                if p.contains("max_in_flight") {
                     settings.idx_of(p);
                 }
             }
@@ -75,11 +75,11 @@ fn main() {
 
         let first_part = line_parts.next().unwrap();
 
-        if line.contains("cache") {
+        if line.contains("max_in_flight") {
             section = sections.idx_of(first_part);
             
             for p in line_parts {
-                if p.contains("cache") {
+                if p.contains("max_in_flight") {
                     setting = settings.idx_of(p);
                 }
             }
@@ -98,13 +98,13 @@ fn main() {
     for section in 0..sections.len() {
         for metric in 0..metrics.len() {
             print!("{}: {}", sections.data[section], metrics[metric]);
-            for setting in &settings.data {
-                print!("\t{setting}");
+            for kernel in &kernels.data {
+                print!("\t{kernel}");
             }
             println!();
-            for kernel in 0..kernels.len() {
-                print!("{}", kernels.data[kernel]);
-                for setting in 0..settings.len() {
+            for setting in 0..settings.len() {
+                print!("{}", settings.data[setting]);
+                for kernel in 0..kernels.len() {
                     print!("\t{}", data[section][setting][kernel][metric]);
                 }
                 println!();

@@ -95,6 +95,18 @@ struct BenchmarkResult {
 
 uint32_t* reference_buffer;
 BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, AXIConfig config) {
+    uint64_t burst_size = (1 << 12) / (info.AXI_WIDTH / 8);
+    if(burst_size > 256) {
+        burst_size = 256;
+    }
+    // Avoid locking up the FPGA due to incorrect max_in_flight
+    if(config.max_in_flight < burst_size) {
+        return BenchmarkResult {
+            0.0, 0.0, 0.0, 0, 0, 0.0, 0.0
+        };
+    }
+
+
     uint32_t config_u32 = *reinterpret_cast<const uint32_t*>(&config);
 
     uint64_t last_elem_idx = offset + num_repeats * experiment_offset + num_elems - 1;
@@ -428,18 +440,27 @@ int main(int argc, const char** argv) {
 
     // Actual benchmarks
     
-    std::ofstream bench_file = std::ofstream("../benchFile" + device_name + ".csv");
+    std::ofstream bench_file = std::ofstream("../benchFileMaxInFlightStudy" + device_name + ".csv");
     AXIConfig config = AXIConfig{
         .arprot = 0,
-        .arcache = 0b0010,
+        .arcache = 0b0011,
         .arqos = 0,
         .arlock = 0,
         .arregion = 0,
         .max_in_flight = (1 << 16) - 1,
     };
 
-    for(int arcache = 0; arcache < 16; arcache++) {
+    /*for(int arcache = 0; arcache < 16; arcache++) {
         config.arcache = arcache;
         run_benchmarks(bench_file, config);
+    }*/
+
+    for(int max_in_flight = 32; max_in_flight < 1024; max_in_flight+=4) {
+        config.max_in_flight = max_in_flight;
+        benchmark_header(bench_file, "Large Buffer Read", config);
+        for(KernelInfo kernel_info : kernel_infos) {
+            BenchmarkResult result = run_kernel(kernel_info, BUFFER_CAPACITY, 0, 10, 0, config);
+            print_benchmark(bench_file, kernel_info, result);
+        }
     }
 }
