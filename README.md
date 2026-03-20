@@ -404,48 +404,61 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 ![img/awcache_writer.png](img/awcache_writer.png)
 
 ## Benchmarks
-| Platform | Frequency | Memory   | Mode  | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
-|----------|----------|----------|-------|-----------|------------------|-------------|
-| U280     | 484MHz   | DDR      | Read  | 32        | 1.93             | 3.99        |
-| U280     | 484MHz   | DDR      | Read  | 64        | 3.87             | 7.99        |
-| U280     | 484MHz   | DDR      | Read  | 128       | 7.73             | 15.97       |
-| U280     | 484MHz   | DDR      | Read  | 256       | 15.49            | 32.00       |
-| U280     | 484MHz   | DDR      | Read  | 512       | 18.16            | 37.53       |
-| U280     | 484MHz   | HBM      | Read  | 32        | 1.94             | 4.00        |
-| U280     | 484MHz   | HBM      | Read  | 64        | 3.87             | 8.00        |
-| U280     | 484MHz   | HBM      | Read  | 128       | 7.74             | 16.00       |
-| U280     | 484MHz   | HBM      | Read  | 256       | 13.36            | 27.61       |
-| U280     | 484MHz   | HBM      | Read  | 512       | 13.36            | 27.60       |
-| U280     | 484MHz   | Host Mem | Read  | 32        | 0.67             | 1.38        |
-| U280     | 484MHz   | Host Mem | Read  | 64        | 1.13             | 2.34        |
-| U280     | 484MHz   | Host Mem | Read  | 128       | 1.60             | 3.31        |
-| U280     | 484MHz   | Host Mem | Read  | 256       | 9.47             | 19.56       |
-| U280     | 484MHz   | Host Mem | Read  | 512       | 12.90            | 26.64       |
-| U280     | 455MHz   | DDR      | Write | 32        | 1.82             | 4           |
-| U280     | 455MHz   | DDR      | Write | 64        | 3.64             | 8           |
-| U280     | 455MHz   | DDR      | Write | 128       | 7.28             | 16          |
-| U280     | 455MHz   | DDR      | Write | 256       | 14.56            | 32          |
-| U280     | 455MHz   | DDR      | Write | 512       | 15.9203          | 34.9897     |
-| U280     | 455MHz   | HBM      | Write | 32        | 1.82             | 4           |
-| U280     | 455MHz   | HBM      | Write | 64        | 3.64             | 8           |
-| U280     | 455MHz   | HBM      | Write | 128       | 7.28             | 16          |
-| U280     | 455MHz   | HBM      | Write | 256       | 13.1823          | 28.972      |
-| U280     | 455MHz   | HBM      | Write | 512       | 13.1826          | 28.9728     |
-| U280     | 455MHz   | Host Mem | Write | 32        | 1.81997          | 3.99994     |
-| U280     | 455MHz   | Host Mem | Write | 64        | 3.6381           | 7.99582     |
-| U280     | 455MHz   | Host Mem | Write | 128       | 7.27023          | 15.9785     |
-| U280     | 455MHz   | Host Mem | Write | 256       | 14.1761          | 31.1562     |
-| U280     | 455MHz   | Host Mem | Write | 512       | 14.174           | 31.1517     |
-| VCK5000  | 431MHz   | DDR      | Read  | 32        | 1.724            | 4           |
-| VCK5000  | 431MHz   | DDR      | Read  | 64        | 3.4479           | 7.99982     |
-| VCK5000  | 431MHz   | DDR      | Read  | 128       | 6.61562          | 15.4371     |
-| VCK5000  | 431MHz   | DDR      | Read  | 256       | 12.6324          | 29.3096     |
-| VCK5000  | 431MHz   | DDR      | Read  | 512       | 12.6324          | 29.3096     |
-| VCK5000  | 427MHz   | DDR      | Write | 32        | 1.66889          | 3.9084      |
-| VCK5000  | 427MHz   | DDR      | Write | 64        | 3.23408          | 7.57396     |
-| VCK5000  | 427MHz   | DDR      | Write | 128       | 6.2109           | 14.5454     |
-| VCK5000  | 427MHz   | DDR      | Write | 256       | 10.7715          | 25.2261     |
-| VCK5000  | 427MHz   | DDR      | Write | 512       | 11.8675          | 27.7928     |
+### U280 Read @ 484MHz
+| Memory   | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
+|----------|-----------|------------------|-------------|
+| DDR      | 32        | 1.93             | 3.99        |
+| DDR      | 64        | 3.87             | 7.99        |
+| DDR      | 128       | 7.73             | 15.97       |
+| DDR      | 256       | 15.49            | 32.00       |
+| DDR      | 512       | 18.16            | 37.53       |
+| HBM      | 32        | 1.94             | 4.00        |
+| HBM      | 64        | 3.87             | 8.00        |
+| HBM      | 128       | 7.74             | 16.00       |
+| HBM      | 256       | 13.36            | 27.61       |
+| HBM      | 512       | 13.36            | 27.60       |
+| Host Mem | 32        | 0.67             | 1.38        |
+| Host Mem | 64        | 1.13             | 2.34        |
+| Host Mem | 128       | 1.60             | 3.31        |
+| Host Mem | 256       | 9.47             | 19.56       |
+| Host Mem | 512       | 12.90            | 26.64       |
+
+### U280 Write @ 455MHz
+| Memory   | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
+|----------|-----------|------------------|-------------|
+| DDR      | 32        | 1.82             | 4.00        |
+| DDR      | 64        | 3.64             | 8.00        |
+| DDR      | 128       | 7.28             | 16.00       |
+| DDR      | 256       | 14.56            | 32.00       |
+| DDR      | 512       | 15.92            | 34.99       |
+| HBM      | 32        | 1.82             | 4.00        |
+| HBM      | 64        | 3.64             | 8.00        |
+| HBM      | 128       | 7.28             | 16.00       |
+| HBM      | 256       | 13.18            | 28.97       |
+| HBM      | 512       | 13.18            | 28.97       |
+| Host Mem | 32        | 1.82             | 4.00        |
+| Host Mem | 64        | 3.64             | 8.00        |
+| Host Mem | 128       | 7.27             | 15.98       |
+| Host Mem | 256       | 14.18            | 31.16       |
+| Host Mem | 512       | 14.17            | 31.15       |
+
+### VCK5000 Read @ 431MHz
+| Memory | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
+|--------|-----------|------------------|-------------|
+| DDR    | 32        | 1.72             | 4.00        |
+| DDR    | 64        | 3.45             | 8.00        |
+| DDR    | 128       | 6.62             | 15.44       |
+| DDR    | 256       | 12.63            | 29.31       |
+| DDR    | 512       | 12.63            | 29.31       |
+
+### VCK5000 Write @ 427MHz
+| Memory | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
+|--------|-----------|------------------|-------------|
+| DDR    | 32        | 1.67             | 3.91        |
+| DDR    | 64        | 3.23             | 7.57        |
+| DDR    | 128       | 6.21             | 14.55       |
+| DDR    | 256       | 10.77            | 25.23       |
+| DDR    | 512       | 11.87            | 27.79       |
 
 ## Optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`
 Using `axi_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter to find the lowest value that still produces optimal bandwidth. These benchmarks are run at very high frequencies, such that we have a confident upper bound. 
