@@ -406,13 +406,18 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 ## Finding optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`
 Using `axi_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter to find the lowest value that still produces optimal bandwidth. These benchmarks are run at very high frequencies, such that we have a confident upper bound. 
 
-![img/max_in_flight_study.png](img/max_in_flight_study.png)
+<p align="center">
+    <img src="img/u280_ddr_max_in_flight.png" alt="img/u280_ddr_max_in_flight.png" style="width:48%">
+    <img src="img/u280_hbm_max_in_flight.png" alt="img/u280_hbm_max_in_flight.png" style="width:48%">
+    <img src="img/u280_host_mem_max_in_flight.png" alt="img/u280_host_mem_max_in_flight.png" style="width:48%">
+    <img src="img/vck5000_ddr_max_in_flight.png" alt="img/vck5000_ddr_max_in_flight.png" style="width:48%">
+</p>
 
 Interpreting these results, we recommend the following values:
 | AXI_WIDTH | U280 DDR | U280 HBM | U280 Host Mem | VCK5000 DDR |
 | --- | --- | --- | ---       | --- |
-| 32  | 512 | 512 | don't use | 320 | 
-| 64  | 512 | 512 | don't use | 320 |
-| 128 | 512 | 512 | don't use | 320 |
+| 32  | 512 | 512 | don't use | 392 | 
+| 64  | 512 | 512 | don't use | 392 |
+| 128 | 512 | 512 | don't use | 392 |
 | 256 | 448 | 256 | 512       | 192 |
 | 512 | 128 | 128 | 384       | 110 |
