@@ -403,7 +403,51 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 ![img/arcache_reader.png](img/arcache_reader.png)
 ![img/awcache_writer.png](img/awcache_writer.png)
 
-## Finding optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`
+## Benchmarks
+| Platform | Frequency | Memory   | Mode  | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
+|----------|----------|----------|-------|-----------|------------------|-------------|
+| U280     | 484MHz   | DDR      | Read  | 32        | 1.93             | 3.99        |
+| U280     | 484MHz   | DDR      | Read  | 64        | 3.87             | 7.99        |
+| U280     | 484MHz   | DDR      | Read  | 128       | 7.73             | 15.97       |
+| U280     | 484MHz   | DDR      | Read  | 256       | 15.49            | 32.00       |
+| U280     | 484MHz   | DDR      | Read  | 512       | 18.16            | 37.53       |
+| U280     | 484MHz   | HBM      | Read  | 32        | 1.94             | 4.00        |
+| U280     | 484MHz   | HBM      | Read  | 64        | 3.87             | 8.00        |
+| U280     | 484MHz   | HBM      | Read  | 128       | 7.74             | 16.00       |
+| U280     | 484MHz   | HBM      | Read  | 256       | 13.36            | 27.61       |
+| U280     | 484MHz   | HBM      | Read  | 512       | 13.36            | 27.60       |
+| U280     | 484MHz   | Host Mem | Read  | 32        | 0.67             | 1.38        |
+| U280     | 484MHz   | Host Mem | Read  | 64        | 1.13             | 2.34        |
+| U280     | 484MHz   | Host Mem | Read  | 128       | 1.60             | 3.31        |
+| U280     | 484MHz   | Host Mem | Read  | 256       | 9.47             | 19.56       |
+| U280     | 484MHz   | Host Mem | Read  | 512       | 12.90            | 26.64       |
+| U280     | 455MHz   | DDR      | Write | 32        | 1.82             | 4           |
+| U280     | 455MHz   | DDR      | Write | 64        | 3.64             | 8           |
+| U280     | 455MHz   | DDR      | Write | 128       | 7.28             | 16          |
+| U280     | 455MHz   | DDR      | Write | 256       | 14.56            | 32          |
+| U280     | 455MHz   | DDR      | Write | 512       | 15.9203          | 34.9897     |
+| U280     | 455MHz   | HBM      | Write | 32        | 1.82             | 4           |
+| U280     | 455MHz   | HBM      | Write | 64        | 3.64             | 8           |
+| U280     | 455MHz   | HBM      | Write | 128       | 7.28             | 16          |
+| U280     | 455MHz   | HBM      | Write | 256       | 13.1823          | 28.972      |
+| U280     | 455MHz   | HBM      | Write | 512       | 13.1826          | 28.9728     |
+| U280     | 455MHz   | Host Mem | Write | 32        | 1.81997          | 3.99994     |
+| U280     | 455MHz   | Host Mem | Write | 64        | 3.6381           | 7.99582     |
+| U280     | 455MHz   | Host Mem | Write | 128       | 7.27023          | 15.9785     |
+| U280     | 455MHz   | Host Mem | Write | 256       | 14.1761          | 31.1562     |
+| U280     | 455MHz   | Host Mem | Write | 512       | 14.174           | 31.1517     |
+| VCK5000  | 431MHz   | DDR      | Read  | 32        | 1.724            | 4           |
+| VCK5000  | 431MHz   | DDR      | Read  | 64        | 3.4479           | 7.99982     |
+| VCK5000  | 431MHz   | DDR      | Read  | 128       | 6.61562          | 15.4371     |
+| VCK5000  | 431MHz   | DDR      | Read  | 256       | 12.6324          | 29.3096     |
+| VCK5000  | 431MHz   | DDR      | Read  | 512       | 12.6324          | 29.3096     |
+| VCK5000  | 427MHz   | DDR      | Write | 32        | 1.66889          | 3.9084      |
+| VCK5000  | 427MHz   | DDR      | Write | 64        | 3.23408          | 7.57396     |
+| VCK5000  | 427MHz   | DDR      | Write | 128       | 6.2109           | 14.5454     |
+| VCK5000  | 427MHz   | DDR      | Write | 256       | 10.7715          | 25.2261     |
+| VCK5000  | 427MHz   | DDR      | Write | 512       | 11.8675          | 27.7928     |
+
+## Optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`
 Using `axi_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter to find the lowest value that still produces optimal bandwidth. These benchmarks are run at very high frequencies, such that we have a confident upper bound. 
 
 <p align="center">
