@@ -423,6 +423,12 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 | Host Mem | 256       | 9.47             | 19.56       |
 | Host Mem | 512       | 12.90            | 26.64       |
 
+| Memory   | Cycles | Latency (ns) |
+|----------|--------|--------------|
+| DDR      | 107    | 221          |
+| HBM      | 96     | 199          |
+| Host Mem | 502    | 1038         |
+
 ### U280 Write @ 455MHz
 | Memory   | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
 |----------|-----------|------------------|-------------|
@@ -442,6 +448,12 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 | Host Mem | 256       | 14.18            | 31.16       |
 | Host Mem | 512       | 14.17            | 31.15       |
 
+| Memory   | Cycles | Latency (ns) |
+|----------|--------|--------------|
+| DDR      | 63     | 139          |
+| HBM      | 52     | 115          |
+| Host Mem | 145    | 318          |
+
 ### VCK5000 Read @ 431MHz
 | Memory | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
 |--------|-----------|------------------|-------------|
@@ -451,6 +463,10 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 | DDR    | 256       | 12.63            | 29.31       |
 | DDR    | 512       | 12.63            | 29.31       |
 
+| Memory | Cycles | Latency (ns) |
+|--------|--------|--------------|
+| DDR    | 62–94  | 144–218      |
+
 ### VCK5000 Write @ 427MHz
 | Memory | AXI_WIDTH | Bandwidth (GB/s) | Bytes/cycle |
 |--------|-----------|------------------|-------------|
@@ -459,6 +475,10 @@ From benchmarking the 256-bit case, it appears for optimal bandwidth 64 elements
 | DDR    | 128       | 6.21             | 14.55       |
 | DDR    | 256       | 10.77            | 25.23       |
 | DDR    | 512       | 11.87            | 27.79       |
+
+| Memory | Cycles | Latency (ns) |
+|--------|--------|--------------|
+| DDR    | 43–53  | 101–124      |
 
 ## Optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`
 Using `axi_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter to find the lowest value that still produces optimal bandwidth. These benchmarks are run at very high frequencies, such that we have a confident upper bound. 
