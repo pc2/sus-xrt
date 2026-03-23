@@ -96,6 +96,18 @@ set_property size           {32}              [ipx::get_registers PARAM_B  -of_o
 Output parameters can't be declared since XRT doesn't expose those for `xrt::kernel`. For those you have to use `xrt::ip`, and call `ip.read_register(0x018)` yourself. 
 
 ### `axi_burst_reader`
+The burst reader is used for high-bandwidth streaming from DDR, HBM, or Host Memory. It has two user-facing interfaces: One for requesting bursts - `may_request_new_read/request_new_read(start_addr, num_elements)`, and one for the data stream itself: `ready_to_receive_lots_of_data/element_packet_valid(elements, chunk_length, chunk_offset, last)`. 
+
+Burst lengths are expressed in **elements**, an **element** is the smallest aligned component of a **transfer**. 
+
+Once a burst has been requested, data streams out of the `element_packet_valid` interface. A **burst** consists of one or more **transfers**, each of which consists of 1 to `AXI_WIDTH / (ADDR_ALIGN * 8)` **elements**. The part of the output data stream that is valid is communicated through the `chunk_length` and `chunk_offset` values. 
+
+Since the burst reader itself does not spend any resources on realigning elements within a transfer, the first transfer within a burst may not have valid elements at the front (denoted by a nonzero `chunk_offset`), and the last transfer may not have valid elements at the end (denoted by non-maximum `chunk_length`). 
+
+**Backpressure** on the data stream can only be provided on the address channel, as it is forbidden to backpressure the data stream itself. Hence, the long latency difference between `ready_to_receive_lots_of_data'-MAX_IN_FLIGHT` and `element_packet_valid'0`. You must account for being able to receive this amount of in-flight data by using an appropriately sized FIFO downstream. (The latency sensitive may_push/push interface on the FIFO should figure out this appropriate size automatically.)
+
+**Example:** In the FIFO below, a request for 13 4-byte elements was made from address `0x00000010000008`, at an AXI_WIDTH of 128-bit. 
+
 <p align="center">
     <img src="img/burst_reader.png" alt="img/burst_reader.png" style="width:60%">
 </p>
@@ -154,6 +166,7 @@ module BasicHash {
         hash = 32'h00000000
     }
 
+    reader.ready_to_receive_lots_of_data = true
     when reader.element_packet_valid :
         bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements,
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length,
