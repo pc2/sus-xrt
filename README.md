@@ -58,7 +58,7 @@ module SumExample {
     state int stored_sum
     when ctrl.start {
         stored_sum_valid = true
-        stored_sum = ctrl.input_regs[0] + ctrl.output_regs[0] mod pow2#(E: 32)
+        stored_sum = ctrl.input_regs[0] + ctrl.input_regs[1] mod pow2#(E: 32)
     }
 
     when stored_sum_valid {
