@@ -106,7 +106,7 @@ Since the burst reader itself does not spend any resources on realigning element
 
 **Backpressure** on the data stream can only be provided on the address channel, as it is forbidden to backpressure the data stream itself. Hence, the long latency difference between `ready_to_receive_lots_of_data'-MAX_IN_FLIGHT` and `element_packet_valid'0`. You must account for being able to receive this amount of in-flight data by using an appropriately sized FIFO downstream. (The latency sensitive may_push/push interface on the FIFO should figure out this appropriate size automatically.)
 
-**Example:** In the FIFO below, a request for 13 4-byte elements was made from address `0x00000010000008`, at an AXI_WIDTH of 128-bit. 
+**Example:** In the FIFO below, a request for 13 4-byte elements was made from address `0x00000010000008`, at an AXI_WIDTH of 128-bit. This results in 4 transfers, of 2, 4, 4, and 3 elements respectively. The last transfer will have `last=1`. 
 
 <p align="center">
     <img src="img/burst_reader.png" alt="img/burst_reader.png" style="width:60%">
@@ -224,6 +224,18 @@ set_property size           {32}              [ipx::get_registers ELEMENT_COUNT 
 ```
 
 ### `axi_burst_writer`
+The burst writer is used for high-bandwidth streaming from DDR, HBM, or Host Memory. It has two user-facing interfaces: One for requesting bursts - `may_request_new_write/request_new_write(start_addr)`, and one for the data stream itself: `may_write/write(elements, chunk_length, chunk_offset, last)`. 
+
+As with the reader, burst lengths are expressed in **elements**, an **element** is the smallest aligned component of a **transfer**. 
+
+After a burst has been requested, you may stream your data into the `write` interface. A **burst** consists of one or more **transfers**, each of which consists of 1 to `AXI_WIDTH / (ADDR_ALIGN * 8)` **elements**. The part of the input data stream that is valid is communicated through the `chunk_length` and `chunk_offset` values. 
+
+As opposed to the burst reader, the burst writer *does* contain data realigning logic. Besides freeing you from the worry of alignment, this comes with the bonus of letting you send your data in smaller transfers. The internal FIFO buffers your transfers anyway, and saves them up until it has full burst to submit to the memory interface. 
+
+**Backpressure:** The backpressure behaves identically to a regular FIFO. 
+
+**Example:** In the FIFO below, a write request for 4-byte elements was made to address `0x0000000100000000`, at an AXI_WIDTH of 128-bit. In 4 separate transfers, 1, 1, 4, and 2 elements were written, with `last=1` on the last transfer. Upon the last transfer, the burst writer submits a memory write for 2 128-bit AXI transfers. 
+
 <p align="center">
     <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:60%">
 </p>
