@@ -1,14 +1,21 @@
-# AXI Slaves and Masters for XRT
-[SUS](https://github.com/pc2/sus-compiler) library that provides AXI slaves and masters for Xilinx' [XRT](https://github.com/Xilinx/XRT)
+# XRT interface library for SUS
+This library provides AXI slaves and masters for integrating with Xilinx' [XRT](https://github.com/Xilinx/XRT)
 
-This Library Provides: 
-- AXI control slave: Provides input & output registers. Output registers only useable in XRT User-Managed Kernels
-- Low-bandwidth AXI reader
-- Low-bandwidth AXI writer
-- High-bandwidth bursting AXI reader
-- High-bandwidth bursting AXI writer
+The following building blocks are provided:
+- `axi_ctrl_slave`: AXI control slave with input & output registers. Output registers only useable in XRT User-Managed Kernels
+- `axi_memory_reader`: Low-bandwidth AXI reader
+- `axi_memory_writer`: Low-bandwidth AXI writer
+- `axi_burst_reader`: High-bandwidth bursting AXI reader
+- `axi_burst_writer`: High-bandwidth bursting AXI writer
+- `axis_master_fifo`: Latency Sensitive FIFO to AXI Stream Master
+
+Minimum [SUS](https://github.com/pc2/sus-compiler) version: **0.3.10**. 
 
 ## Usage
+To use this library, include it in your `sus_compiler` build command: `sus_compiler sus-xrt/axi.sus other_files.sus...`
+
+For full examples, buildable from source, see [tests/burst_reader](tests/burst_reader), [tests/burst_writer](tests/burst_writer), or [tests/memory_doubler](tests/memory_doubler). They employ a bursting axi reader, writer, and both respectively. 
+
 ### `axi_ctrl_slave`
 This module is the interface of your [XRT kernel](https://xilinx.github.io/XRT/master/html/xrt_native_apis.html#kernel-and-run). It is responsible the starting and stopping of your kernel, and for accepting the parameters your kernel has, as well as returning the results. (Note: This is only for small results. If you wish to work with larger data structures you should use the memory interfaces instead.)
 
