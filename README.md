@@ -246,7 +246,7 @@ As opposed to the burst reader, the burst writer *does* contain data realigning 
 **Example:** In the FIFO below, a write request for 4-byte elements was made to address `0x0000000100000000`, at an AXI_WIDTH of 128-bit. In 4 separate transfers, 1, 1, 4, and 2 elements were written, with `last=1` on the last transfer. Upon the last transfer, the burst writer submits a memory write for 2 128-bit AXI transfers. 
 
 <p align="center">
-    <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:80%">
+    <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:73.65%">
 </p>
 
 **Usage example:**
