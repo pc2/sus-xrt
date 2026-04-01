@@ -121,9 +121,9 @@ module memory_doubler#(int AXI_WIDTH) {
         reader.request_new_read(modified_addr, num_to_transfer)
     }
 
-    reader.is_ready_to_receive_lots_of_data = writer.may_write
+    reader.ready_for_lots_of_data = writer.may_write
 
-    when reader.element_packet_valid: bool[32][NUM_PARALLEL_ELEMENTS] elems, int num_valid, int valid_offset, bool is_last {
+    when reader.chunk_valid: bool[32][NUM_PARALLEL_ELEMENTS] elems, int num_valid, int valid_offset, bool is_last {
         bool[32][NUM_PARALLEL_ELEMENTS] doubled
         for int i in 0..NUM_PARALLEL_ELEMENTS {
             float in_v = FromBits(elems[i])

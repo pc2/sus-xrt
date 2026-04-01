@@ -22,8 +22,8 @@ module test_burst_reader {
     input  bool                     rlast'0
 
     // User ports
-    input bool is_ready_to_receive_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
-    trigger element_packet_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
+    input bool ready_for_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
+    trigger chunk_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
     output bool may_request_new_burst'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
@@ -44,8 +44,8 @@ logic                 rready;
 logic[AXI_WIDTH-1:0]  rdata;
 logic                 rlast = 0;
 
-logic is_ready_to_receive_lots_of_data = 1;
-logic element_packet_valid;
+logic ready_for_lots_of_data = 1;
+logic chunk_valid;
 logic[ELEM_BYTE_SIZE*8-1:0] elements[NUM_PARALLEL_ELEMENTS-1:0];
 logic[$clog2(NUM_PARALLEL_ELEMENTS)-1:0] chunk_offset;
 logic[$clog2(NUM_PARALLEL_ELEMENTS+1)-1:0] chunk_length;
@@ -72,8 +72,8 @@ axi_burst_reader_AXI_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_ATO_184467440737095516
     .rlast(rlast),
 
     // User wires
-    .is_ready_to_receive_lots_of_data(is_ready_to_receive_lots_of_data),
-    .element_packet_valid(element_packet_valid),
+    .ready_for_lots_of_data(ready_for_lots_of_data),
+    .chunk_valid(chunk_valid),
     .elements(elements),
     .chunk_offset(chunk_offset),
     .chunk_length(chunk_length),
@@ -92,7 +92,7 @@ typedef struct {
 burst_t burst_q[$];
 
 initial forever begin
-    is_ready_to_receive_lots_of_data <= !is_ready_to_receive_lots_of_data;
+    ready_for_lots_of_data <= !ready_for_lots_of_data;
     #4000
     @(posedge clk);
 end
@@ -149,9 +149,9 @@ task automatic test_burst(input int start, input int cnt);
     
     element_index = 0;
     chunk_index = 0;
-    while(!(last & element_packet_valid)) begin
+    while(!(last & chunk_valid)) begin
         @(posedge clk);
-        if(element_packet_valid) begin
+        if(chunk_valid) begin
             chunk_index += 1;
             for(int i = 0; i < chunk_length; i = i + 1) begin
                 logic[31:0] expected_value = start + element_index * ELEM_BYTE_SIZE;
@@ -221,8 +221,8 @@ module test_burst_reader {
     input  bool                     rlast'0
 
     // User ports
-    input bool is_ready_to_receive_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
-    trigger element_packet_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
+    input bool ready_for_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
+    trigger chunk_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
     output bool may_request_new_burst'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
@@ -244,7 +244,7 @@ logic                 rready;
 logic[AXI_WIDTH-1:0]  rdata;
 logic                 rlast = 0;
 
-logic is_ready_to_receive_lots_of_data = 1;
+logic ready_for_lots_of_data = 1;
 logic value_valid;
 logic[VALUE_SIZE-1:0] value[VALUE_ARRAY_SIZE-1:0];
 logic last;
@@ -271,7 +271,7 @@ axi_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_T
     .rresp(2'b00),
 
     // User wires
-    .is_ready_to_receive_lots_of_data(is_ready_to_receive_lots_of_data),
+    .ready_for_lots_of_data(ready_for_lots_of_data),
     .value_valid(value_valid),
     .value(value),
     .last(last),
@@ -291,7 +291,7 @@ typedef struct {
 burst_t burst_q[$];
 
 initial forever begin
-    is_ready_to_receive_lots_of_data <= !is_ready_to_receive_lots_of_data;
+    ready_for_lots_of_data <= !ready_for_lots_of_data;
     #4000
     @(posedge clk);
 end
@@ -413,8 +413,8 @@ module test_burst_reader {
     input  bool                     rlast'0
 
     // User ports
-    input bool is_ready_to_receive_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
-    trigger element_packet_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
+    input bool ready_for_lots_of_data'-MAX_CHUNKS_IN_FLIGHT
+    trigger chunk_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
     output bool may_request_new_burst'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
@@ -436,7 +436,7 @@ logic                 rready;
 logic[AXI_WIDTH-1:0]  rdata;
 logic                 rlast = 0;
 
-logic is_ready_to_receive_lots_of_data = 1;
+logic ready_for_lots_of_data = 1;
 logic value_valid;
 logic[VALUE_SIZE-1:0] value[VALUE_ARRAY_SIZE-1:0];
 logic last;
@@ -462,7 +462,7 @@ axi_realigning_burst_reader_T_type_bool_32_16_AXI_WIDTH_512_ADDR_ALIGN_64_COUNT_
     .rlast(rlast),
 
     // User wires
-    .is_ready_to_receive_lots_of_data(is_ready_to_receive_lots_of_data),
+    .ready_for_lots_of_data(ready_for_lots_of_data),
     .value_valid(value_valid),
     .value(value),
     .last(last),
@@ -480,7 +480,7 @@ typedef struct {
 burst_t burst_q[$];
 
 initial forever begin
-    is_ready_to_receive_lots_of_data <= !is_ready_to_receive_lots_of_data;
+    ready_for_lots_of_data <= !ready_for_lots_of_data;
     #4000
     @(posedge clk);
 end

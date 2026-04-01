@@ -152,7 +152,7 @@ module bench_burst_reader#(int AXI_WIDTH) {
         num_cycles_running = num_cycles_running + 1 mod pow2#(E: 32)
     }
 
-    when reader.element_packet_valid : bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, bool last {
+    when reader.chunk_valid : bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, bool last {
         reg reg bool[NUM_PARALLEL_ELEMENTS] mask = MakeStrobe(chunk_length, chunk_offset)
         bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] masked_elements
         for int i in 0..NUM_PARALLEL_ELEMENTS {

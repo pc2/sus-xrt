@@ -631,14 +631,14 @@ module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, in
 
     domain data
     // It's not possible to encode the backpressure when we have a dynamic MAX_IN_FLIGHT. Luckily, since this is for benchmarking, we simply 
-    bool is_ready_to_receive_lots_of_data = true
-    trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
+    bool ready_for_lots_of_data = true
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
-    bool offset_receiver_is_ready = is_ready_to_receive_lots_of_data
+    bool offset_receiver_is_ready = ready_for_lots_of_data
     /*
-    input bool is_ready_to_receive_lots_of_data'-MAX_IN_FLIGHT
-    bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(is_ready_to_receive_lots_of_data)
-    trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
+    input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
+    bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
     */
 
     when cur_addr_valid & in_flight_headroom >= MAX_BURST & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
@@ -694,7 +694,7 @@ module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, in
     }
     when rready & rvalid | stored_is_empty_burst {
         // For a zero-sized burst, the elements will be invalid data. This is acceptable, since the associated strobe is 'b000000...
-        element_packet_valid(elements, chunk_length, chunk_offset, is_final_last)
+        chunk_valid(elements, chunk_length, chunk_offset, is_final_last)
         chunk_offset = 0
         stored_is_empty_burst = false
     }
@@ -750,9 +750,9 @@ Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, 
 */
 /// A Bursting AXI reader. It spends as little logic as possible, so aligning and backpressure are up to the user. 
 ///
-/// Alignment is not handled by this module. Chunks are delivered on element_packet_valid with a size and valid chunk count. Data is not necessarily aligned to the start of the chunk. For alignment see [axi_burst_reader]
+/// Alignment is not handled by this module. Chunks are delivered on chunk_valid with a size and valid chunk count. Data is not necessarily aligned to the start of the chunk. For alignment see [axi_burst_reader]
 ///
-/// Very coarse backpressure is provided in the form of the `is_ready_to_receive_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
+/// Very coarse backpressure is provided in the form of the `ready_for_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
 /// 
 /// element: size is ADDR_ALIGN * 8. It is also the resolution of count
 /// chunk: one AXI transfer. Contains AXI_WIDTH / (ADDR_ALIGN * 8) elements
@@ -868,9 +868,9 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
     in_flight_headroom = IntNarrow#(FROM: 0, TO: MAX_IN_FLIGHT+1)(in_flight_headroom - num_transfers_in_this_burst - (1 - BoolToInt(rready & rvalid)))
 
     domain data
-    input bool is_ready_to_receive_lots_of_data'-MAX_IN_FLIGHT
-    bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(is_ready_to_receive_lots_of_data)
-    trigger element_packet_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
+    input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
+    bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
     when cur_addr_valid & in_flight_headroom >= MAX_BURST & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
         int final_align
@@ -925,7 +925,7 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
     }
     when rready & rvalid | stored_is_empty_burst {
         // For a zero-sized burst, the elements will be invalid data. This is acceptable, since the associated strobe is 'b000000...
-        element_packet_valid(elements, chunk_length, chunk_offset, is_final_last)
+        chunk_valid(elements, chunk_length, chunk_offset, is_final_last)
         chunk_offset = 0
         stored_is_empty_burst = false
     }
@@ -963,7 +963,7 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
 /// 
 /// As 
 /// 
-/// Very coarse backpressure is provided in the form of the `is_ready_to_receive_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
+/// Very coarse backpressure is provided in the form of the `ready_for_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
 /// 
 /// `last` is asserted for the last value
 module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int ATO, int MAX_IN_FLIGHT) {
@@ -1011,14 +1011,14 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
     }
 
     domain data
-    input bool is_ready_to_receive_lots_of_data'-MAX_IN_FLIGHT
-    parent.is_ready_to_receive_lots_of_data = is_ready_to_receive_lots_of_data
+    input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
+    parent.ready_for_lots_of_data = ready_for_lots_of_data
 
     trigger value_valid'0: T value'0, bool last'0
 
     state bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE-1] stored_elements
     state int#(FROM: 0, TO: NUM_ELEMENTS_PER_VALUE) cur_element_store_align
-    when parent.element_packet_valid : bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, bool last {
+    when parent.chunk_valid : bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, bool last {
         bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] elements_extended
         elements_extended[:NUM_PARALLEL_ELEMENTS] = elements
         bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] rotated_elements = RotateRight(elements_extended, cur_element_store_align - chunk_offset mod NUM_ELEMENTS_PER_VALUE)
@@ -1626,15 +1626,15 @@ module axi_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_L
         }
     }
 
-    domain elements
+    domain data
     output bool may_write'-MAY_PUSH_LATENCY = fifo_manager.may_push
     // Add some forced pipeline stages on the write signal, such that a write address that's been submitted is ready by the time the data arrives. 
-    action write'-3: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] write_v'1, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elems'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) strobe_offset'0, bool is_last'0 {
+    action write'-3: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'1, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0 {
         // Two pipeline stages here
-        reg int num_elems_d = num_elems
-        reg bool is_last_d = is_last
-        reg int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset = addr_manager.push_elements(num_elems_d, is_last_d)
-        fifo_manager.push(write_v, num_elems_d, fifo_offset - strobe_offset mod NUM_PARALLEL_ELEMENTS)
+        reg int chunk_length_d = chunk_length
+        reg bool last_d = last
+        reg int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset = addr_manager.push_elements(chunk_length_d, last_d)
+        fifo_manager.push(elements, chunk_length_d, fifo_offset - chunk_offset mod NUM_PARALLEL_ELEMENTS)
     }
 
     domain reset

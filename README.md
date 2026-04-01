@@ -90,7 +90,7 @@ set_property address_offset {0x00}            [ipx::get_registers CTRL -of_objec
 set_property size           {32}              [ipx::get_registers CTRL -of_objects $CTRL_ADDR_BLOCK]
 
 ipx::add_register PARAM_A $CTRL_ADDR_BLOCK
-set_property description    {Sum Param B}     [ipx::get_registers PARAM_A  -of_objects $CTRL_ADDR_BLOCK]
+set_property description    {Sum Param A}     [ipx::get_registers PARAM_A  -of_objects $CTRL_ADDR_BLOCK]
 set_property address_offset {0x010}           [ipx::get_registers PARAM_A  -of_objects $CTRL_ADDR_BLOCK]
 set_property size           {32}              [ipx::get_registers PARAM_A  -of_objects $CTRL_ADDR_BLOCK]
 
@@ -103,15 +103,15 @@ set_property size           {32}              [ipx::get_registers PARAM_B  -of_o
 Output parameters can't be declared since XRT doesn't expose those for `xrt::kernel`. For those you have to use `xrt::ip`, and call `ip.read_register(0x018)` yourself. 
 
 ### `axi_burst_reader`
-The burst reader is used for high-bandwidth streaming from DDR, HBM, or Host Memory. It has two user-facing interfaces: One for requesting bursts - `may_request_new_read/request_new_read(start_addr, num_elements)`, and one for the data stream itself: `ready_to_receive_lots_of_data/element_packet_valid(elements, chunk_length, chunk_offset, last)`. 
+The burst reader is used for high-bandwidth streaming from DDR, HBM, or Host Memory. It has two user-facing interfaces: One for requesting bursts - `may_request_new_read/request_new_read(start_addr, num_elements)`, and one for the data stream itself: `ready_for_lots_of_data/chunk_valid(elements, chunk_length, chunk_offset, last)`. 
 
 Burst lengths are expressed in **elements**, an **element** is the smallest aligned component of a **transfer**. 
 
-Once a burst has been requested, data streams out of the `element_packet_valid` interface. A **burst** consists of one or more **transfers**, each of which consists of 1 to `AXI_WIDTH / (ADDR_ALIGN * 8)` **elements**. The part of the output data stream that is valid is communicated through the `chunk_length` and `chunk_offset` values. 
+Once a burst has been requested, data streams out of the `chunk_valid` interface. A **burst** consists of one or more **transfers**, each of which consists of 1 to `AXI_WIDTH / (ADDR_ALIGN * 8)` **elements**. The part of the output data stream that is valid is communicated through the `chunk_length` and `chunk_offset` values. 
 
 Since the burst reader itself does not spend any resources on realigning elements within a transfer, the first transfer within a burst may not have valid elements at the front (denoted by a nonzero `chunk_offset`), and the last transfer may not have valid elements at the end (denoted by non-maximum `chunk_length`). 
 
-**Backpressure** on the data stream can only be provided on the address channel, as it is forbidden to backpressure the data stream itself. Hence, the long latency difference between `ready_to_receive_lots_of_data'-MAX_IN_FLIGHT` and `element_packet_valid'0`. You must account for being able to receive this amount of in-flight data by using an appropriately sized FIFO downstream. (The latency sensitive may_push/push interface on the FIFO should figure out this appropriate size automatically.)
+**Backpressure** on the data stream can only be provided on the address channel, as it is forbidden to backpressure the data stream itself. Hence, the long latency difference between `ready_for_lots_of_data'-MAX_IN_FLIGHT` and `chunk_valid'0`. You must account for being able to receive this amount of in-flight data by using an appropriately sized FIFO downstream. (The latency sensitive may_push/push interface on the FIFO should figure out this appropriate size automatically.)
 
 **Example:** In the FIFO below, a request for 13 4-byte elements was made from address `0x00000010000008`, at an AXI_WIDTH of 128-bit. This results in 4 transfers, of 2, 4, 4, and 3 elements respectively. The last transfer will have `last=1`. 
 
@@ -175,8 +175,8 @@ module BasicHash {
         hash = 32'h00000000
     }
 
-    reader.ready_to_receive_lots_of_data = true
-    when reader.element_packet_valid :
+    reader.ready_for_lots_of_data = true
+    when reader.chunk_valid :
         bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements,
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length,
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset,
@@ -246,7 +246,7 @@ As opposed to the burst reader, the burst writer *does* contain data realigning 
 **Example:** In the FIFO below, a write request for 4-byte elements was made to address `0x0000000100000000`, at an AXI_WIDTH of 128-bit. In 4 separate transfers, 1, 1, 4, and 2 elements were written, with `last=1` on the last transfer. Upon the last transfer, the burst writer submits a memory write for 2 128-bit AXI transfers. 
 
 <p align="center">
-    <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:73.65%">
+    <img src="img/burst_writer.png" alt="img/burst_writer.png" style="width:80%">
 </p>
 
 **Usage example:**
@@ -324,6 +324,7 @@ module MemoryZeroer {
         writer.rst()
         left_to_transfer = 0
     }
+}
 ```
 
 `pack_kernel.tcl`:
