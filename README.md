@@ -28,38 +28,38 @@ Input registers start from `0x010`, and increment by 4 bytes for each register. 
 module SumExample {
     clock aclk
     input bool aresetn
-    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
+    gen int ADDR_WIDTH
 
-    gen int ATO = pow2#(E: 12)
-    
+    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH, AXI_WIDTH: 32) ctrl
+
     // Export AXI4-Lite interface
     domain axi_control
-    input  int#(FROM: 0, TO: ATO)   s_axi_control_awaddr
-    input  bool                     s_axi_control_awvalid
-    output bool                     s_axi_control_awready = ctrl.awready
-    input  bool[32]                 s_axi_control_wdata
-    input  bool[4]                  s_axi_control_wstrb
-    input  bool                     s_axi_control_wvalid
-    output bool                     s_axi_control_wready  = ctrl.wready
-    output bool[2]                  s_axi_control_bresp   = ctrl.bresp
-    output bool                     s_axi_control_bvalid  = ctrl.bvalid
-    input  bool                     s_axi_control_bready
-    input  int#(FROM: 0, TO: ATO)   s_axi_control_araddr
-    input  bool                     s_axi_control_arvalid
-    output bool                     s_axi_control_arready = ctrl.arready
-    output bool[32]                 s_axi_control_rdata   = ctrl.rdata
-    output bool[2]                  s_axi_control_rresp   = ctrl.rresp
-    output bool                     s_axi_control_rvalid  = ctrl.rvalid
-    input  bool                     s_axi_control_rready
-    ctrl.awaddr  = s_axi_control_awaddr
-    ctrl.awvalid = s_axi_control_awvalid
-    ctrl.wdata   = s_axi_control_wdata
-    ctrl.wstrb   = s_axi_control_wstrb
-    ctrl.wvalid  = s_axi_control_wvalid
-    ctrl.bready  = s_axi_control_bready
-    ctrl.araddr  = s_axi_control_araddr
-    ctrl.arvalid = s_axi_control_arvalid
-    ctrl.rready  = s_axi_control_rready
+    input  int#(FROM: 0, TO: 1 << ADDR_WIDTH)  s_axi_control_awaddr
+    input  bool                                s_axi_control_awvalid
+    output bool                                s_axi_control_awready = ctrl.awready
+    input  bool[32]                            s_axi_control_wdata
+    input  bool[4]                             s_axi_control_wstrb
+    input  bool                                s_axi_control_wvalid
+    output bool                                s_axi_control_wready  = ctrl.wready
+    output bool[2]                             s_axi_control_bresp   = ctrl.bresp
+    output bool                                s_axi_control_bvalid  = ctrl.bvalid
+    input  bool                                s_axi_control_bready
+    input  int#(FROM: 0, TO: 1 << ADDR_WIDTH)  s_axi_control_araddr
+    input  bool                                s_axi_control_arvalid
+    output bool                                s_axi_control_arready = ctrl.arready
+    output bool[32]                            s_axi_control_rdata   = ctrl.rdata
+    output bool[2]                             s_axi_control_rresp   = ctrl.rresp
+    output bool                                s_axi_control_rvalid  = ctrl.rvalid
+    input  bool                                s_axi_control_rready
+    ctrl.awaddr  =                             s_axi_control_awaddr
+    ctrl.awvalid =                             s_axi_control_awvalid
+    ctrl.wdata   =                             s_axi_control_wdata
+    ctrl.wstrb   =                             s_axi_control_wstrb
+    ctrl.wvalid  =                             s_axi_control_wvalid
+    ctrl.bready  =                             s_axi_control_bready
+    ctrl.araddr  =                             s_axi_control_araddr
+    ctrl.arvalid =                             s_axi_control_arvalid
+    ctrl.rready  =                             s_axi_control_rready
 
     state bool stored_sum_valid
     state int stored_sum
@@ -127,7 +127,7 @@ module BasicHash {
     clock aclk
     input bool aresetn
 
-    gen int MTO = pow2#(E: 64)
+    gen int MEM_ADDR_WIDTH = 64
     gen int AXI_WIDTH = 512
     gen int ELEM_BITWIDTH = 32
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEM_BITWIDTH
@@ -136,31 +136,31 @@ module BasicHash {
     domain axi_control
     // ...
 
-    axi_burst_reader#(AXI_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), ATO: pow2#(E: 64), MAX_IN_FLIGHT: 110) reader
+    axi_burst_reader#(AXI_WIDTH, ADDR_WIDTH: MEM_ADDR_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), MAX_IN_FLIGHT: 110) reader
     domain mem_read
-    output bool                     m_axi_arvalid'0 = reader.arvalid
-    input  bool                     m_axi_arready
-    output int#(FROM: 0, TO: MTO)   m_axi_araddr = reader.araddr
-    output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
-    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
-    output bool[2]                  m_axi_arburst = reader.arburst
-    output bool[3]                  m_axi_arprot = reader.arprot
-    output bool[4]                  m_axi_arcache = reader.arcache
-    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
-    output bool                     m_axi_arlock = reader.arlock
-    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
-    input  bool                     m_axi_rvalid
-    output bool                     m_axi_rready = reader.rready
-    input  bool[AXI_WIDTH]          m_axi_rdata
-    input  bool[2]                  m_axi_rresp
-    input  bool                     m_axi_rlast
-    reader.arready =                m_axi_arready
-    reader.rvalid =                 m_axi_rvalid
-    reader.rdata =                  m_axi_rdata
-    reader.rresp =                  m_axi_rresp
-    reader.rlast =                  m_axi_rlast
+    output bool                                    m_axi_arvalid'0 = reader.arvalid
+    input  bool                                    m_axi_arready
+    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)  m_axi_araddr = reader.araddr
+    output int#(FROM: 0, TO: 256)                  m_axi_arlen = reader.arlen
+    output int#(FROM: 0, TO: 8)                    m_axi_arsize  = reader.arsize
+    output bool[2]                                 m_axi_arburst = reader.arburst
+    output bool[3]                                 m_axi_arprot = reader.arprot
+    output bool[4]                                 m_axi_arcache = reader.arcache
+    output int#(FROM: 0, TO: 16)                   m_axi_arqos = reader.arqos
+    output bool                                    m_axi_arlock = reader.arlock
+    output int#(FROM: 0, TO: 16)                   m_axi_arregion = reader.arregion
+    input  bool                                    m_axi_rvalid
+    output bool                                    m_axi_rready = reader.rready
+    input  bool[AXI_WIDTH]                         m_axi_rdata
+    input  bool[2]                                 m_axi_rresp
+    input  bool                                    m_axi_rlast
+    reader.arready =                               m_axi_arready
+    reader.rvalid =                                m_axi_rvalid
+    reader.rdata =                                 m_axi_rdata
+    reader.rresp =                                 m_axi_rresp
+    reader.rlast =                                 m_axi_rlast
 
-    axi_memory_writer_tie_off writer
+    axi_writer_tie_off writer
     domain mem_write
     // ...  tie off the write half of the AXI4-Full interface
 
@@ -256,7 +256,7 @@ module MemoryZeroer {
     input bool aresetn
 
     gen int AXI_WIDTH = 256
-    gen int MEM_ATO = pow2#(E: 64)
+    gen int MEM_ADDR_WIDTH = 64
 
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / 32
 
@@ -266,33 +266,33 @@ module MemoryZeroer {
     domain axi_control
     // ...
 
-    axi_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4) writer
+    axi_burst_writer#(AXI_WIDTH, ADDR_WIDTH: MEM_ADDR_WIDTH, ADDR_ALIGN: 4) writer
     domain mem_write
-    output bool                        m_axi_awvalid = writer.awvalid
-    input  bool                        m_axi_awready
-    output int#(FROM: 0, TO: MEM_ATO)  m_axi_awaddr = writer.awaddr
-    output int#(FROM: 0, TO: 256)      m_axi_awlen = writer.awlen
-    output int#(FROM: 0, TO: 8)        m_axi_awsize  = writer.awsize
-    output bool[2]                     m_axi_awburst = writer.awburst
-    output bool[3]                     m_axi_awprot = writer.awprot
-    output bool[4]                     m_axi_awcache = writer.awcache
-    output int#(FROM: 0, TO: 16)       m_axi_awqos = writer.awqos
-    output bool                        m_axi_awlock = writer.awlock
-    output int#(FROM: 0, TO: 16)       m_axi_awregion = writer.awregion
-    output bool                        m_axi_wvalid = writer.wvalid
-    input  bool                        m_axi_wready
-    output bool[AXI_WIDTH]             m_axi_wdata = writer.wdata
-    output bool[AXI_WIDTH / 8]         m_axi_wstrb = writer.wstrb
-    output bool                        m_axi_wlast = writer.wlast
-    input  bool                        m_axi_bvalid
-    output bool                        m_axi_bready = writer.bready
-    input  bool[2]                     m_axi_bresp
-    writer.awready = m_axi_awready
-    writer.wready  = m_axi_wready
-    writer.bvalid  = m_axi_bvalid
-    writer.bresp   = m_axi_bresp
+    output bool                                    m_axi_awvalid = writer.awvalid
+    input  bool                                    m_axi_awready
+    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)  m_axi_awaddr = writer.awaddr
+    output int#(FROM: 0, TO: 256)                  m_axi_awlen = writer.awlen
+    output int#(FROM: 0, TO: 8)                    m_axi_awsize  = writer.awsize
+    output bool[2]                                 m_axi_awburst = writer.awburst
+    output bool[3]                                 m_axi_awprot = writer.awprot
+    output bool[4]                                 m_axi_awcache = writer.awcache
+    output int#(FROM: 0, TO: 16)                   m_axi_awqos = writer.awqos
+    output bool                                    m_axi_awlock = writer.awlock
+    output int#(FROM: 0, TO: 16)                   m_axi_awregion = writer.awregion
+    output bool                                    m_axi_wvalid = writer.wvalid
+    input  bool                                    m_axi_wready
+    output bool[AXI_WIDTH]                         m_axi_wdata = writer.wdata
+    output bool[AXI_WIDTH / 8]                     m_axi_wstrb = writer.wstrb
+    output bool                                    m_axi_wlast = writer.wlast
+    input  bool                                    m_axi_bvalid
+    output bool                                    m_axi_bready = writer.bready
+    input  bool[2]                                 m_axi_bresp
+    writer.awready =                               m_axi_awready
+    writer.wready  =                               m_axi_wready
+    writer.bvalid  =                               m_axi_bvalid
+    writer.bresp   =                               m_axi_bresp
 
-    axi_memory_reader_tie_off reader
+    axi_reader_tie_off reader
     domain mem_read
     // ...  tie off the read half of the AXI4-Full interface
 

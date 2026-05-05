@@ -48,7 +48,6 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     gen int CTRL_REG = 0
     gen int FIRST_REG = DATA_STARTS_AT_ADDR / REG_STRIDE
     assert#(C: DATA_STARTS_AT_ADDR mod REG_STRIDE == 0)
-    gen int ATO = pow2#(E: ADDR_WIDTH)
     assert#(C: ADDR_WIDTH >= 12)
     assert#(C: ADDR_WIDTH <= 16)
     // Max number of regs
@@ -60,7 +59,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
 
     domain axi4
     // AXI signals
-    input int#(FROM: 0, TO: ATO) awaddr
+    input int#(FROM: 0, TO: 1 << ADDR_WIDTH) awaddr
     input bool awvalid
     output bool awready = false
     input bool[AXI_WIDTH] wdata
@@ -70,7 +69,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     output bool[2] bresp
     output bool bvalid = false
     input bool bready
-    input int#(FROM: 0, TO: ATO) araddr
+    input int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr
     input bool arvalid
     output bool arready = false
     output bool[AXI_WIDTH] rdata
@@ -195,22 +194,19 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         reg_ctrl_ap_start = false
         reg_ctrl_ap_done = false
 
-        input_regs = Repeat(32'h00000000)
-        stored_output_regs = Repeat(32'h00000000)
+        input_regs = RepeatGen#(T: type bool[32], V: 32'h00000000, SIZE: NUM_INPUT_REGS)
+        stored_output_regs = RepeatGen#(T: type bool[32], V: 32'h00000000, SIZE: NUM_OUTPUT_REGS)
     }
 }
 
 
-module axi_memory_reader_tie_off#(int AXI_WIDTH) {
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
-
+module axi_reader_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     domain axi4
     // axi mm master
     // read channels - tie off, never ready/valid
     output bool                     arvalid'0 = false
     input  bool                     arready'0
-    output int#(FROM: 0, TO: ATO)   araddr'0 = 0
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         araddr'0 = 0
     output int#(FROM: 0, TO: 256)   arlen'0 = 0
     output int#(FROM: 0, TO: 8)     arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  arburst'0 = 2'b00
@@ -234,16 +230,13 @@ module axi_memory_reader_tie_off#(int AXI_WIDTH) {
     action rst {}
 }
 
-module axi_memory_writer_tie_off#(int AXI_WIDTH) {
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
-
+module axi_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     domain axi4
     // axi mm master
     // write channels - tie off, never ready/valid
     output bool                     awvalid'0 = false
     input  bool                     awready'0
-    output int#(FROM: 0, TO: ATO)   awaddr'0 = 0
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         awaddr'0 = 0
     output int#(FROM: 0, TO: 256)   awlen'0 = 0
     output int#(FROM: 0, TO: 8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  awburst'0 = 2'b00
@@ -254,8 +247,8 @@ module axi_memory_writer_tie_off#(int AXI_WIDTH) {
     output int#(FROM: 0, TO: 16)    awregion'0 = 0
     output bool                     wvalid'0 = false
     input  bool                     wready'0
-    output bool[AXI_WIDTH]          wdata'0 = Repeat(false)
-    output bool[AXI_WIDTH / 8]      wstrb'0 = Repeat(false)
+    output bool[AXI_WIDTH]          wdata'0 = RepeatGen#(T: type bool, V: false, SIZE: AXI_WIDTH)
+    output bool[AXI_WIDTH / 8]      wstrb'0 = RepeatGen#(T: type bool, V: false, SIZE: AXI_WIDTH / 8)
     output bool                     wlast'0 = false
     input  bool                     bvalid'0
     input  bool[2]                  bresp'0
@@ -272,11 +265,9 @@ module axi_memory_writer_tie_off#(int AXI_WIDTH) {
 
 /// AXI_WIDTH can be 32, 64, 128, 256, or 512
 /// sizeof#(T) should be divisible by 8 for <= AXI_WIDTH, and divisible by AXI_WIDTH for larger
-module axi_memory_reader #(T, int AXI_WIDTH) {
+module axi_memory_reader #(T, int AXI_WIDTH, int ADDR_WIDTH) {
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
     
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
     gen int MAX_BURST = 256
 
     gen int NUM_TRANSFERS
@@ -298,7 +289,7 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
     // read channel
     output bool                     arvalid'0
     input  bool                     arready'0
-    output int#(FROM: 0, TO: ATO)   araddr'0
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         araddr'0
     output int#(FROM: 0, TO: 256)   arlen'0
     output int#(FROM: 0, TO: 8)     arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  arburst'0 = 2'b01 // BURST_INC
@@ -317,7 +308,7 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
 
     // control signals
     // Returns "true" if the request was 
-    action request : int#(FROM: 0, TO: ATO) addr -> bool fire {
+    action request : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) addr -> bool fire {
         arvalid = true
         araddr = addr
         arlen = NUM_TRANSFERS - 1 // 0 is used for length '1', 1 for '2', etc. I think this is because a len-0 transfer makes no sense? 
@@ -375,6 +366,7 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
         do_read = false
     }
 
+    domain reset
     action rst {
         do_rst = true
     }
@@ -382,11 +374,9 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
 
 /// AXI_WIDTH can be 32, 64, 128, 256, or 512
 /// sizeof#(T) should be divisible by 8 for <= AXI_WIDTH, and divisible by AXI_WIDTH for larger
-module axi_memory_writer #(T, int AXI_WIDTH) {
+module axi_memory_writer #(T, int AXI_WIDTH, int ADDR_WIDTH) {
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
     
-    gen int ADDR_WIDTH = 64
-    gen int ATO = pow2#(E: ADDR_WIDTH)
     gen int MAX_BURST = 256
     gen int OUTSTANDING_WRITES_CAPACITY = 256
 
@@ -408,7 +398,7 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
     // write channels - tie off, never ready/valid
     output bool                     awvalid'0
     input  bool                     awready'0
-    output int#(FROM: 0, TO: ATO)   awaddr'0
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         awaddr'0
     output int#(FROM: 0, TO: 256)   awlen'0
     output int#(FROM: 0, TO: 8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  awburst'0
@@ -457,7 +447,7 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
         }
 
         wdata = parts[cur_data_chunk]
-        wstrb = Repeat(true)
+        wstrb = RepeatGen#(T: type bool, V: true, SIZE: AXI_WIDTH / 8)
         wlast = !(cur_data_chunk < NUM_TRANSFERS - 1)
 
         when wvalid & wready {
@@ -476,7 +466,7 @@ module axi_memory_writer #(T, int AXI_WIDTH) {
     }
 
     output bool has_outstanding_writes = bready
-    action write : int#(FROM: 0, TO: ATO) addr, T data -> bool write_success {
+    action write : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) addr, T data -> bool write_success {
         awlen = NUM_TRANSFERS - 1 // 0 is used for length '1', 1 for '2', etc. I think this is because a len-0 transfer makes no sense? 
         awburst = 2'b01 // BURST_INC
         awaddr = addr
@@ -521,7 +511,7 @@ module MakeStrobe #(int STROBE_WIDTH) {
 }
 
 /// Similar interface to [axi_burst_reader]. Used to determine optimal values for [axi_burst_reader::MAX_IN_FLIGHT]
-module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO) {
+module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -554,8 +544,8 @@ module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, in
     // axi interface
     output state bool                     arvalid'0
     input  bool                           arready'0
-    state int#(FROM: 0, TO: ATO / (AXI_WIDTH / 8)) araddr_transfer
-    output int#(FROM: 0, TO: ATO)         araddr'0 = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH / 8))(araddr_transfer, 0)
+    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
     output state int#(FROM: 0, TO: 256)   arlen'0
     output int#(FROM: 0, TO: 8)           arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                        arburst'0 = 2'b01 // BURST_INC
@@ -572,7 +562,7 @@ module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, in
     input  bool                           rlast'0
 
     state bool cur_addr_valid
-    state int#(FROM: 0, TO: ATO / ADDR_ALIGN) cur_addr
+    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
     state int#(FROM: 0, TO: COUNT_TO) elements_remaining
 
     SlowStablePipelineCustom#(PIPELINE_DEPTH: 1) feedback_loop
@@ -584,7 +574,7 @@ module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, in
     int addr_burst, int first_elem_in_burst = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_BURST * NUM_PARALLEL_ELEMENTS))(cur_addr_begin_pipeline)
     int first_transfer_idx, int first_elem_in_transfer = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(first_elem_in_burst)
 
-    reg int next_addr_burst_idx = addr_burst+1 mod ATO / (MAX_BURST_ELEMENTS * ADDR_ALIGN)
+    reg int next_addr_burst_idx = addr_burst+1 mod pow2#(E: ADDR_WIDTH) / (MAX_BURST_ELEMENTS * ADDR_ALIGN)
 
     // The feedback loop pipeline
     int max_number_of_elements_in_this_burst = MAX_BURST_ELEMENTS - first_elem_in_burst
@@ -607,7 +597,7 @@ module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, in
 
     domain read_requests
     output bool may_request_new_read'0 = !cur_addr_valid
-    action request_new_read'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0 {
+    action request_new_read'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0 {
         int elem_addr, int _misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
 
         cur_addr_valid = true
@@ -760,7 +750,7 @@ Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, 
 /// XXXXXXXX
 /// XXXXX...
 /// due to alignment of address
-module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, int MAX_IN_FLIGHT) {
+module axi_burst_reader #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO, int MAX_IN_FLIGHT) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -793,8 +783,8 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
     // axi interface
     output state bool                     arvalid'0
     input  bool                           arready'0
-    state int#(FROM: 0, TO: ATO / (AXI_WIDTH / 8)) araddr_transfer
-    output int#(FROM: 0, TO: ATO)         araddr'0 = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH / 8))(araddr_transfer, 0)
+    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
     output state int#(FROM: 0, TO: 256)   arlen'0
     output int#(FROM: 0, TO: 8)           arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                        arburst'0 = 2'b01 // BURST_INC
@@ -811,7 +801,7 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
     input  bool                           rlast'0
 
     state bool cur_addr_valid
-    state int#(FROM: 0, TO: ATO / ADDR_ALIGN) cur_addr
+    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
     state int#(FROM: 0, TO: COUNT_TO) elements_remaining
 
     SlowStablePipelineCustom#(PIPELINE_DEPTH: 1) feedback_loop
@@ -823,7 +813,7 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
     int addr_burst, int first_elem_in_burst = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_BURST * NUM_PARALLEL_ELEMENTS))(cur_addr_begin_pipeline)
     int first_transfer_idx, int first_elem_in_transfer = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(first_elem_in_burst)
 
-    reg int next_addr_burst_idx = addr_burst+1 mod ATO / (MAX_BURST_ELEMENTS * ADDR_ALIGN)
+    reg int next_addr_burst_idx = addr_burst+1 mod pow2#(E: ADDR_WIDTH) / (MAX_BURST_ELEMENTS * ADDR_ALIGN)
 
     // The feedback loop pipeline
     int max_number_of_elements_in_this_burst = MAX_BURST_ELEMENTS - first_elem_in_burst
@@ -844,7 +834,7 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
 
     domain read_requests
     output bool may_request_new_read'0 = !cur_addr_valid
-    action request_new_read'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0 {
+    action request_new_read'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0 {
         int elem_addr, int _misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
 
         cur_addr_valid = true
@@ -962,20 +952,20 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
 /// Very coarse backpressure is provided in the form of the `ready_for_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
 /// 
 /// `last` is asserted for the last value
-module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int ATO, int MAX_IN_FLIGHT) {
+module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO, int MAX_IN_FLIGHT) {
     assert#(C: sizeof#(T) mod ADDR_ALIGN * 8 == 0)
     gen int ELEMENT_BITWIDTH = ADDR_ALIGN * 8
     gen int NUM_ELEMENTS_PER_VALUE = sizeof#(T) / ELEMENT_BITWIDTH
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
     // When T is bigger than AXI_WIDTH, multiple output cycles would be needed per input transfer. But with this AXI reader, we cannot provide backpressure (without a FIFO that is, of course)
     assert#(C: AXI_WIDTH <= sizeof#(T))
-    axi_burst_reader #(AXI_WIDTH, ADDR_ALIGN, ATO, COUNT_TO: COUNT_TO * NUM_ELEMENTS_PER_VALUE, MAX_IN_FLIGHT) parent
+    axi_burst_reader #(AXI_WIDTH, ADDR_WIDTH, ADDR_ALIGN, COUNT_TO: COUNT_TO * NUM_ELEMENTS_PER_VALUE, MAX_IN_FLIGHT) parent
 
     // export axi interface
     domain axi4_read
     output bool                     arvalid = parent.arvalid
     input  bool                     arready
-    output int#(FROM: 0, TO: ATO)   araddr  = parent.araddr
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         araddr  = parent.araddr
     output int#(FROM: 0, TO: 256)   arlen   = parent.arlen
     output int#(FROM: 0, TO: 8)     arsize  = parent.arsize
     output bool[2]                  arburst = parent.arburst
@@ -1000,7 +990,7 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
 
     domain requests
     output bool may_request_new_read = parent.may_request_new_read
-    action request_new_read : int#(FROM: 0, TO: ATO) start_addr, int#(FROM: 1, TO: COUNT_TO) count {
+    action request_new_read : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr, int#(FROM: 1, TO: COUNT_TO) count {
         parent.request_new_read(start_addr, count * NUM_ELEMENTS_PER_VALUE)
     }
 
@@ -1140,7 +1130,7 @@ module SlowStablePipelineCustom#(T, int PIPELINE_DEPTH) {
 }
 
 /// awaddr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH_BYTES))(first_transfer_idx, 0)
-module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELEMENTS, int ADDR_QUEUE_SIZE, int ADDR_MAY_PUSH_LATENCY, int TOTAL_ELEMENTS_THAT_CAN_BE_STORED) {
+module write_burst_address_manager#(int AXI_WIDTH, int ADDR_WIDTH, int NUM_PARALLEL_ELEMENTS, int ADDR_QUEUE_SIZE, int ADDR_MAY_PUSH_LATENCY, int TOTAL_ELEMENTS_THAT_CAN_BE_STORED) {
     gen int MAX_AXI_ALIGNMENT = pow2#(E: 12) // 4kb page size, a burst cannot cross a 4K boundary
     gen int MAX_BURST = MAX_AXI_ALIGNMENT / (AXI_WIDTH / 8)
 
@@ -1155,7 +1145,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     gen int ELEMENT_BYTES = AXI_WIDTH / NUM_PARALLEL_ELEMENTS / 8
     assert#(C: pow2#(E: clog2#(V: ELEMENT_BYTES)) == ELEMENT_BYTES)
 
-    state int#(FROM: 0, TO: ATO / ELEMENT_BYTES) current_addr
+    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ELEMENT_BYTES) current_addr
     state int current_command_final_align
     state bool current_addr_valid
     state bool current_command_chunk_end
@@ -1171,7 +1161,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     int cur_burst_idx, int element_in_burst = BitwiseIntSplit#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(addr_begin_pipeline)
     int first_transfer_idx, int start_element_offset = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(element_in_burst)
 
-    reg int next_burst_idx = cur_burst_idx + 1 mod ATO / MAX_BURST_BYTES
+    reg int next_burst_idx = cur_burst_idx + 1 mod pow2#(E: ADDR_WIDTH) / MAX_BURST_BYTES
     int next_burst_addr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: MAX_ELEMENTS_IN_BURST))(next_burst_idx, 0) // Find the first address at the start of the next burst
     
     int last_transfer_to_include
@@ -1191,7 +1181,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
     domain addr_output_channel
     // start_offset is inclusive. 1 -> 0111
     // end_offset is also inclusive. 3 -> 1110
-    trigger push_burst'0 : int#(FROM: 0, TO: ATO / (AXI_WIDTH / 8)) awaddr'0, int#(FROM: 0, TO: MAX_BURST) awlen'0, int start_offset'0, int end_offset'0, bool is_last'0, bool is_empty_burst'0
+    trigger push_burst'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) awaddr'0, int#(FROM: 0, TO: MAX_BURST) awlen'0, int start_offset'0, int end_offset'0, bool is_last'0, bool is_empty_burst'0
 
     action may_push_burst'0 {
         when current_addr_valid & feedback_loop.pipeline_stable {
@@ -1236,7 +1226,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
 
     domain addresses
     trigger may_push_address'-ADDR_MAY_PUSH_LATENCY
-    action push_address'0 : int#(FROM: 0, TO: ATO) new_addr'0 {
+    action push_address'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) new_addr'0 {
         int element_aligned_addr, int _addr_misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ELEMENT_BYTES))(new_addr)
         assert_runtime(_addr_misalign == 0)
         addr_fifo.push(element_aligned_addr)
@@ -1471,7 +1461,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
 /// 
 /// Once a burst has been requested, wait until [burst_accepted] goes high before writing data through [may_write] and [write].
 /// It is guaranteed that [burst_accepted] goes high after a fixed number of clock cycles, no need for state management around it. 
-module axi_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_LATENCY, int ADDR_MAY_PUSH_LATENCY) {
+module axi_burst_writer #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int MAY_PUSH_LATENCY, int ADDR_MAY_PUSH_LATENCY) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -1509,7 +1499,7 @@ module axi_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_L
     }
     write_burst_address_manager#(
         AXI_WIDTH,
-        ATO,
+        ADDR_WIDTH,
         NUM_PARALLEL_ELEMENTS,
         ADDR_QUEUE_SIZE: 32,
         ADDR_MAY_PUSH_LATENCY,
@@ -1527,8 +1517,8 @@ module axi_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_L
     domain axi4
     output state bool                     awvalid'0
     input  bool                           awready'0
-    state int#(FROM: 0, TO: ATO / (AXI_WIDTH / 8)) awaddr_transfer
-    output int#(FROM: 0, TO: ATO)         awaddr'0 = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH / 8))(awaddr_transfer, 0)
+    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) awaddr_transfer
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) awaddr'0 = awaddr_transfer << clog2#(V: AXI_WIDTH / 8)
     output int#(FROM: 0, TO: 256)         awlen'0
     output int#(FROM: 0, TO: 8)           awsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                        awburst'0 = 2'b01 // BURST
@@ -1559,7 +1549,7 @@ module axi_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_L
         may_request_new_write()
     }
 
-    action request_new_write'0 : int #(FROM: 0, TO: ATO) start_addr'0 {
+    action request_new_write'0 : int #(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0 {
         addr_manager.push_address(start_addr)
     }
 

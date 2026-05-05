@@ -4,17 +4,16 @@ module bench_burst_writer#(int AXI_WIDTH) {
     input bool aresetn
 
     gen int CTRL_AXI_WIDTH = 32
-    gen int ADDR_WIDTH = 12
-    gen int CTRL_ATO = pow2#(E: ADDR_WIDTH)
-    gen int MEM_ATO = pow2#(E: 64)
+    gen int CTRL_ADDR_WIDTH = 12
+    gen int MEM_ADDR_WIDTH = 64
 
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 7, NUM_OUTPUT_REGS: 5, ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+    axi_ctrl_slave #(NUM_INPUT_REGS: 7, NUM_OUTPUT_REGS: 5, AXI_WIDTH: CTRL_AXI_WIDTH, ADDR_WIDTH: CTRL_ADDR_WIDTH) ctrl
 
     // Export AXI4-Lite interface
     domain axi_control
-    input  int#(FROM: 0, TO: CTRL_ATO)   s_axi_control_awaddr
+    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)    s_axi_control_awaddr
     input  bool                     s_axi_control_awvalid
     output bool                     s_axi_control_awready = ctrl.awready
     input  bool[CTRL_AXI_WIDTH]     s_axi_control_wdata
@@ -24,7 +23,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
     output bool[2]                  s_axi_control_bresp   = ctrl.bresp
     output bool                     s_axi_control_bvalid  = ctrl.bvalid
     input  bool                     s_axi_control_bready
-    input  int#(FROM: 0, TO: CTRL_ATO)   s_axi_control_araddr
+    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)    s_axi_control_araddr
     input  bool                     s_axi_control_arvalid
     output bool                     s_axi_control_arready = ctrl.arready
     output bool[CTRL_AXI_WIDTH]     s_axi_control_rdata   = ctrl.rdata
@@ -41,13 +40,13 @@ module bench_burst_writer#(int AXI_WIDTH) {
     ctrl.arvalid =         s_axi_control_arvalid
     ctrl.rready  =         s_axi_control_rready
 
-    axi_memory_reader_tie_off reader
-    axi_burst_writer#(ATO: MEM_ATO, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
+    axi_reader_tie_off#(ADDR_WIDTH: MEM_ADDR_WIDTH) reader
+    axi_burst_writer#(ADDR_WIDTH: MEM_ADDR_WIDTH, ADDR_ALIGN: 4, ADDR_MAY_PUSH_LATENCY: 0) writer
 
     domain mem_write
     output bool                     m_axi_awvalid = writer.awvalid
     input  bool                     m_axi_awready
-    output int#(FROM: 0, TO: MEM_ATO)   m_axi_awaddr = writer.awaddr
+    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)     m_axi_awaddr = writer.awaddr
     output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
     output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
@@ -71,7 +70,7 @@ module bench_burst_writer#(int AXI_WIDTH) {
     domain mem_read
     output bool                     m_axi_arvalid'0 = reader.arvalid
     input  bool                     m_axi_arready
-    output int#(FROM: 0, TO: MEM_ATO)   m_axi_araddr = reader.araddr
+    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)     m_axi_araddr = reader.araddr
     output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
     output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
