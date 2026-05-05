@@ -1,7 +1,7 @@
 
 
 module bench_burst_reader#(int AXI_WIDTH) {
-    domain aclk
+    clock aclk
     input bool aresetn
 
     gen int CTRL_AXI_WIDTH = 32

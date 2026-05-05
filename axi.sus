@@ -2,7 +2,7 @@
 module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
     FWFT#(DEPTH, MAY_PUSH_LATENCY) fifo
     
-    domain clk
+    domain reset
     input bool aresetn'0
 
     when !aresetn {
@@ -56,7 +56,6 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     gen bool[2] RESP_OKAY = [false, false]
     gen bool[2] RESP_SLVERR = [false, true]
 
-    domain aclk
     bool do_reset = false
 
     domain axi4
@@ -184,6 +183,7 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         reg_ctrl_ap_idle = false
     }
 
+    domain reset
     action rst {
         do_reset = true
         stored_addr_valid = false
@@ -204,9 +204,6 @@ module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
 module axi_memory_reader_tie_off#(int AXI_WIDTH) {
     gen int ADDR_WIDTH = 64
     gen int ATO = pow2#(E: ADDR_WIDTH)
-
-    domain aclk
-    action rst {}
 
     domain axi4
     // axi mm master
@@ -232,14 +229,14 @@ module axi_memory_reader_tie_off#(int AXI_WIDTH) {
     bool[AXI_WIDTH] _rdata = rdata
     bool[2] _rresp = rresp
     bool _rlast = rlast
+
+    domain reset
+    action rst {}
 }
 
 module axi_memory_writer_tie_off#(int AXI_WIDTH) {
     gen int ADDR_WIDTH = 64
     gen int ATO = pow2#(E: ADDR_WIDTH)
-
-    domain aclk
-    action rst {}
 
     domain axi4
     // axi mm master
@@ -267,6 +264,9 @@ module axi_memory_writer_tie_off#(int AXI_WIDTH) {
     bool _wready = wready
     bool _bvalid = bvalid
     bool[2] _bresp = bresp
+
+    domain reset
+    action rst {}
 }
 
 
@@ -292,11 +292,7 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
         assert#(C: sizeof#(T) mod AXI_WIDTH == 0)
     }
 
-    domain aclk
     bool do_rst = false
-    action rst {
-        do_rst = true
-    }
 
     domain axi4_read
     // read channel
@@ -378,6 +374,10 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
     } else {
         do_read = false
     }
+
+    action rst {
+        do_rst = true
+    }
 }
 
 /// AXI_WIDTH can be 32, 64, 128, 256, or 512
@@ -385,8 +385,6 @@ module axi_memory_reader #(T, int AXI_WIDTH) {
 module axi_memory_writer #(T, int AXI_WIDTH) {
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
     
-    domain aclk
-
     gen int ADDR_WIDTH = 64
     gen int ATO = pow2#(E: ADDR_WIDTH)
     gen int MAX_BURST = 256
@@ -524,7 +522,6 @@ module MakeStrobe #(int STROBE_WIDTH) {
 
 /// Similar interface to [axi_burst_reader]. Used to determine optimal values for [axi_burst_reader::MAX_IN_FLIGHT]
 module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO) {
-    domain aclk
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -764,7 +761,6 @@ Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, 
 /// XXXXX...
 /// due to alignment of address
 module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, int MAX_IN_FLIGHT) {
-    domain aclk
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -967,8 +963,6 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int COUNT_TO, 
 /// 
 /// `last` is asserted for the last value
 module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT_TO, int ATO, int MAX_IN_FLIGHT) {
-    domain aclk
-
     assert#(C: sizeof#(T) mod ADDR_ALIGN * 8 == 0)
     gen int ELEMENT_BITWIDTH = ADDR_ALIGN * 8
     gen int NUM_ELEMENTS_PER_VALUE = sizeof#(T) / ELEMENT_BITWIDTH
@@ -1061,9 +1055,6 @@ module axi_realigning_burst_reader #(T, int AXI_WIDTH, int ADDR_ALIGN, int COUNT
 }
 
 module axis_SkidBuffer#(T) {
-    domain aclk
-    input bool rst
-
     domain axis_in
     input T adata
     input bool avalid
@@ -1099,7 +1090,8 @@ module axis_SkidBuffer#(T) {
         }
     }
 
-    when rst {
+    domain reset
+    action rst {
         bvalid = false
         skid_valid = false
     }
@@ -1107,14 +1099,12 @@ module axis_SkidBuffer#(T) {
 
 // Equivalent to a runtime assert
 module assert_runtime {
-    domain clk
     action assert_runtime'0 : bool _condition'0 {}
 }
 
 /// TBD add to standard library
 module SlowStablePipelineCustom#(T, int PIPELINE_DEPTH) {
     state bool[PIPELINE_DEPTH] cooldown
-    domain clk
 
     domain validity
     action input_changed'0 {
@@ -1151,7 +1141,6 @@ module SlowStablePipelineCustom#(T, int PIPELINE_DEPTH) {
 
 /// awaddr = BitwiseIntConcat#(LOWER_BITS: clog2#(V: AXI_WIDTH_BYTES))(first_transfer_idx, 0)
 module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELEMENTS, int ADDR_QUEUE_SIZE, int ADDR_MAY_PUSH_LATENCY, int TOTAL_ELEMENTS_THAT_CAN_BE_STORED) {
-    domain clk
     gen int MAX_AXI_ALIGNMENT = pow2#(E: 12) // 4kb page size, a burst cannot cross a 4K boundary
     gen int MAX_BURST = MAX_AXI_ALIGNMENT / (AXI_WIDTH / 8)
 
@@ -1302,8 +1291,6 @@ module write_burst_address_manager#(int AXI_WIDTH, int ATO, int NUM_PARALLEL_ELE
 
 /// This module takes in the new adresses, and counts up for every set of elements that comes in. 
 module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENTS, int ADDR_QUEUE_SIZE) {
-    domain clk
-
     state int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) current_align
     state bool current_align_valid
     state bool current_burst_is_empty
@@ -1371,7 +1358,7 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
 module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int MAX_BURST, int DEPTH, int MAY_PUSH_LATENCY) {
     gen int ELEMENT_BITWIDTH = AXI_WIDTH / NUM_PARALLEL_ELEMENTS
     gen int ELEMENT_BYTEWIDTH = ELEMENT_BITWIDTH / 8
-    domain clk
+
     bool do_rst = false
 
     // FIFO State
@@ -1536,8 +1523,6 @@ module axi_burst_writer #(int AXI_WIDTH, int ADDR_ALIGN, int ATO, int MAY_PUSH_L
         MAX_BURST,
         MAY_PUSH_LATENCY: MAY_PUSH_LATENCY+2
     ) fifo_manager
-
-    domain aclk
 
     domain axi4
     output state bool                     awvalid'0

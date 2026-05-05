@@ -8,7 +8,7 @@ logic aresetn = 0;
 /*
 
 module test_burst_reader {
-    domain aclk
+    clock aclk
     input bool aresetn'0
 
     output bool                     arvalid'0
@@ -207,7 +207,7 @@ logic aresetn = 0;
 /*
 
 module test_burst_reader {
-    domain aclk
+    clock aclk
     input bool aresetn'0
 
     output bool                     arvalid'0
@@ -399,7 +399,7 @@ logic aresetn = 0;
 /*
 
 module test_burst_reader {
-    domain aclk
+    clock aclk
     input bool aresetn'0
 
     output bool                     arvalid'0

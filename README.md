@@ -26,7 +26,7 @@ Input registers start from `0x010`, and increment by 4 bytes for each register. 
 **Usage example:**
 ```sus
 module SumExample {
-    domain aclk
+    clock aclk
     input bool aresetn
     axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
 
@@ -124,7 +124,7 @@ For setting **MAX_IN_FLIGHT** for your specific case, refer to the values in [Op
 **Usage example:**
 ```sus
 module BasicHash {
-    domain aclk
+    clock aclk
     input bool aresetn
 
     gen int MTO = pow2#(E: 64)
@@ -252,7 +252,7 @@ As opposed to the burst reader, the burst writer *does* contain data realigning 
 **Usage example:**
 ```sus
 module MemoryZeroer {
-    domain aclk
+    clock aclk
     input bool aresetn
 
     gen int AXI_WIDTH = 256

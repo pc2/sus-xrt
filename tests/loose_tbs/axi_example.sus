@@ -1,7 +1,7 @@
 
 
 module axis_master_fifo_example {
-    domain aclk
+    clock aclk
     input bool aresetn
 
     domain axis
@@ -24,7 +24,7 @@ module axis_master_fifo_example {
 
 
 module axi_ctrl_slave_example {
-    domain aclk
+    clock aclk
     input bool aresetn
 
     gen int ADDR_WIDTH = 12
@@ -108,7 +108,7 @@ module axi_ctrl_slave_example {
 
 
 module combined_axi_ctrl_plus_reader {
-    domain aclk
+    clock aclk
     input bool aresetn
 
     gen int ADDR_WIDTH = 12
@@ -269,7 +269,7 @@ module combined_axi_ctrl_plus_reader {
 
 
 module combined_axi_ctrl_reader_writer {
-    domain aclk
+    clock aclk
     input bool aresetn
 
     gen int ADDR_WIDTH = 12

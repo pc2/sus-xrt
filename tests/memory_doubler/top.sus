@@ -1,7 +1,6 @@
 
 module memory_doubler#(int AXI_WIDTH) {
-
-    domain aclk
+    clock aclk
     input bool aresetn
 
     gen int CTRL_AXI_WIDTH = 32
