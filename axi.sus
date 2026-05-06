@@ -737,9 +737,31 @@ Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, 
 */
 /// A Bursting AXI reader. It spends as little logic as possible, so aligning and backpressure are up to the user. 
 ///
-/// Alignment is not handled by this module. Chunks are delivered on chunk_valid with a size and valid chunk count. Data is not necessarily aligned to the start of the chunk. For alignment see [axi_burst_reader]
+/// Alignment is not handled by this module. Chunks are delivered on chunk_valid with a size and valid chunk count.
+/// Data is not necessarily aligned to the start of the chunk. For alignment see [axi_burst_reader]
 ///
-/// Very coarse backpressure is provided in the form of the `ready_for_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
+/// Very coarse backpressure is provided in the form of the `ready_for_lots_of_data` wire.
+/// Its latency count is set such that a receiving FIFO can set its `ALMOST_FULL` treshold
+/// to receive all elements in flight (around 192..384).
+///
+/// `MAX_IN_FLIGHT` must be greater or equal to the minimum size of a transfer:
+/// | AXI_WIDTH | MIN_TRANSFER_SIZE |
+/// | ---  | --- |
+/// | 8    | 256 |
+/// | 16   | 256 |
+/// | 32   | 256 |
+/// | 64   | 256 |
+/// | 128  | 256 |
+/// | 256  | 128 |
+/// | 512  | 64  |
+/// | 1024 | 32  |
+/// 
+/// Or... you may set `MAX_IN_FLIGHT` to 0 for direct backpressure to the `r` channel.
+/// However, it is discouraged to use `MAX_IN_FLIGHT=0` unless you know that:
+/// - Your AXI slave can handle `r` channel backpressure
+/// - A blocked transfer would not block other transfers on the same crossbar
+/// Alternatively, if you know you will never backpressure the read channel (IE: `ready_for_lots_of_data == true` always),
+/// then setting `MAX_IN_FLIGHT=0` is correct.
 /// 
 /// element: size is ADDR_ALIGN * 8. It is also the resolution of count
 /// chunk: one AXI transfer. Contains AXI_WIDTH / (ADDR_ALIGN * 8) elements
@@ -851,11 +873,19 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COU
         num_transfers_in_this_burst = -1
     }
     // Should synthesize to a simple adder with carry
-    in_flight_headroom = IntNarrow#(FROM: 0, TO: MAX_IN_FLIGHT+1)(in_flight_headroom - num_transfers_in_this_burst - (1 - BoolToInt(rready & rvalid)))
+    if MAX_IN_FLIGHT != 0 {
+        in_flight_headroom = IntNarrow#(FROM: 0, TO: MAX_IN_FLIGHT+1)(in_flight_headroom - num_transfers_in_this_burst - (1 - BoolToInt(rready & rvalid)))
+    }
 
     domain data
     input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
-    bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+    bool offset_receiver_is_ready
+    if MAX_IN_FLIGHT != 0 {
+        offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+    } else {
+        offset_receiver_is_ready = true
+    }
+
     trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
     when cur_addr_valid & in_flight_headroom >= MAX_BURST & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
@@ -927,7 +957,11 @@ module axi_burst_reader #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COU
             stored_is_last = cmd_is_last
             stored_is_empty_burst = cmd_is_empty_burst // Takes prescedence over the setting to false when sending the last one
 
-            rready = !cmd_is_empty_burst
+            if MAX_IN_FLIGHT != 0 {
+                rready = !cmd_is_empty_burst
+            } else {
+                rready = !cmd_is_empty_burst & ready_for_lots_of_data
+            }
         } else {
             rready = false
         }
