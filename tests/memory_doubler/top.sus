@@ -116,12 +116,12 @@ module memory_doubler#(int AXI_WIDTH) {
     when ctrl.start {
         reg reg int modified_addr = start_addr + offset mod pow2#(E: 64)
         writer.request_new_write(modified_addr)
-        reader.request_new_read(modified_addr, num_to_transfer)
+        reader.request_new_read(modified_addr, num_to_transfer, [])
     }
 
     reader.ready_for_lots_of_data = writer.may_write
 
-    when reader.chunk_valid: bool[32][NUM_PARALLEL_ELEMENTS] elems, int num_valid, int valid_offset, bool is_last {
+    when reader.chunk_valid: bool[32][NUM_PARALLEL_ELEMENTS] elems, int num_valid, int valid_offset, bool is_last, bool[0] _unused_extra {
         bool[32][NUM_PARALLEL_ELEMENTS] doubled
         for int i in 0..NUM_PARALLEL_ELEMENTS {
             float in_v = FromBits(elems[i])

@@ -113,6 +113,8 @@ Since the burst reader itself does not spend any resources on realigning element
 
 **Backpressure** on the data stream can only be provided on the address channel, as it is forbidden to backpressure the data stream itself. Hence, the long latency difference between `ready_for_lots_of_data'-MAX_IN_FLIGHT` and `chunk_valid'0`. You must account for being able to receive this amount of in-flight data by using an appropriately sized FIFO downstream. (The latency sensitive may_push/push interface on the FIFO should figure out this appropriate size automatically.)
 
+You can also attach extra data to the burst read. Whatever extra data you pass to `request_new_read` you receive again on every `chunk_valid`. 
+
 **Example:** In the FIFO below, a request for 13 4-byte elements was made from address `0x00000010000008`, at an AXI_WIDTH of 128-bit. This results in 4 transfers, of 2, 4, 4, and 3 elements respectively. The last transfer will have `last=1`. 
 
 For setting **MAX_IN_FLIGHT** for your specific case, refer to the values in [Optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`](README.md#optimal-max_in_flight-values-for-axi_burst_reader)
@@ -170,7 +172,7 @@ module BasicHash {
         addr_bits[:32] = ctrl.input_regs[0]
         addr_bits[32:] = ctrl.input_regs[1]
         int num_to_transfer = BitsToUInt(ctrl.input_regs[2])
-        reader.request_new_read(BitsToUInt(addr_bits), num_to_transfer)
+        reader.request_new_read(BitsToUInt(addr_bits), num_to_transfer, [])
 
         hash = 32'h00000000
     }
@@ -180,7 +182,8 @@ module BasicHash {
         bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements,
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length,
         int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset,
-        bool last {
+        bool last,
+        bool[0] _unused_extra_data {
 
         reg reg bool[NUM_PARALLEL_ELEMENTS] mask = MakeStrobe(chunk_length, chunk_offset)
         bool[ELEM_BITWIDTH][NUM_PARALLEL_ELEMENTS] masked_elements
@@ -441,7 +444,7 @@ Using `axi_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter t
     <img src="img/vck5000_ddr_max_in_flight.png" alt="img/vck5000_ddr_max_in_flight.png" style="width:48%">
 </p>
 
-Interpreting these results, we recommend the following values:
+Interpreting these results, we recommend the following `MAX_IN_FLIGHT` values:
 | AXI_WIDTH | U280 DDR | U280 HBM | U280 Host Mem | VCK5000 DDR |
 | --- | --- | --- | ---       | --- |
 | 32  | 512 | 512 | don't use | 392 | 
