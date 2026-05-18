@@ -944,7 +944,7 @@ module axi_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_AL
     }
     when rready & rvalid | stored_is_empty_burst {
         // For a zero-sized burst, the elements will be invalid data. This is acceptable, since the associated strobe is 'b000000...
-        chunk_valid(elements, chunk_length, chunk_offset, is_final_last, stored_extra_data)
+        chunk_valid(elements, chunk_length, chunk_offset, is_final_last, stored_extra_data_out)
         chunk_offset = 0
         stored_is_empty_burst = false
     }
