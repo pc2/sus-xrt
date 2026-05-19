@@ -119,7 +119,7 @@ module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
         // Data Write
         when (stored_addr >= FIRST_REG) & (stored_addr < FIRST_REG + NUM_INPUT_REGS) {
             int write_idx = IntNarrow#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS)(stored_addr) - FIRST_REG
-            for int strbi in 0..4 {
+            for int strbi in 0..AXI_WIDTH / 8 {
                 when wstrb[strbi] {
                     input_regs[write_idx][strbi*8 +: 8] = wdata[strbi*8 +: 8]
                 }
