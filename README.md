@@ -2,7 +2,7 @@
 This library provides AXI slaves and masters for integrating with Xilinx' [XRT](https://github.com/Xilinx/XRT)
 
 The following building blocks are provided:
-- `axi_ctrl_slave`: AXI control slave with input & output registers. Output registers only useable in XRT User-Managed Kernels
+- `xrt_ctrl_slave`: AXI control slave with input & output registers. Output registers only useable in XRT User-Managed Kernels
 - `axi_memory_reader`: Low-bandwidth AXI reader
 - `axi_memory_writer`: Low-bandwidth AXI writer
 - `axi_burst_reader`: High-bandwidth bursting AXI reader
@@ -16,7 +16,7 @@ To use this library, include it in your `sus_compiler` build command: `sus_compi
 
 For full examples, buildable from source, see [tests/burst_reader](tests/burst_reader), [tests/burst_writer](tests/burst_writer), or [tests/memory_doubler](tests/memory_doubler). They employ a bursting axi reader, writer, and both respectively. 
 
-### `axi_ctrl_slave`
+### `xrt_ctrl_slave`
 This module is the interface of your [XRT kernel](https://xilinx.github.io/XRT/master/html/xrt_native_apis.html#kernel-and-run). It is responsible the starting and stopping of your kernel, and for accepting the parameters your kernel has, as well as returning the results. (Note: This is only for small results. If you wish to work with larger data structures you should use the memory interfaces instead.)
 
 The control slave maps the incoming AXI4-Lite address space to an array of 32-bit registers. Register `0x000` is used as the control register, to which `0x00000001` is written to start the kernel. Once running, the control register is continuously polled, until it returns `0x00000004` to indicate it is done. 
@@ -30,7 +30,7 @@ module SumExample {
     input bool aresetn
     gen int ADDR_WIDTH
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH, AXI_WIDTH: 32) ctrl
+    xrt_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 1, ADDR_WIDTH, AXI_WIDTH: 32) ctrl
 
     // Export AXI4-Lite interface
     domain axi_control
@@ -134,7 +134,7 @@ module BasicHash {
     gen int ELEM_BITWIDTH = 32
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEM_BITWIDTH
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 3, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
+    xrt_ctrl_slave #(NUM_INPUT_REGS: 3, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
     domain axi_control
     // ...
 
@@ -263,7 +263,7 @@ module MemoryZeroer {
 
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 0, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
+    xrt_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 0, ADDR_WIDTH: 12, AXI_WIDTH: 32) ctrl
 
     // Export AXI4-Lite interface
     domain axi_control

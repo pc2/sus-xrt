@@ -42,7 +42,7 @@ module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
 /// See https://docs.amd.com/r/2023.2-English/ug1393-vitis-application-acceleration/Kernel-Interface-Requirements
 ///
 /// It also appears that ADDR_WIDTH must be >= 12, because the address mapping requires blocks of size 4096
-module axi_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH, int AXI_WIDTH) {
+module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH, int AXI_WIDTH) {
     gen int DATA_STARTS_AT_ADDR = 16 // 0x010
     gen int REG_STRIDE = AXI_WIDTH / 8
     gen int CTRL_REG = 0

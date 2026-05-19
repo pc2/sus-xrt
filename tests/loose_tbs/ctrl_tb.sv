@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module tb_axi_ctrl_slave_example;
+module tb_xrt_ctrl_slave_example;
 
   // Clock and reset
   logic aclk;
@@ -30,7 +30,7 @@ module tb_axi_ctrl_slave_example;
   logic s_axi_control_rready;
 
   // Instantiate DUT
-  axi_ctrl_slave_example dut (
+  xrt_ctrl_slave_example dut (
     .aclk(aclk),
     .aresetn(aresetn),
     .s_axi_control_awaddr(s_axi_control_awaddr),

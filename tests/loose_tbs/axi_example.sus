@@ -23,14 +23,14 @@ module axis_master_fifo_example {
 }
 
 
-module axi_ctrl_slave_example {
+module xrt_ctrl_slave_example {
     clock aclk
     input bool aresetn
 
     gen int CTRL_ADDR_WIDTH = 12
     gen int DATA_WIDTH = 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 500, ADDR_WIDTH: CTRL_ADDR_WIDTH) ctrl
+    xrt_ctrl_slave #(NUM_INPUT_REGS: 2, NUM_OUTPUT_REGS: 500, ADDR_WIDTH: CTRL_ADDR_WIDTH) ctrl
 
     domain axi4
     // Export AXI4-Lite interface
@@ -114,7 +114,7 @@ module combined_axi_ctrl_plus_reader {
     gen int MEM_ADDR_WIDTH = 64
     gen int AXI_WIDTH = 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: CTRL_ADDR_WIDTH) ctrl
+    xrt_ctrl_slave #(NUM_INPUT_REGS: 4, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: CTRL_ADDR_WIDTH) ctrl
 
     domain axi_control
     // Export AXI4-Lite interface
@@ -276,7 +276,7 @@ module combined_axi_ctrl_reader_writer {
 
     gen int NUM_VALUES = 8
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 8, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: CTRL_ADDR_WIDTH) ctrl
+    xrt_ctrl_slave #(NUM_INPUT_REGS: 8, NUM_OUTPUT_REGS: 1, ADDR_WIDTH: CTRL_ADDR_WIDTH) ctrl
 
     // Export AXI4-Lite interface
     domain axi_control

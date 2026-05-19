@@ -9,7 +9,7 @@ module memory_doubler#(int AXI_WIDTH) {
 
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / 32
 
-    axi_ctrl_slave #(NUM_INPUT_REGS: 6, NUM_OUTPUT_REGS: 0, ADDR_WIDTH: CTRL_ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
+    xrt_ctrl_slave #(NUM_INPUT_REGS: 6, NUM_OUTPUT_REGS: 0, ADDR_WIDTH: CTRL_ADDR_WIDTH, AXI_WIDTH: CTRL_AXI_WIDTH) ctrl
 
     // Export AXI4-Lite interface
     domain axi_control
