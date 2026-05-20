@@ -875,8 +875,12 @@ module axi_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_AL
         num_transfers_in_this_burst = -1
     }
     // Should synthesize to a simple adder with carry
+    bool enough_in_flight_headroom
     if MAX_IN_FLIGHT != 0 {
         in_flight_headroom = IntNarrow#(FROM: 0, TO: MAX_IN_FLIGHT+1)(in_flight_headroom - num_transfers_in_this_burst - (1 - BoolToInt(rready & rvalid)))
+        enough_in_flight_headroom = in_flight_headroom >= MAX_BURST
+    } else {
+        enough_in_flight_headroom = true
     }
 
     domain data
@@ -890,7 +894,7 @@ module axi_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_AL
 
     trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0, ExtraDataT extra_data_out'0
 
-    when cur_addr_valid & in_flight_headroom >= MAX_BURST & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
+    when cur_addr_valid & enough_in_flight_headroom & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
         int final_align
         int new_arlen
         when is_last {
