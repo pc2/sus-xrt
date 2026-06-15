@@ -3,10 +3,10 @@ This library provides AXI slaves and masters for integrating with Xilinx' [XRT](
 
 The following building blocks are provided:
 - `xrt_ctrl_slave`: AXI control slave with input & output registers. Output registers only useable in XRT User-Managed Kernels
-- `axi_memory_reader`: Low-bandwidth AXI reader
-- `axi_memory_writer`: Low-bandwidth AXI writer
-- `axi_burst_reader`: High-bandwidth bursting AXI reader
-- `axi_burst_writer`: High-bandwidth bursting AXI writer
+- `axi4_memory_reader`: Low-bandwidth AXI reader
+- `axi4_memory_writer`: Low-bandwidth AXI writer
+- `axi4_burst_reader`: High-bandwidth bursting AXI reader
+- `axi4_burst_writer`: High-bandwidth bursting AXI writer
 - `axis_master_fifo`: Latency Sensitive FIFO to AXI Stream Master
 
 Minimum [SUS](https://github.com/pc2/sus-compiler) version: **0.3.10**. 
@@ -102,7 +102,7 @@ set_property size           {32}              [ipx::get_registers PARAM_B  -of_o
 ```
 Output parameters can't be declared since XRT doesn't expose those for `xrt::kernel`. For those you have to use `xrt::ip`, and call `ip.read_register(0x018)` yourself. 
 
-### `axi_burst_reader`
+### `axi4_burst_reader`
 The burst reader is used for high-bandwidth streaming from DDR, HBM, or Host Memory. It has two user-facing interfaces: One for requesting bursts - `may_request_new_read/request_new_read(start_addr, num_elements)`, and one for the data stream itself: `ready_for_lots_of_data/chunk_valid(elements, chunk_length, chunk_offset, last)`. 
 
 Burst lengths are expressed in **elements**, an **element** is the smallest aligned component of a **transfer**. 
@@ -117,7 +117,7 @@ You can also attach extra data to the burst read. Whatever extra data you pass t
 
 **Example:** In the FIFO below, a request for 13 4-byte elements was made from address `0x00000010000008`, at an AXI_WIDTH of 128-bit. This results in 4 transfers, of 2, 4, 4, and 3 elements respectively. The last transfer will have `last=1`. 
 
-For setting **MAX_IN_FLIGHT** for your specific case, refer to the values in [Optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`](README.md#optimal-max_in_flight-values-for-axi_burst_reader)
+For setting **MAX_IN_FLIGHT** for your specific case, refer to the values in [Optimal `MAX_IN_FLIGHT` values for `axi4_burst_reader`](README.md#optimal-max_in_flight-values-for-axi4_burst_reader)
 
 <p align="center">
     <img src="img/burst_reader.png" alt="img/burst_reader.png" style="width:80%">
@@ -138,7 +138,7 @@ module BasicHash {
     domain axi_control
     // ...
 
-    axi_burst_reader#(AXI_WIDTH, ADDR_WIDTH: MEM_ADDR_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), MAX_IN_FLIGHT: 110) reader
+    axi4_burst_reader#(AXI_WIDTH, ADDR_WIDTH: MEM_ADDR_WIDTH, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 32), MAX_IN_FLIGHT: 110) reader
     domain mem_read
     output bool                                    m_axi_arvalid'0 = reader.arvalid
     input  bool                                    m_axi_arready
@@ -162,7 +162,7 @@ module BasicHash {
     reader.rresp =                                 m_axi_rresp
     reader.rlast =                                 m_axi_rlast
 
-    axi_writer_tie_off writer
+    axi4_writer_tie_off writer
     domain mem_write
     // ...  tie off the write half of the AXI4-Full interface
 
@@ -235,7 +235,7 @@ set_property size           {32}              [ipx::get_registers ELEMENT_COUNT 
 # ... other kernel packing stuff
 ```
 
-### `axi_burst_writer`
+### `axi4_burst_writer`
 The burst writer is used for high-bandwidth streaming from DDR, HBM, or Host Memory. It has two user-facing interfaces: One for requesting bursts - `may_request_new_write/request_new_write(start_addr)`, and one for the data stream itself: `may_write/write(elements, chunk_length, chunk_offset, last)`. 
 
 As with the reader, burst lengths are expressed in **elements**, an **element** is the smallest aligned component of a **transfer**. 
@@ -269,7 +269,7 @@ module MemoryZeroer {
     domain axi_control
     // ...
 
-    axi_burst_writer#(AXI_WIDTH, ADDR_WIDTH: MEM_ADDR_WIDTH, ADDR_ALIGN: 4) writer
+    axi4_burst_writer#(AXI_WIDTH, ADDR_WIDTH: MEM_ADDR_WIDTH, ADDR_ALIGN: 4) writer
     domain mem_write
     output bool                                    m_axi_awvalid = writer.awvalid
     input  bool                                    m_axi_awready
@@ -295,7 +295,7 @@ module MemoryZeroer {
     writer.bvalid  =                               m_axi_bvalid
     writer.bresp   =                               m_axi_bresp
 
-    axi_reader_tie_off reader
+    axi4_reader_tie_off reader
     domain mem_read
     // ...  tie off the read half of the AXI4-Full interface
 
@@ -434,8 +434,8 @@ set_property size           {32}              [ipx::get_registers ELEMENT_COUNT 
 |--------|--------|--------------|
 | DDR    | 43–53  | 101–124      |
 
-## Optimal `MAX_IN_FLIGHT` values for `axi_burst_reader`
-Using `axi_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter to find the lowest value that still produces optimal bandwidth. These benchmarks are run at very high frequencies, such that we have a confident upper bound. 
+## Optimal `MAX_IN_FLIGHT` values for `axi4_burst_reader`
+Using `axi4_burst_reader_benchmarker` we can vary the `MAX_IN_FLIGHT` parameter to find the lowest value that still produces optimal bandwidth. These benchmarks are run at very high frequencies, such that we have a confident upper bound. 
 
 <p align="center">
     <img src="img/u280_ddr_max_in_flight.png" alt="img/u280_ddr_max_in_flight.png" style="width:48%">

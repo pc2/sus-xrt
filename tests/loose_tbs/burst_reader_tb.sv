@@ -56,7 +56,7 @@ logic request_new_burst = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
-axi_burst_reader_AXI_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_ATO_18446744073709551616 dut(
+axi4_burst_reader_AXI_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_ATO_18446744073709551616 dut(
     .aclk(clk),
     .aresetn(aresetn),
 
@@ -254,7 +254,7 @@ logic request_new_burst = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
-axi_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_TO_65536_ATO_18446744073709551616 dut(
+axi4_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_TO_65536_ATO_18446744073709551616 dut(
     .aclk(clk),
     .aresetn(aresetn),
 
@@ -446,7 +446,7 @@ logic request_new_burst = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
-axi_realigning_burst_reader_T_type_bool_32_16_AXI_WIDTH_512_ADDR_ALIGN_64_COUNT_TO_65536_ATO_18446744073709551616 dut(
+axi4_realigning_burst_reader_T_type_bool_32_16_AXI_WIDTH_512_ADDR_ALIGN_64_COUNT_TO_65536_ATO_18446744073709551616 dut(
     .aclk(clk),
     .aresetn(aresetn),
 

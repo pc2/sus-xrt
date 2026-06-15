@@ -200,7 +200,7 @@ module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
 }
 
 
-module axi_reader_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
+module axi4_reader_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     domain axi4
     // axi mm master
     // read channels - tie off, never ready/valid
@@ -230,7 +230,7 @@ module axi_reader_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     action rst {}
 }
 
-module axi_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
+module axi4_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     domain axi4
     // axi mm master
     // write channels - tie off, never ready/valid
@@ -265,7 +265,7 @@ module axi_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
 
 /// AXI_WIDTH can be 32, 64, 128, 256, or 512
 /// sizeof#(T) should be divisible by 8 for <= AXI_WIDTH, and divisible by AXI_WIDTH for larger
-module axi_memory_reader #(T, int AXI_WIDTH, int ADDR_WIDTH) {
+module axi4_memory_reader #(T, int AXI_WIDTH, int ADDR_WIDTH) {
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
     
     gen int MAX_BURST = 256
@@ -374,7 +374,7 @@ module axi_memory_reader #(T, int AXI_WIDTH, int ADDR_WIDTH) {
 
 /// AXI_WIDTH can be 32, 64, 128, 256, or 512
 /// sizeof#(T) should be divisible by 8 for <= AXI_WIDTH, and divisible by AXI_WIDTH for larger
-module axi_memory_writer #(T, int AXI_WIDTH, int ADDR_WIDTH) {
+module axi4_memory_writer #(T, int AXI_WIDTH, int ADDR_WIDTH) {
     assert#(C: (AXI_WIDTH == 32) | (AXI_WIDTH == 64) | (AXI_WIDTH == 128) | (AXI_WIDTH == 256) | (AXI_WIDTH == 512))
     
     gen int MAX_BURST = 256
@@ -510,8 +510,8 @@ module MakeStrobe #(int STROBE_WIDTH) {
     strobe = RotateRight(MakeMask(chunk_length), chunk_offset)
 }
 
-/// Similar interface to [axi_burst_reader]. Used to determine optimal values for [axi_burst_reader::MAX_IN_FLIGHT]
-module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO) {
+/// Similar interface to [axi4_burst_reader]. Used to determine optimal values for [axi4_burst_reader::MAX_IN_FLIGHT]
+module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -722,7 +722,7 @@ module axi_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_AL
 
 
 /*
-Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64))
+Vivado Utiliziation report for axi4_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ATO: pow2#(E: 64))
 +-------------------------+------+-------+------------+-----------+-------+
 |        Site Type        | Used | Fixed | Prohibited | Available | Util% |
 +-------------------------+------+-------+------------+-----------+-------+
@@ -738,7 +738,7 @@ Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, 
 /// A Bursting AXI reader. It spends as little logic as possible, so aligning and backpressure are up to the user. 
 ///
 /// Alignment is not handled by this module. Chunks are delivered on chunk_valid with a size and valid chunk count.
-/// Data is not necessarily aligned to the start of the chunk. For alignment see [axi_burst_reader]
+/// Data is not necessarily aligned to the start of the chunk. For alignment see [axi4_burst_reader]
 ///
 /// Very coarse backpressure is provided in the form of the `ready_for_lots_of_data` wire.
 /// Its latency count is set such that a receiving FIFO can set its `ALMOST_FULL` treshold
@@ -772,7 +772,7 @@ Vivado Utiliziation report for axi_burst_reader#(AXI_WIDTH: 512, ADDR_ALIGN: 4, 
 /// XXXXXXXX
 /// XXXXX...
 /// due to alignment of address
-module axi_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO, int MAX_IN_FLIGHT) {
+module axi4_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO, int MAX_IN_FLIGHT) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
@@ -994,14 +994,14 @@ module axi_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_AL
 /// Very coarse backpressure is provided in the form of the `ready_for_lots_of_data` wire. Its latency count is set such that a receiving FIFO can set its ALMOST_FULL treshold to receive all elements in flight (around 192..384). Can be set to constant 'true' if no backpressure needed
 /// 
 /// `last` is asserted for the last value
-module axi_realigning_burst_reader #(T, ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO, int MAX_IN_FLIGHT) {
+module axi4_realigning_burst_reader #(T, ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int COUNT_TO, int MAX_IN_FLIGHT) {
     assert#(C: sizeof#(T) mod ADDR_ALIGN * 8 == 0)
     gen int ELEMENT_BITWIDTH = ADDR_ALIGN * 8
     gen int NUM_ELEMENTS_PER_VALUE = sizeof#(T) / ELEMENT_BITWIDTH
     gen int NUM_PARALLEL_ELEMENTS = AXI_WIDTH / ELEMENT_BITWIDTH
     // When T is bigger than AXI_WIDTH, multiple output cycles would be needed per input transfer. But with this AXI reader, we cannot provide backpressure (without a FIFO that is, of course)
     assert#(C: AXI_WIDTH <= sizeof#(T))
-    axi_burst_reader #(ExtraDataT, AXI_WIDTH, ADDR_WIDTH, ADDR_ALIGN, COUNT_TO: COUNT_TO * NUM_ELEMENTS_PER_VALUE, MAX_IN_FLIGHT) parent
+    axi4_burst_reader #(ExtraDataT, AXI_WIDTH, ADDR_WIDTH, ADDR_ALIGN, COUNT_TO: COUNT_TO * NUM_ELEMENTS_PER_VALUE, MAX_IN_FLIGHT) parent
 
     // export axi interface
     domain axi4_read
@@ -1503,7 +1503,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
 /// 
 /// Once a burst has been requested, wait until [burst_accepted] goes high before writing data through [may_write] and [write].
 /// It is guaranteed that [burst_accepted] goes high after a fixed number of clock cycles, no need for state management around it. 
-module axi_burst_writer #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int MAY_PUSH_LATENCY, int ADDR_MAY_PUSH_LATENCY) {
+module axi4_burst_writer #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int MAY_PUSH_LATENCY, int ADDR_MAY_PUSH_LATENCY) {
     gen int AXI_WIDTH_BYTES = AXI_WIDTH / 8
     gen int AxSIZE = clog2#(V: AXI_WIDTH_BYTES)
 
