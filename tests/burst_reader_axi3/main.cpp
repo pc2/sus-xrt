@@ -25,9 +25,8 @@
 struct AXIConfig {
     uint32_t arprot : 3;
     uint32_t arcache : 4;
-    uint32_t arqos : 4;
-    uint32_t arlock : 1;
-    uint32_t arregion : 4;
+    uint32_t arlock : 2;
+    uint32_t _unused : 7;
     uint32_t max_in_flight : 16;
 };
 
@@ -35,9 +34,7 @@ void printConfig(AXIConfig config) {
     std::cout << "Current AXIConfig:\n"
               << "  arprot        = " << config.arprot << "\n"
               << "  arcache       = " << config.arcache << "\n"
-              << "  arqos         = " << config.arqos << "\n"
               << "  arlock        = " << config.arlock << "\n"
-              << "  arregion      = " << config.arregion << "\n"
               << "  max_in_flight = " << config.max_in_flight << std::endl;
 }
 
@@ -96,8 +93,8 @@ struct BenchmarkResult {
 uint32_t* reference_buffer;
 BenchmarkResult run_kernel(KernelInfo& info, uint32_t num_elems, uint32_t offset, uint32_t num_repeats, uint32_t experiment_offset, AXIConfig config) {
     uint64_t burst_size = (1 << 12) / (info.AXI_WIDTH / 8);
-    if(burst_size > 256) {
-        burst_size = 256;
+    if(burst_size > 16) {
+        burst_size = 16;
     }
     // Avoid locking up the FPGA due to incorrect max_in_flight
     if(config.max_in_flight < burst_size) {
@@ -177,9 +174,7 @@ void benchmark_header(std::ofstream& bench_file, const char* name, AXIConfig& co
     bench_file << name << "\t";
     bench_file << "arprot: " << config.arprot << "\t";
     bench_file << "arcache: " << config.arcache << "\t";
-    bench_file << "arqos: " << config.arqos << "\t";
     bench_file << "arlock: " << config.arlock << "\t";
-    bench_file << "arregion: " << config.arregion << "\t";
     bench_file << "max_in_flight: " << config.max_in_flight << "\t";
     bench_file << "clock_freq (MHz): " << clock_freq_MHz;
     bench_file << "\nName\tCycles\tBytes Per Cycle\tTime (s)\tKernel Time (s)\tBandwidth (GB/s)\tKernel Measured Bandwidth (GB/s)" << std::endl;
@@ -444,9 +439,7 @@ int main(int argc, const char** argv) {
     AXIConfig config = AXIConfig{
         .arprot = 0,
         .arcache = 0b0011,
-        .arqos = 0,
         .arlock = 0,
-        .arregion = 0,
         .max_in_flight = (1 << 16) - 1,
     };
 
