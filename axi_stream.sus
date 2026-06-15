@@ -1,0 +1,78 @@
+
+module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
+    FWFT#(DEPTH, MAY_PUSH_LATENCY) fifo
+    
+    domain reset
+    input bool aresetn'0
+
+    when !aresetn {
+        fifo.rst()
+    }
+
+    domain axis
+    input bool tready'0
+    output bool tvalid'0
+    output bool[sizeof#(T)] tdata'0
+
+    when fifo.pop_available: bool[sizeof#(T)] data {
+        tvalid = true
+        tdata = data
+        when tready {
+            fifo.pop()
+        }
+    } else {
+        tvalid = false
+    }
+
+    domain push_dom
+    output bool may_push'-MAY_PUSH_LATENCY = fifo.may_push
+    action push'0: T data'0 {
+        fifo.push(ToBits(data))
+    }
+}
+/*module use_axis_master_fifo {
+    axis_master_fifo#(T: type bool, DEPTH: 0, MAY_PUSH_LATENCY: 12) m
+}*/
+
+module axis_SkidBuffer#(T) {
+    domain axis_in
+    input T adata
+    input bool avalid
+    output bool aready
+
+    domain axis_out
+    output state T bdata
+    output state bool bvalid
+    input bool bready
+
+    state T skid
+    state bool skid_valid
+
+    aready = !skid_valid
+
+    T next_bdata
+    bool next_bvalid
+    when skid_valid {
+        next_bdata = skid
+        next_bvalid = skid_valid
+    } else {
+        next_bdata = adata
+        next_bvalid = avalid
+    }
+    when !bvalid | bready { // Try to move into bdata
+        skid_valid = false
+        bdata = next_bdata
+        bvalid = next_bvalid
+    } else { // Can't move into bdata, must move into skid
+        when aready { // There's an implicit && avalid here, but it's not needed
+            skid_valid = avalid
+            skid = adata
+        }
+    }
+
+    domain reset
+    action rst {
+        bvalid = false
+        skid_valid = false
+    }
+}

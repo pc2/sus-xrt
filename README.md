@@ -12,7 +12,7 @@ The following building blocks are provided:
 Minimum [SUS](https://github.com/pc2/sus-compiler) version: **0.3.10**. 
 
 ## Usage
-To use this library, include it in your `sus_compiler` build command: `sus_compiler sus-xrt/axi.sus other_files.sus...`
+To use this library, include it in your `sus_compiler` build command: `sus_compiler sus-xrt/xrt.sus sus-xrt/axi_stream.sus sus-xrt/axi_memory.sus other_files.sus...`
 
 For full examples, buildable from source, see [tests/burst_reader](tests/burst_reader), [tests/burst_writer](tests/burst_writer), or [tests/memory_doubler](tests/memory_doubler). They employ a bursting axi reader, writer, and both respectively. 
 

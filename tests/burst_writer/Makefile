@@ -14,8 +14,8 @@ U280/%: BIN_DIR ?= U280
 U280/%: PART := xcu280-fsvh2892-2L-e
 U280/%: PLATFORM := xilinx_u280_gen3x16_xdma_1_202211_1
 
-sus_codegen.sv: ../../axi.sus top.sus
-	sus_compiler ../../axi.sus top.sus -o sus_codegen.sv --top all_write_benchmarks
+sus_codegen.sv: ../../axi_memory.sus ../../xrt.sus top.sus
+	sus_compiler ../../axi_memory.sus ../../xrt.sus top.sus -o sus_codegen.sv --top all_write_benchmarks_axi4
 
 XOS_VCK := $(BIN_DIR)/burst_writer_32.xo $(BIN_DIR)/burst_writer_64.xo $(BIN_DIR)/burst_writer_128.xo $(BIN_DIR)/burst_writer_256.xo $(BIN_DIR)/burst_writer_512.xo
 LOCAL_XOS := ../burst_writer_32.xo ../burst_writer_64.xo ../burst_writer_128.xo ../burst_writer_256.xo ../burst_writer_512.xo

@@ -1,5 +1,5 @@
 
-module bench_burst_writer#(int AXI_WIDTH) {
+module bench_burst_writer_axi4#(int AXI_WIDTH) {
     clock aclk
     input bool aresetn
 
@@ -126,11 +126,11 @@ module bench_burst_writer#(int AXI_WIDTH) {
     state int#(FROM: 0, TO: pow2#(E: 32) - NUM_PARALLEL_ELEMENTS) cur_idx
     state int#(FROM: 0, TO: pow2#(E: 32)) num_cycles_running
 
-    SlowState#(T: type int#(FROM: 0, TO: pow2#(E: 64)), RESET_TO: 0) cur_experiment_addr
+    SlowState#(T: type int#(FROM: 0, TO: pow2#(E: 64))) cur_experiment_addr
     when ctrl.start {
         num_repeats_remaining = num_repeats
         num_repeats_remaining_to_finish = num_repeats
-        cur_experiment_addr.update(start_addr + offset mod pow2#(E: 64))
+        cur_experiment_addr.set_fast(start_addr + offset mod pow2#(E: 64))
         running = true
         cur_idx = 0
         num_cycles_running = 0
@@ -140,10 +140,10 @@ module bench_burst_writer#(int AXI_WIDTH) {
     when num_repeats_remaining != 0 {
         when writer.may_request_new_write {
             when queued_transfers.may_push {
-                when cur_experiment_addr.may_update {
-                    writer.request_new_write(cur_experiment_addr.old)
-                    reg int new_addr = cur_experiment_addr.old + repeat_offset mod pow2#(E: 64)
-                    cur_experiment_addr.update(new_addr)
+                when cur_experiment_addr.is_stable : int old_addr {
+                    writer.request_new_write(old_addr)
+                    reg int new_addr = old_addr + repeat_offset mod pow2#(E: 64)
+                    cur_experiment_addr.set_slow(new_addr)
                     queued_transfers.push(0)
                     num_repeats_remaining = num_repeats_remaining - 1 mod pow2#(E: 32)
                 }
@@ -209,10 +209,10 @@ module bench_burst_writer#(int AXI_WIDTH) {
     }
 }
 
-module all_write_benchmarks {
-    bench_burst_writer#(AXI_WIDTH: 32) bench32
-    bench_burst_writer#(AXI_WIDTH: 64) bench64
-    bench_burst_writer#(AXI_WIDTH: 128) bench128
-    bench_burst_writer#(AXI_WIDTH: 256) bench256
-    bench_burst_writer#(AXI_WIDTH: 512) bench512
+module all_write_benchmarks_axi4 {
+    bench_burst_writer_axi4#(AXI_WIDTH: 32) bench32
+    bench_burst_writer_axi4#(AXI_WIDTH: 64) bench64
+    bench_burst_writer_axi4#(AXI_WIDTH: 128) bench128
+    bench_burst_writer_axi4#(AXI_WIDTH: 256) bench256
+    bench_burst_writer_axi4#(AXI_WIDTH: 512) bench512
 }

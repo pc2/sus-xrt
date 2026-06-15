@@ -1,0 +1,165 @@
+
+/// CTRL REGS is 0x000000
+/// Input regs start at 0x000010 and increment 0X000008 every time
+/// Output regs start at end of input regs
+///
+/// XRT imposes a 64K (16bit) address range limitation. 
+/// See https://docs.amd.com/r/2023.2-English/ug1393-vitis-application-acceleration/Kernel-Interface-Requirements
+///
+/// It also appears that ADDR_WIDTH must be >= 12, because the address mapping requires blocks of size 4096
+module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH, int AXI_WIDTH) {
+    gen int DATA_STARTS_AT_ADDR = 16 // 0x010
+    gen int REG_STRIDE = AXI_WIDTH / 8
+    gen int CTRL_REG = 0
+    gen int FIRST_REG = DATA_STARTS_AT_ADDR / REG_STRIDE
+    assert#(C: DATA_STARTS_AT_ADDR mod REG_STRIDE == 0)
+    assert#(C: ADDR_WIDTH >= 12)
+    assert#(C: ADDR_WIDTH <= 16)
+    // Max number of regs
+    assert#(C: (FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS) * REG_STRIDE <= pow2#(E: ADDR_WIDTH))
+    gen bool[2] RESP_OKAY = [false, false]
+    gen bool[2] RESP_SLVERR = [false, true]
+
+    bool do_reset = false
+
+    domain axi4
+    // AXI signals
+    input int#(FROM: 0, TO: 1 << ADDR_WIDTH) awaddr
+    input bool awvalid
+    output bool awready = false
+    input bool[AXI_WIDTH] wdata
+    input bool[AXI_WIDTH / 8] wstrb
+    input bool wvalid
+    output bool wready = false
+    output bool[2] bresp
+    output bool bvalid = false
+    input bool bready
+    input int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr
+    input bool arvalid
+    output bool arready = false
+    output bool[AXI_WIDTH] rdata
+    output bool[2] rresp
+    output bool rvalid = false
+    input bool rready
+
+    domain start_dom
+    state bool[32][NUM_OUTPUT_REGS] stored_output_regs
+    output state bool[32][NUM_INPUT_REGS] input_regs
+    trigger start
+
+    // control register bits
+    state bool reg_ctrl_ap_idle
+    state bool reg_ctrl_ap_done
+    bool reg_ctrl_ap_ready = reg_ctrl_ap_done    // copy ap_done because there's no pausing
+    state bool reg_ctrl_ap_start
+
+    // Write transaction
+    state int stored_addr
+    state bool stored_addr_valid
+    state bool[2] last_bresp
+    state bool last_werr_valid
+    
+    awready = !stored_addr_valid & !do_reset // Force low on reset
+    wready = stored_addr_valid & !last_werr_valid // Already low by reset
+    bvalid = last_werr_valid
+    bresp = last_bresp
+
+    when awready & awvalid {
+        stored_addr_valid = true
+        stored_addr = awaddr / REG_STRIDE
+    }
+    when wready & wvalid {
+        stored_addr_valid = false
+        last_werr_valid = true
+
+        last_bresp = RESP_SLVERR
+        when stored_addr == CTRL_REG {
+            when wstrb[0] & wdata[0] {
+                reg_ctrl_ap_start = true
+                reg_ctrl_ap_idle = false
+                start()
+            }
+            last_bresp = RESP_OKAY
+        }
+        // Data Write
+        when (stored_addr >= FIRST_REG) & (stored_addr < FIRST_REG + NUM_INPUT_REGS) {
+            int write_idx = IntNarrow#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS)(stored_addr) - FIRST_REG
+            for int strbi in 0..AXI_WIDTH / 8 {
+                when wstrb[strbi] {
+                    input_regs[write_idx][strbi*8 +: 8] = wdata[strbi*8 +: 8]
+                }
+            }
+            last_bresp = RESP_OKAY
+        }
+    }
+    when bready & bvalid {
+        last_werr_valid = false
+    }
+
+    // Read transaction
+    state bool last_rdata_valid
+    state bool[32] last_rdata
+    rdata = last_rdata
+    state bool[2] last_rresp
+    rresp = last_rresp
+
+    bool[32][NUM_INPUT_REGS + NUM_OUTPUT_REGS] regs_read_multiplexer
+    regs_read_multiplexer[:NUM_INPUT_REGS] = input_regs
+    regs_read_multiplexer[NUM_INPUT_REGS:] = stored_output_regs
+
+    arready = !last_rdata_valid & !do_reset // Force low on reset
+    rvalid = last_rdata_valid // Already low by reset
+
+    when arready & arvalid {
+        last_rdata_valid = true
+        
+        // Control Read
+        last_rresp = RESP_SLVERR
+        int read_addr = araddr / REG_STRIDE
+        when read_addr == CTRL_REG {
+            last_rdata[0] = reg_ctrl_ap_start
+            last_rdata[1] = reg_ctrl_ap_done
+            last_rdata[2] = reg_ctrl_ap_idle
+            last_rdata[3] = reg_ctrl_ap_ready
+            last_rdata[4:] = 28'h0000000
+            when reg_ctrl_ap_done {
+                reg_ctrl_ap_idle = true
+            }
+            reg_ctrl_ap_done = false // clear on read
+            last_rresp = RESP_OKAY
+        }
+        // Data Read
+        when (read_addr >= FIRST_REG) & (read_addr < FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS) {
+            int read_idx = IntNarrow#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS + NUM_OUTPUT_REGS)(read_addr) - FIRST_REG
+            last_rdata = regs_read_multiplexer[read_idx]
+            last_rresp = RESP_OKAY
+        }
+    }
+    when rready & rvalid {
+        last_rdata_valid = false
+    }
+
+    domain finish_dom
+    action finish'0 : bool[32][NUM_OUTPUT_REGS] output_regs'0 {
+        stored_output_regs = output_regs
+        reg_ctrl_ap_done = true
+        reg_ctrl_ap_start = false
+        reg_ctrl_ap_idle = false
+    }
+
+    domain reset
+    action rst {
+        do_reset = true
+        stored_addr_valid = false
+        last_werr_valid = false
+
+        last_rdata_valid = false
+
+        reg_ctrl_ap_idle = true
+        reg_ctrl_ap_start = false
+        reg_ctrl_ap_done = false
+
+        input_regs = RepeatGen#(T: type bool[32], V: 32'h00000000, SIZE: NUM_INPUT_REGS)
+        stored_output_regs = RepeatGen#(T: type bool[32], V: 32'h00000000, SIZE: NUM_OUTPUT_REGS)
+    }
+}

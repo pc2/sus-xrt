@@ -12,13 +12,13 @@ PLATFORM_U280 := xilinx_u280_gen3x16_xdma_1_202211_1
 PART := $(PART_$(TARGET))
 PLATFORM := $(PLATFORM_$(TARGET))
 
-U280/sus_codegen.sv: ../../axi.sus top.sus sus-float/UltraScalePlus/fp_wrappers.sus sus-float/fp_custom.sus
+U280/sus_codegen.sv: ../../axi_memory.sus ../../xrt.sus top.sus sus-float/UltraScalePlus/fp_wrappers.sus sus-float/fp_custom.sus
 	mkdir -p $(TARGET)
-	sus_compiler ../../axi.sus top.sus sus-float/UltraScalePlus/fp_wrappers.sus sus-float/fp_custom.sus -o U280/sus_codegen.sv --top all_doubler_benchmarks
+	sus_compiler ../../axi_memory.sus ../../xrt.sus top.sus sus-float/UltraScalePlus/fp_wrappers.sus sus-float/fp_custom.sus -o U280/sus_codegen.sv --top all_doubler_benchmarks
 
-VCK5000/sus_codegen.sv: ../../axi.sus top.sus sus-float/Versal/fp_wrappers.sus sus-float/fp_custom.sus
+VCK5000/sus_codegen.sv: ../../axi_memory.sus ../../xrt.sus top.sus sus-float/Versal/fp_wrappers.sus sus-float/fp_custom.sus
 	mkdir -p $(TARGET)
-	sus_compiler ../../axi.sus top.sus sus-float/Versal/fp_wrappers.sus sus-float/fp_custom.sus -o VCK5000/sus_codegen.sv --top all_doubler_benchmarks
+	sus_compiler ../../axi_memory.sus ../../xrt.sus top.sus sus-float/Versal/fp_wrappers.sus sus-float/fp_custom.sus -o VCK5000/sus_codegen.sv --top all_doubler_benchmarks
 
 XOS_VCK := $(TARGET)/memory_doubler_32.xo $(TARGET)/memory_doubler_64.xo $(TARGET)/memory_doubler_128.xo $(TARGET)/memory_doubler_256.xo $(TARGET)/memory_doubler_512.xo
 LOCAL_XOS := ../memory_doubler_32.xo ../memory_doubler_64.xo ../memory_doubler_128.xo ../memory_doubler_256.xo ../memory_doubler_512.xo

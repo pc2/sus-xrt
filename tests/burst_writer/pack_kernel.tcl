@@ -16,7 +16,7 @@ add_files -norecurse \
 }
 
 # ???
-set_property top bench_burst_writer_AXI_WIDTH_${AXI_WIDTH} [current_fileset]
+set_property top bench_burst_writer_axi4_AXI_WIDTH_${AXI_WIDTH} [current_fileset]
 
 
 update_compile_order -fileset sources_1
