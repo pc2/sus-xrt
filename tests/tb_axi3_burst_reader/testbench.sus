@@ -1,0 +1,4 @@
+
+module inst_burst_reader {
+    axi3_burst_reader #(AXI_WIDTH: 256, MAX_IN_FLIGHT: 192, ADDR_WIDTH: 64, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16), ExtraDataT: type bool[0]) reader
+}
