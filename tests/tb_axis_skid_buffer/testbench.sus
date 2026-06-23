@@ -1,0 +1,4 @@
+
+module instantiate_skid_buffer {
+    axis_SkidBuffer#(T: type bool[32]) skid_buffer
+}

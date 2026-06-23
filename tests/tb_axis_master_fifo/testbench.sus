@@ -1,0 +1,23 @@
+
+
+module axis_master_fifo_example {
+    clock clk
+    input bool aresetn
+
+    domain axis
+    input bool axis_tready
+    output bool axis_tvalid
+    output bool[sizeof#(T: type float)] axis_tdata
+
+    axis_master_fifo#(DEPTH: 32) my_fifo
+    my_fifo.aresetn = aresetn
+    my_fifo.tready = axis_tready
+    axis_tvalid = my_fifo.tvalid
+    axis_tdata = my_fifo.tdata
+
+    domain user
+    output bool may_push'-10 = my_fifo.may_push
+    action push'0 : float data'0 {
+        my_fifo.push(data)
+    }
+}

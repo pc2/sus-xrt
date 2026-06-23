@@ -5,17 +5,17 @@ module tb_axis_SkidBuffer;
   // -------------------------------------------------
   // Clock & Reset
   // -------------------------------------------------
-  logic aclk;
+  logic clk;
   logic rst;
 
   initial begin
-    aclk = 0;
-    forever #5 aclk = ~aclk;   // 100 MHz clock
+    clk = 0;
+    forever #5 clk = ~clk;   // 100 MHz clock
   end
 
   initial begin
     rst = 1;
-    repeat (5) @(posedge aclk);
+    repeat (5) @(posedge clk);
     rst = 0;
   end
 
@@ -34,7 +34,7 @@ module tb_axis_SkidBuffer;
   // Instantiate DUT
   // -------------------------------------------------
   axis_SkidBuffer_T_type_bool_32 dut (
-    .aclk    (aclk),
+    .clk    (clk),
     .rst (rst),
     .adata   (adata),
     .avalid  (avalid),
@@ -51,7 +51,7 @@ module tb_axis_SkidBuffer;
   int unsigned recv_queue[$];
   
   // Track transfers
-  always @(posedge aclk) begin
+  always @(posedge clk) begin
     if (!rst) begin
       if (avalid && aready) begin
         sent_queue.push_back(adata);
@@ -90,25 +90,25 @@ module tb_axis_SkidBuffer;
 
     wait(!rst);
     
-    @(posedge aclk);
-    @(posedge aclk);
-    @(posedge aclk);
-    @(posedge aclk);
+    @(posedge clk);
+    @(posedge clk);
+    @(posedge clk);
+    @(posedge clk);
     
     repeat(1000) begin
-        @(posedge aclk);
+        @(posedge clk);
         avalid <= $urandom_range(0,1);
         bready <= $urandom_range(0,1);
     end
     
-    @(posedge aclk);
+    @(posedge clk);
     bready <= 1;
-    @(posedge aclk);
-    @(posedge aclk);
-    @(posedge aclk);
+    @(posedge clk);
+    @(posedge clk);
+    @(posedge clk);
     bready <= 0;
     
-    repeat (20) @(posedge aclk);
+    repeat (20) @(posedge clk);
 
     check_results();
     $finish;

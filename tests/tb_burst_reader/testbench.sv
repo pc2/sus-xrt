@@ -26,8 +26,8 @@ module test_burst_reader {
     trigger chunk_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
-    output bool may_request_new_burst'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
-    action request_new_burst'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: MAX_NUM_ELEMENTS+1) count'0
+    output bool may_request_new_read'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
+    action request_new_read'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: MAX_NUM_ELEMENTS+1) count'0
 }
 */
 localparam AXI_WIDTH = 64;
@@ -51,14 +51,14 @@ logic[$clog2(NUM_PARALLEL_ELEMENTS)-1:0] chunk_offset;
 logic[$clog2(NUM_PARALLEL_ELEMENTS+1)-1:0] chunk_length;
 logic last;
 
-logic may_request_new_burst;
-logic request_new_burst = 0;
+logic may_request_new_read;
+logic request_new_read = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
-axi4_burst_reader_AXI_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_ATO_18446744073709551616 dut(
-    .aclk(clk),
-    .aresetn(aresetn),
+axi4_burst_reader_ExtraDataT_type_bool_0_AXI_WIDTH_64_ADDR_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_MAX_IN_FLIGHT_400 dut(
+    .clk(clk),
+    .rst(!aresetn),
 
     // AXI4 Master
     .arvalid(arvalid),
@@ -78,8 +78,8 @@ axi4_burst_reader_AXI_WIDTH_64_ADDR_ALIGN_2_COUNT_TO_65536_ATO_18446744073709551
     .chunk_offset(chunk_offset),
     .chunk_length(chunk_length),
     .last(last),
-    .may_request_new_burst(may_request_new_burst),
-    .request_new_burst(request_new_burst),
+    .may_request_new_read(may_request_new_read),
+    .request_new_read(request_new_read),
     .start_addr(start_addr),
     .count(count)
 );
@@ -141,11 +141,11 @@ int element_index;
 int chunk_index = 0;
 task automatic test_burst(input int start, input int cnt);
     $display("TESTING BURST start: %d, cnt: %d", start, cnt);
-    request_new_burst <= 1;
+    request_new_read <= 1;
     start_addr <= start;
     count <= cnt;
     @(posedge clk);
-    request_new_burst <= 0;
+    request_new_read <= 0;
     
     element_index = 0;
     chunk_index = 0;
@@ -225,8 +225,8 @@ module test_burst_reader {
     trigger chunk_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
-    output bool may_request_new_burst'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
-    action request_new_burst'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: MAX_NUM_ELEMENTS+1) count'0
+    output bool may_request_new_read'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
+    action request_new_read'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: MAX_NUM_ELEMENTS+1) count'0
 }
 */
 localparam AXI_WIDTH = 512;
@@ -249,8 +249,8 @@ logic value_valid;
 logic[VALUE_SIZE-1:0] value[VALUE_ARRAY_SIZE-1:0];
 logic last;
 
-logic may_request_new_burst;
-logic request_new_burst = 0;
+logic may_request_new_read;
+logic request_new_read = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
@@ -275,8 +275,8 @@ axi4_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_
     .value_valid(value_valid),
     .value(value),
     .last(last),
-    .may_request_new_burst(may_request_new_burst),
-    .request_new_burst(request_new_burst),
+    .may_request_new_read(may_request_new_read),
+    .request_new_read(request_new_read),
     .start_addr(start_addr),
     .count(count),
     
@@ -343,11 +343,11 @@ task automatic test_burst(input int start, input int cnt);
         $display("Count 0 burst, skipping...");
         return;
     end
-    request_new_burst <= 1;
+    request_new_read <= 1;
     start_addr <= start;
     count <= cnt;
     @(posedge clk);
-    request_new_burst <= 0;
+    request_new_read <= 0;
     
     value_index = 0;
     while(!(last & value_valid)) begin
@@ -417,8 +417,8 @@ module test_burst_reader {
     trigger chunk_valid'0: ElemT[NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, int#(FROM: 1, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, bool last'0
 
 
-    output bool may_request_new_burst'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
-    action request_new_burst'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: MAX_NUM_ELEMENTS+1) count'0
+    output bool may_request_new_read'0 = !chunks_are_left & num_chunks_left.may_update & cur_start_chunk_addr.may_update
+    action request_new_read'0 : int#(FROM: 0, TO: ATO) start_addr'0, int#(FROM: 0, TO: MAX_NUM_ELEMENTS+1) count'0
 }
 */
 localparam AXI_WIDTH = 512;
@@ -441,8 +441,8 @@ logic value_valid;
 logic[VALUE_SIZE-1:0] value[VALUE_ARRAY_SIZE-1:0];
 logic last;
 
-logic may_request_new_burst;
-logic request_new_burst = 0;
+logic may_request_new_read;
+logic request_new_read = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
@@ -466,8 +466,8 @@ axi4_realigning_burst_reader_T_type_bool_32_16_AXI_WIDTH_512_ADDR_ALIGN_64_COUNT
     .value_valid(value_valid),
     .value(value),
     .last(last),
-    .may_request_new_burst(may_request_new_burst),
-    .request_new_burst(request_new_burst),
+    .may_request_new_read(may_request_new_read),
+    .request_new_read(request_new_read),
     .start_addr(start_addr),
     .count(count)
 );
@@ -532,11 +532,11 @@ task automatic test_burst(input int start, input int cnt);
         $display("Count 0 burst, skipping...");
         return;
     end
-    request_new_burst <= 1;
+    request_new_read <= 1;
     start_addr <= start;
     count <= cnt;
     @(posedge clk);
-    request_new_burst <= 0;
+    request_new_read <= 0;
     
     value_index = 0;
     while(!(last & value_valid)) begin
