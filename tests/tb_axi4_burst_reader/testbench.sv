@@ -43,6 +43,7 @@ logic                 rvalid;
 logic                 rready;
 logic[AXI_WIDTH-1:0]  rdata;
 logic                 rlast;
+logic[1:0]            rresp = 2'b00;
 
 logic ready_for_lots_of_data = 1;
 logic chunk_valid;
@@ -70,6 +71,7 @@ axi4_burst_reader_ExtraDataT_type_bool_0_AXI_WIDTH_64_ADDR_WIDTH_64_ADDR_ALIGN_2
     .rready(rready),
     .rdata(rdata),
     .rlast(rlast),
+    .rresp(rresp),
 
     // User wires
     .ready_for_lots_of_data(ready_for_lots_of_data),

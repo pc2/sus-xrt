@@ -335,7 +335,7 @@ module combined_axi_ctrl_reader_writer {
     }
 }
 
-module all_tests {
+module all_axi4_tests {
     axi4_burst_reader #(AXI_WIDTH: 64, ADDR_WIDTH: 64, ADDR_ALIGN: 2, COUNT_TO: pow2#(E: 16), MAX_IN_FLIGHT: 400, ExtraDataT: type bool[0]) reader
     //axi4_burst_reader #(AXI_WIDTH: 512, ADDR_WIDTH: 64, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16)) fullFatReader
     //axi4_realigning_burst_reader #(T: type float[17], AXI_WIDTH: 512, ADDR_WIDTH: 64, ADDR_ALIGN: 4, COUNT_TO: pow2#(E: 16)) bigSingleObjectReader

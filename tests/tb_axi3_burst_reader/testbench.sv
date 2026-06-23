@@ -43,6 +43,7 @@ logic                 rvalid;
 logic                 rready;
 logic[AXI_WIDTH-1:0]  rdata;
 logic                 rlast;
+logic[1:0]            rresp = 2'b00;
 
 logic ready_for_lots_of_data = 1;
 logic chunk_valid;
@@ -70,6 +71,7 @@ axi3_burst_reader_ExtraDataT_type_bool_0_AXI_WIDTH_256_ADDR_WIDTH_64_ADDR_ALIGN_
     .rready(rready),
     .rdata(rdata),
     .rlast(rlast),
+    .rresp(rresp),
 
     // User wires
     .ready_for_lots_of_data(ready_for_lots_of_data),
@@ -121,7 +123,7 @@ initial forever begin
     end
 end
 
-int max_bursts_in_flight = 4;
+int max_bursts_in_flight = 400;
 always @(posedge clk) begin
     if (arvalid & arready) begin
         burst_q.push_back('{addr: araddr, len: arlen});
