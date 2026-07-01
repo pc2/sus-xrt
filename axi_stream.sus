@@ -2,13 +2,6 @@
 module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
     FWFT#(DEPTH, MAY_PUSH_LATENCY) fifo
     
-    domain reset
-    input bool aresetn'0
-
-    when !aresetn {
-        fifo.rst()
-    }
-
     domain axis
     input bool tready'0
     output bool tvalid'0
@@ -28,6 +21,11 @@ module axis_master_fifo#(T, int DEPTH, int MAY_PUSH_LATENCY) {
     output bool may_push'-MAY_PUSH_LATENCY = fifo.may_push
     action push'0: T data'0 {
         fifo.push(ToBits(data))
+    }
+
+    domain reset
+    action rst {
+        fifo.rst()
     }
 }
 /*module use_axis_master_fifo {
