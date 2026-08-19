@@ -3,8 +3,8 @@ This library provides AXI slaves and masters for integrating with Xilinx' [XRT](
 
 The following building blocks are provided:
 - `xrt_ctrl_slave`: AXI control slave with input & output registers. Output registers only useable in XRT User-Managed Kernels
-- `axi4_memory_reader`: Low-bandwidth AXI4 reader
-- `axi4_memory_writer`: Low-bandwidth AXI4 writer
+- `axi4_lite_reader`: Low-bandwidth AXI4 reader
+- `axi4_lite_writer`: Low-bandwidth AXI4 writer
 - `axi3_burst_reader`: High-bandwidth bursting AXI3 reader
 - `axi4_burst_reader`: High-bandwidth bursting AXI4 reader
 - `axi4_burst_writer`: High-bandwidth bursting AXI4 writer
@@ -13,7 +13,7 @@ The following building blocks are provided:
 Minimum [SUS](https://github.com/pc2/sus-compiler) version: **0.4.0**. 
 
 ## Usage
-To use this library, include it in your `sus_compiler` build command: `sus_compiler sus-xrt/xrt.sus sus-xrt/axi_stream.sus sus-xrt/axi_memory.sus other_files.sus...`
+To use this library, include it in your `sus_compiler` build command: `sus_compiler sus-xrt/xrt.sus sus-xrt/axi_stream.sus sus-xrt/axi_lite.sus sus-xrt/axi_memory.sus other_files.sus...`
 
 For full examples, buildable from source, see [tests/burst_reader](tests/burst_reader), [tests/burst_writer](tests/burst_writer), or [tests/memory_doubler](tests/memory_doubler). They employ a bursting axi reader, writer, and both respectively. 
 

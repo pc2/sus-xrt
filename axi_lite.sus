@@ -1,0 +1,137 @@
+
+module axi4_lite_writer#(int AXI_WIDTH, int ADDR_WIDTH) {
+    domain axi4
+    output state int#(FROM: 0, TO: 1 << ADDR_WIDTH) awaddr'0
+    output state bool awvalid'0
+    input bool awready'0
+    output state bool[AXI_WIDTH] wdata'0
+    output state bool[AXI_WIDTH / 8] wstrb'0
+    output state bool wvalid'0
+    input bool wready'0
+    input bool[2] bresp'0
+    input bool bvalid'0
+    output bool bready'0
+
+    domain write_dom
+    output bool may_write = !awvalid & !wvalid
+    // Setting awvalid and wvalid to 'true' has higher priority,
+    // so that even with awready or wready permanently high,
+    // there will be a valid transfer cycle. 
+    when awready {
+        awvalid = false
+    }
+    when wready {
+        wvalid = false
+    }
+    action write : int#(FROM: 0, TO: 1 << ADDR_WIDTH) addr, bool[AXI_WIDTH] data, bool[AXI_WIDTH / 8] strb {
+        awvalid = true
+        awaddr = addr
+        wvalid = true
+        wdata = data
+        wstrb = strb
+    }
+    domain write_resp_dom
+    state bool stored_bresp_valid
+    state bool[2] stored_bresp
+
+    trigger write_resp_available : bool[2] resp
+    action take_write_resp {
+        stored_bresp_valid = false
+    }
+    bready = !stored_bresp_valid
+    when bvalid & bready {
+        stored_bresp_valid = true
+        stored_bresp = bresp
+    }
+    when stored_bresp_valid {
+        write_resp_available(stored_bresp)
+    }
+
+    domain reset
+    action rst {
+        awvalid = false
+        wvalid = false
+        bready = false
+        stored_bresp_valid = false
+    }
+}
+
+module axi4_lite_reader#(int AXI_WIDTH, int ADDR_WIDTH) {
+    domain axi4
+    output state int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0
+    output state bool arvalid'0
+    input bool arready'0
+    input bool[AXI_WIDTH] rdata'0
+    input bool[2] rresp'0
+    input bool rvalid'0
+    output bool rready'0
+
+    domain read_dom
+    output bool may_read = !arvalid
+    
+    // Setting arvalid 'true' has higher priority,
+    // so that even with arready permanently high,
+    // there will be a valid transfer cycle. 
+    when arready {
+        arvalid = false
+    }
+    action read : int#(FROM: 0, TO: 1 << ADDR_WIDTH) addr {
+        arvalid = true
+        araddr = addr
+    }
+
+    domain read_resp_dom
+    state bool stored_read_valid
+    state bool[AXI_WIDTH] stored_read
+    state bool[2] stored_rresp
+    trigger read_available : bool[AXI_WIDTH] read_data, bool[2] resp
+    when stored_read_valid {
+        read_available(stored_read, stored_rresp)
+    }
+    action take_read {
+        stored_read_valid = false
+    }
+    rready = !stored_read_valid
+    when rvalid & rready {
+        stored_read_valid = true
+        stored_read = rdata
+        stored_rresp = rresp
+    }
+
+    domain reset
+    action rst {
+        arvalid = false
+        rready = false
+        stored_read_valid = false
+    }
+}
+
+module axi4_lite_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) awaddr'0 = 0
+    output bool awvalid'0 = false
+    input bool awready'0
+    output bool[AXI_WIDTH] wdata'0 = RepeatGen#(T: type bool, V: true, SIZE: AXI_WIDTH)
+    output bool[AXI_WIDTH / 8] wstrb'0 = RepeatGen#(T: type bool, V: true, SIZE: AXI_WIDTH / 8)
+    output bool wvalid'0 = false
+    input bool wready'0
+    input bool[2] bresp'0
+    input bool bvalid'0
+    output bool bready'0 = false
+    bool _awready = awready
+    bool _wready = wready
+    bool _bvalid = bvalid
+    bool[2] _bresp = bresp
+}
+module axi4_lite_reader_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
+    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0 = 0
+    output bool arvalid'0 = false
+    input bool arready'0
+    input bool[AXI_WIDTH] rdata'0
+    input bool[2] rresp'0
+    input bool rvalid'0
+    output bool rready'0 = false
+    bool _arready = arready
+    bool[AXI_WIDTH] _rdata = rdata
+    bool[2] _rresp = rresp
+    bool _rvalid = rvalid
+}
