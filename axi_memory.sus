@@ -1614,18 +1614,18 @@ module axi4_burst_writer #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int MA
 
     domain write_commit
     /// After all writes for a burst have been committed to memory, this pulses true. No backpressure, simply don't push addresses you don't know you can handle. 
-    trigger write_has_been_committed
+    output bool write_has_been_committed = false
     bready = false
     when burst_is_last_fifo.pop_available: bool[2] packed_info {
         bool last_burst_just_finished, bool burst_was_empty = burst_is_last_tuple.unpack(packed_info)
         when burst_was_empty {
-            write_has_been_committed()
+            write_has_been_committed = true
             burst_is_last_fifo.pop()
         } else {
             bready = true
             when bvalid {
                 when last_burst_just_finished {
-                    write_has_been_committed()
+                    write_has_been_committed = true
                 }
                 burst_is_last_fifo.pop()
             }
