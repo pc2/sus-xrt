@@ -207,11 +207,3 @@ module bench_burst_writer_axi4#(int AXI_WIDTH) {
         cur_experiment_addr.rst()
     }
 }
-
-module all_write_benchmarks_axi4 {
-    bench_burst_writer_axi4#(AXI_WIDTH: 32) bench32
-    bench_burst_writer_axi4#(AXI_WIDTH: 64) bench64
-    bench_burst_writer_axi4#(AXI_WIDTH: 128) bench128
-    bench_burst_writer_axi4#(AXI_WIDTH: 256) bench256
-    bench_burst_writer_axi4#(AXI_WIDTH: 512) bench512
-}

@@ -186,11 +186,3 @@ module bench_burst_reader_axi4#(int AXI_WIDTH) {
         cur_experiment_addr.rst()
     }
 }
-
-module all_read_benchmarks_axi4 {
-    bench_burst_reader_axi4#(AXI_WIDTH: 32) burst32
-    bench_burst_reader_axi4#(AXI_WIDTH: 64) burst64
-    bench_burst_reader_axi4#(AXI_WIDTH: 128) burst128
-    bench_burst_reader_axi4#(AXI_WIDTH: 256) burst256
-    bench_burst_reader_axi4#(AXI_WIDTH: 512) burst512
-}

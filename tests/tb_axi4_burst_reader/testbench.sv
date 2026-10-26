@@ -252,9 +252,9 @@ logic request_new_read = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
-axi4_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_TO_65536_ATO_18446744073709551616 dut(
-    .aclk(clk),
-    .aresetn(aresetn),
+axi4_realigning_burst_reader_T_type_bool_32_17_ExtraDataT_type_bool_0_AXI_WIDTH_512_ADDR_WIDTH_64_ADDR_ALIGN_4_COUNT_TO_65536_MAX_IN_FLIGHT_400 dut(
+    .clk(clk),
+    .rst(!aresetn),
 
     // AXI4 Master
     .arvalid(arvalid),
@@ -276,9 +276,7 @@ axi4_realigning_burst_reader_T_type_bool_32_17_AXI_WIDTH_512_ADDR_ALIGN_4_COUNT_
     .may_request_new_read(may_request_new_read),
     .request_new_read(request_new_read),
     .start_addr(start_addr),
-    .count(count),
-    
-    .max_in_flight(320)
+    .count(count)
 );
 
 typedef struct {
@@ -444,9 +442,9 @@ logic request_new_read = 0;
 logic[63:0] start_addr;
 logic[15:0] count;
 
-axi4_realigning_burst_reader_T_type_bool_32_16_AXI_WIDTH_512_ADDR_ALIGN_64_COUNT_TO_65536_ATO_18446744073709551616 dut(
-    .aclk(clk),
-    .aresetn(aresetn),
+axi4_realigning_burst_reader_T_type_bool_32_16_ExtraDataT_type_bool_0_AXI_WIDTH_512_ADDR_WIDTH_64_ADDR_ALIGN_64_COUNT_TO_65536_MAX_IN_FLIGHT_400 dut(
+    .clk(clk),
+    .rst(!aresetn),
 
     // AXI4 Master
     .arvalid(arvalid),

@@ -14,11 +14,21 @@ PLATFORM := $(PLATFORM_$(TARGET))
 
 U280/sus_codegen.sv: ../../axi_memory.sus ../../xrt.sus top.sus sus-float/UltraScalePlus/fp_wrappers.sus sus-float/fp_custom.sus
 	mkdir -p $(TARGET)
-	sus_compiler ../../axi_memory.sus ../../xrt.sus top.sus sus-float/UltraScalePlus/fp_wrappers.sus sus-float/fp_custom.sus -o U280/sus_codegen.sv --top all_doubler_benchmarks
+	sus_compiler ../../axi_memory.sus ../../xrt.sus top.sus sus-float/UltraScalePlus/fp_wrappers.sus sus-float/fp_custom.sus -o U280/sus_codegen.sv \
+		--top "memory_doubler#(AXI_WIDTH: 32)" \
+		--top "memory_doubler#(AXI_WIDTH: 64)" \
+		--top "memory_doubler#(AXI_WIDTH: 128)" \
+		--top "memory_doubler#(AXI_WIDTH: 256)" \
+		--top "memory_doubler#(AXI_WIDTH: 512)"
 
 VCK5000/sus_codegen.sv: ../../axi_memory.sus ../../xrt.sus top.sus sus-float/Versal/fp_wrappers.sus sus-float/fp_custom.sus
 	mkdir -p $(TARGET)
-	sus_compiler ../../axi_memory.sus ../../xrt.sus top.sus sus-float/Versal/fp_wrappers.sus sus-float/fp_custom.sus -o VCK5000/sus_codegen.sv --top all_doubler_benchmarks
+	sus_compiler ../../axi_memory.sus ../../xrt.sus top.sus sus-float/Versal/fp_wrappers.sus sus-float/fp_custom.sus -o VCK5000/sus_codegen.sv \
+		--top "memory_doubler#(AXI_WIDTH: 32)" \
+		--top "memory_doubler#(AXI_WIDTH: 64)" \
+		--top "memory_doubler#(AXI_WIDTH: 128)" \
+		--top "memory_doubler#(AXI_WIDTH: 256)" \
+		--top "memory_doubler#(AXI_WIDTH: 512)"
 
 XOS_VCK := $(TARGET)/memory_doubler_32.xo $(TARGET)/memory_doubler_64.xo $(TARGET)/memory_doubler_128.xo $(TARGET)/memory_doubler_256.xo $(TARGET)/memory_doubler_512.xo
 LOCAL_XOS := ../memory_doubler_32.xo ../memory_doubler_64.xo ../memory_doubler_128.xo ../memory_doubler_256.xo ../memory_doubler_512.xo

@@ -142,11 +142,3 @@ module memory_doubler#(int AXI_WIDTH) {
         ctrl.rst()
     }
 }
-
-module all_doubler_benchmarks {
-    memory_doubler#(AXI_WIDTH: 32) bench32
-    memory_doubler#(AXI_WIDTH: 64) bench64
-    memory_doubler#(AXI_WIDTH: 128) bench128
-    memory_doubler#(AXI_WIDTH: 256) bench256
-    memory_doubler#(AXI_WIDTH: 512) bench512
-}
