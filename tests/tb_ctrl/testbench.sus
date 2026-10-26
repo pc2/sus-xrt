@@ -10,7 +10,7 @@ module xrt_ctrl_slave_example {
 
     domain axi4
     // Export AXI4-Lite interface
-    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)  s_axi_control_awaddr'0
+    input  int#(0..1 << CTRL_ADDR_WIDTH)  s_axi_control_awaddr'0
     input  bool                   s_axi_control_awvalid
     output bool                   s_axi_control_awready = ctrl.awready
     input  bool[DATA_WIDTH]       s_axi_control_wdata
@@ -20,7 +20,7 @@ module xrt_ctrl_slave_example {
     output bool[2]                s_axi_control_bresp   = ctrl.bresp
     output bool                   s_axi_control_bvalid  = ctrl.bvalid
     input  bool                   s_axi_control_bready
-    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)  s_axi_control_araddr
+    input  int#(0..1 << CTRL_ADDR_WIDTH)  s_axi_control_araddr
     input  bool                   s_axi_control_arvalid
     output bool                   s_axi_control_arready = ctrl.arready
     output bool[DATA_WIDTH]       s_axi_control_rdata   = ctrl.rdata

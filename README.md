@@ -10,7 +10,7 @@ The following building blocks are provided:
 - `axi4_burst_writer`: High-bandwidth bursting AXI4 writer
 - `axis_master_fifo`: Latency Sensitive FIFO to AXI Stream Master
 
-Minimum [SUS](https://github.com/pc2/sus-compiler) version: **0.4.0**. 
+Minimum [SUS](https://github.com/pc2/sus-compiler) version: **0.6.0** (the `sus-0.5.0` tag marks the last version for SUS 0.5.0). 
 
 ## Usage
 To use this library, include it in your `sus_compiler` build command: `sus_compiler sus-xrt/xrt.sus sus-xrt/axi_stream.sus sus-xrt/axi_lite.sus sus-xrt/axi_memory.sus other_files.sus...`

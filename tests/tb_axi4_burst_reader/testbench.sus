@@ -11,7 +11,7 @@ module combined_axi_ctrl_plus_reader {
 
     domain axi_control
     // Export AXI4-Lite interface
-    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)  s_axi_control_awaddr
+    input  int#(0..1 << CTRL_ADDR_WIDTH)  s_axi_control_awaddr
     input  bool                   s_axi_control_awvalid
     output bool                   s_axi_control_awready = ctrl.awready
     input  bool[AXI_WIDTH]        s_axi_control_wdata
@@ -21,7 +21,7 @@ module combined_axi_ctrl_plus_reader {
     output bool[2]                s_axi_control_bresp   = ctrl.bresp
     output bool                   s_axi_control_bvalid  = ctrl.bvalid
     input  bool                   s_axi_control_bready
-    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)  s_axi_control_araddr
+    input  int#(0..1 << CTRL_ADDR_WIDTH)  s_axi_control_araddr
     input  bool                   s_axi_control_arvalid
     output bool                   s_axi_control_arready = ctrl.arready
     output bool[AXI_WIDTH]        s_axi_control_rdata   = ctrl.rdata
@@ -38,21 +38,21 @@ module combined_axi_ctrl_plus_reader {
     ctrl.arvalid =                s_axi_control_arvalid
     ctrl.rready  =                s_axi_control_rready
 
-    axi4_memory_reader#(T: type int#(FROM: 0, TO: pow2#(E: 32)), ADDR_WIDTH: MEM_ADDR_WIDTH) reader
+    axi4_memory_reader#(T: type int#(0..pow2#(E: 32)), ADDR_WIDTH: MEM_ADDR_WIDTH) reader
     axi4_writer_tie_off#(ADDR_WIDTH: MEM_ADDR_WIDTH) writer
 
     domain mem_read
     output bool                     m_axi_awvalid = writer.awvalid
     input  bool                     m_axi_awready
-    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)     m_axi_awaddr = writer.awaddr
-    output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
-    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
+    output int#(0..1 << MEM_ADDR_WIDTH)     m_axi_awaddr = writer.awaddr
+    output int#(0..256)   m_axi_awlen = writer.awlen
+    output int#(0..8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
     output bool[3]                  m_axi_awprot = writer.awprot
     output bool[4]                  m_axi_awcache = writer.awcache
-    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    output int#(0..16)    m_axi_awqos = writer.awqos
     output bool                     m_axi_awlock = writer.awlock
-    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
+    output int#(0..16)    m_axi_awregion = writer.awregion
     output bool                     m_axi_wvalid = writer.wvalid
     input  bool                     m_axi_wready
     output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
@@ -68,15 +68,15 @@ module combined_axi_ctrl_plus_reader {
     domain mem_write
     output bool                     m_axi_arvalid = reader.arvalid
     input  bool                     m_axi_arready
-    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)     m_axi_araddr = reader.araddr
-    output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
-    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
+    output int#(0..1 << MEM_ADDR_WIDTH)     m_axi_araddr = reader.araddr
+    output int#(0..256)   m_axi_arlen = reader.arlen
+    output int#(0..8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
     output bool[3]                  m_axi_arprot = reader.arprot
     output bool[4]                  m_axi_arcache = reader.arcache
-    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    output int#(0..16)    m_axi_arqos = reader.arqos
     output bool                     m_axi_arlock = reader.arlock
-    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
+    output int#(0..16)    m_axi_arregion = reader.arregion
     input  bool                     m_axi_rvalid
     output bool                     m_axi_rready = reader.rready
     input  bool[AXI_WIDTH]          m_axi_rdata
@@ -104,15 +104,15 @@ module combined_axi_ctrl_plus_reader {
 
     when addr_state == STM_GET_A {
         bool[64] addr_a_bits
-        addr_a_bits[:32] = ctrl.input_regs[0]
-        addr_a_bits[32:] = ctrl.input_regs[1]
+        addr_a_bits[..32] = ctrl.input_regs[0]
+        addr_a_bits[32..] = ctrl.input_regs[1]
         when reader.request(BitsToUInt(addr_a_bits)) {
             addr_state = STM_GET_B
         }
     } else when addr_state == STM_GET_B {
         bool[64] addr_b_bits
-        addr_b_bits[:32] = ctrl.input_regs[2]
-        addr_b_bits[32:] = ctrl.input_regs[3]
+        addr_b_bits[..32] = ctrl.input_regs[2]
+        addr_b_bits[32..] = ctrl.input_regs[3]
         when reader.request(BitsToUInt(addr_b_bits)) {
             addr_state = STM_IDLE
         }
@@ -173,7 +173,7 @@ module combined_axi_ctrl_reader_writer {
 
     // Export AXI4-Lite interface
     domain axi_control
-    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)  s_axi_control_awaddr
+    input  int#(0..1 << CTRL_ADDR_WIDTH)  s_axi_control_awaddr
     input  bool                   s_axi_control_awvalid
     output bool                   s_axi_control_awready = ctrl.awready
     input  bool[AXI_WIDTH]        s_axi_control_wdata
@@ -183,7 +183,7 @@ module combined_axi_ctrl_reader_writer {
     output bool[2]                s_axi_control_bresp   = ctrl.bresp
     output bool                   s_axi_control_bvalid  = ctrl.bvalid
     input  bool                   s_axi_control_bready
-    input  int#(FROM: 0, TO: 1 << CTRL_ADDR_WIDTH)  s_axi_control_araddr
+    input  int#(0..1 << CTRL_ADDR_WIDTH)  s_axi_control_araddr
     input  bool                   s_axi_control_arvalid
     output bool                   s_axi_control_arready = ctrl.arready
     output bool[AXI_WIDTH]        s_axi_control_rdata   = ctrl.rdata
@@ -200,21 +200,21 @@ module combined_axi_ctrl_reader_writer {
     ctrl.arvalid =         s_axi_control_arvalid
     ctrl.rready  =         s_axi_control_rready
 
-    axi4_memory_reader#(T: type int#(FROM: 0, TO: pow2#(E: 32))[NUM_VALUES], ADDR_WIDTH: MEM_ADDR_WIDTH) reader
-    axi4_memory_writer#(T: type int#(FROM: 0, TO: pow2#(E: 32))[NUM_VALUES], ADDR_WIDTH: MEM_ADDR_WIDTH) writer
+    axi4_memory_reader#(T: type int#(0..pow2#(E: 32))[NUM_VALUES], ADDR_WIDTH: MEM_ADDR_WIDTH) reader
+    axi4_memory_writer#(T: type int#(0..pow2#(E: 32))[NUM_VALUES], ADDR_WIDTH: MEM_ADDR_WIDTH) writer
 
     domain mem_write
     output bool                     m_axi_awvalid = writer.awvalid
     input  bool                     m_axi_awready
-    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)     m_axi_awaddr = writer.awaddr
-    output int#(FROM: 0, TO: 256)   m_axi_awlen = writer.awlen
-    output int#(FROM: 0, TO: 8)     m_axi_awsize  = writer.awsize
+    output int#(0..1 << MEM_ADDR_WIDTH)     m_axi_awaddr = writer.awaddr
+    output int#(0..256)   m_axi_awlen = writer.awlen
+    output int#(0..8)     m_axi_awsize  = writer.awsize
     output bool[2]                  m_axi_awburst = writer.awburst
     output bool[3]                  m_axi_awprot = writer.awprot
     output bool[4]                  m_axi_awcache = writer.awcache
-    output int#(FROM: 0, TO: 16)    m_axi_awqos = writer.awqos
+    output int#(0..16)    m_axi_awqos = writer.awqos
     output bool                     m_axi_awlock = writer.awlock
-    output int#(FROM: 0, TO: 16)    m_axi_awregion = writer.awregion
+    output int#(0..16)    m_axi_awregion = writer.awregion
     output bool                     m_axi_wvalid = writer.wvalid
     input  bool                     m_axi_wready
     output bool[AXI_WIDTH]          m_axi_wdata = writer.wdata
@@ -230,15 +230,15 @@ module combined_axi_ctrl_reader_writer {
     domain mem_read
     output bool                     m_axi_arvalid = reader.arvalid
     input  bool                     m_axi_arready
-    output int#(FROM: 0, TO: 1 << MEM_ADDR_WIDTH)     m_axi_araddr = reader.araddr
-    output int#(FROM: 0, TO: 256)   m_axi_arlen = reader.arlen
-    output int#(FROM: 0, TO: 8)     m_axi_arsize  = reader.arsize
+    output int#(0..1 << MEM_ADDR_WIDTH)     m_axi_araddr = reader.araddr
+    output int#(0..256)   m_axi_arlen = reader.arlen
+    output int#(0..8)     m_axi_arsize  = reader.arsize
     output bool[2]                  m_axi_arburst = reader.arburst
     output bool[3]                  m_axi_arprot = reader.arprot
     output bool[4]                  m_axi_arcache = reader.arcache
-    output int#(FROM: 0, TO: 16)    m_axi_arqos = reader.arqos
+    output int#(0..16)    m_axi_arqos = reader.arqos
     output bool                     m_axi_arlock = reader.arlock
-    output int#(FROM: 0, TO: 16)    m_axi_arregion = reader.arregion
+    output int#(0..16)    m_axi_arregion = reader.arregion
     input  bool                     m_axi_rvalid
     output bool                     m_axi_rready = reader.rready
     input  bool[AXI_WIDTH]          m_axi_rdata
@@ -264,17 +264,17 @@ module combined_axi_ctrl_reader_writer {
 
 
     bool[64] addr_a_bits
-    addr_a_bits[:32] = ctrl.input_regs[0]
-    addr_a_bits[32:] = ctrl.input_regs[1]
+    addr_a_bits[..32] = ctrl.input_regs[0]
+    addr_a_bits[32..] = ctrl.input_regs[1]
     bool[64] addr_b_bits
-    addr_b_bits[:32] = ctrl.input_regs[2]
-    addr_b_bits[32:] = ctrl.input_regs[3]
+    addr_b_bits[..32] = ctrl.input_regs[2]
+    addr_b_bits[32..] = ctrl.input_regs[3]
     bool[64] addr_c_bits
-    addr_c_bits[:32] = ctrl.input_regs[4]
-    addr_c_bits[32:] = ctrl.input_regs[5]
+    addr_c_bits[..32] = ctrl.input_regs[4]
+    addr_c_bits[32..] = ctrl.input_regs[5]
     bool[64] addr_d_bits
-    addr_d_bits[:32] = ctrl.input_regs[6]
-    addr_d_bits[32:] = ctrl.input_regs[7]
+    addr_d_bits[..32] = ctrl.input_regs[6]
+    addr_d_bits[32..] = ctrl.input_regs[7]
 
     when addr_state == STM_GET_A {
         when reader.request(BitsToUInt(addr_a_bits)) {

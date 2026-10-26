@@ -5,12 +5,12 @@ module axi3_reader_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     // read channels - tie off, never ready/valid
     output bool                     arvalid'0 = false
     input  bool                     arready'0
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         araddr'0 = 0
-    output int#(FROM: 0, TO: 8)     arsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output int#(0..1 << ADDR_WIDTH)         araddr'0 = 0
+    output int#(0..8)     arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  arburst'0 = 2'b00
     output bool[4]                  arcache'0 = 4'b0000
     output bool[3]                  arprot'0 = 3'b00
-    output int#(FROM: 0, TO: 16)    arlen'0 = 0
+    output int#(0..16)    arlen'0 = 0
     output bool[2]                  arlock'0 = 2'b00
     input  bool                     rvalid'0
     output bool                     rready'0 = false
@@ -30,12 +30,12 @@ module axi3_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     // write channels - tie off, never ready/valid
     output bool                     awvalid'0 = false
     input  bool                     awready'0
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         awaddr'0 = 0
-    output int#(FROM: 0, TO: 8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output int#(0..1 << ADDR_WIDTH)         awaddr'0 = 0
+    output int#(0..8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  awburst'0 = 2'b00
     output bool[4]                  awcache'0 = 4'b0000
     output bool[3]                  awprot'0 = 3'b000
-    output int#(FROM: 0, TO: 16)    awlen'0 = 0
+    output int#(0..16)    awlen'0 = 0
     output bool[2]                  awlock'0 = 2'b00
     output bool                     wvalid'0 = false
     input  bool                     wready'0
@@ -57,15 +57,15 @@ module axi4_reader_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     // read channels - tie off, never ready/valid
     output bool                     arvalid'0 = false
     input  bool                     arready'0
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         araddr'0 = 0
-    output int#(FROM: 0, TO: 256)   arlen'0 = 0
-    output int#(FROM: 0, TO: 8)     arsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output int#(0..1 << ADDR_WIDTH)         araddr'0 = 0
+    output int#(0..256)   arlen'0 = 0
+    output int#(0..8)     arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  arburst'0 = 2'b00
     output bool[3]                  arprot'0 = 3'b00
     output bool[4]                  arcache'0 = 4'b0000
-    output int#(FROM: 0, TO: 16)    arqos'0 = 0
+    output int#(0..16)    arqos'0 = 0
     output bool                     arlock'0 = false
-    output int#(FROM: 0, TO: 16)    arregion'0 = 0
+    output int#(0..16)    arregion'0 = 0
     input  bool                     rvalid'0
     output bool                     rready'0 = false
     input  bool[AXI_WIDTH]          rdata'0
@@ -84,15 +84,15 @@ module axi4_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
     // write channels - tie off, never ready/valid
     output bool                     awvalid'0 = false
     input  bool                     awready'0
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         awaddr'0 = 0
-    output int#(FROM: 0, TO: 256)   awlen'0 = 0
-    output int#(FROM: 0, TO: 8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output int#(0..1 << ADDR_WIDTH)         awaddr'0 = 0
+    output int#(0..256)   awlen'0 = 0
+    output int#(0..8)     awsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                  awburst'0 = 2'b00
     output bool[3]                  awprot'0 = 3'b000
     output bool[4]                  awcache'0 = 4'b0000
-    output int#(FROM: 0, TO: 16)    awqos'0 = 0
+    output int#(0..16)    awqos'0 = 0
     output bool                     awlock'0 = false
-    output int#(FROM: 0, TO: 16)    awregion'0 = 0
+    output int#(0..16)    awregion'0 = 0
     output bool                     wvalid'0 = false
     input  bool                     wready'0
     output bool[AXI_WIDTH]          wdata'0 = RepeatGen#(T: type bool, V: false, SIZE: AXI_WIDTH)
@@ -109,7 +109,7 @@ module axi4_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
 
 /// MakeMask(3) = [true, true, true, false, false, ...]
 module MakeMask#(int SIZE) {
-    interface MakeMask : int#(FROM: 0, TO: SIZE + 1) up_to -> bool[SIZE] bits
+    interface MakeMask : int#(0..SIZE + 1) up_to -> bool[SIZE] bits
 
     for int I in 0..SIZE {
         bits[I] = up_to > I
@@ -117,7 +117,7 @@ module MakeMask#(int SIZE) {
 }
 
 module MakeStrobe #(int STROBE_WIDTH) {
-    interface MakeStrobe : int#(FROM: 0, TO: STROBE_WIDTH+1) chunk_length'0, int#(FROM: 0, TO: STROBE_WIDTH) chunk_offset'0 -> bool[STROBE_WIDTH] strobe
+    interface MakeStrobe : int#(0..STROBE_WIDTH+1) chunk_length'0, int#(0..STROBE_WIDTH) chunk_offset'0 -> bool[STROBE_WIDTH] strobe
 
     strobe = RotateRight(MakeMask(chunk_length), chunk_offset)
 }
@@ -154,15 +154,15 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     domain axi3
     // axi interface
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
+    state int#(0..pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
     output state bool                         arvalid'0
     input  bool                               arready'0
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
-    output int#(FROM: 0, TO: 8)               arsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output int#(0..1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
+    output int#(0..8)               arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                            arburst'0 = 2'b01 // BURST_INC
     output bool[4]                            arcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
     output bool[3]                            arprot'0 = 3'b000 // Unprivileged, Secure, Data Access
-    output state int#(FROM: 0, TO: 16)        arlen'0
+    output state int#(0..16)        arlen'0
     output bool[2]                            arlock'0 = 2'b00 // NORMAL - No atomics
     input  bool                               rvalid'0
     output state bool                         rready'0
@@ -172,8 +172,8 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     bool[2] _rresp =                          rresp
 
     state bool cur_addr_valid
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
-    state int#(FROM: 0, TO: COUNT_TO) elements_remaining
+    state int#(0..pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
+    state int#(0..COUNT_TO) elements_remaining
 
     SlowStablePipelineCustom#(PIPELINE_DEPTH: 1) feedback_loop
     Tuple2 pack_feedback_loop
@@ -203,11 +203,11 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     gen int MAX_IN_FLIGHT_BOUND = pow2#(E: 16)
 
     /// Small register updated every cycle keeping live track of how many transfers are in flight. If < MAX_BURST then we can't request more bursts before 
-    state int#(FROM: 0, TO: MAX_IN_FLIGHT_BOUND) in_flight_headroom
+    state int#(0..MAX_IN_FLIGHT_BOUND) in_flight_headroom
 
     domain read_requests
     output bool may_request_new_read'0 = !cur_addr_valid
-    action request_new_read'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0 {
+    action request_new_read'0 : int#(0..pow2#(E: ADDR_WIDTH)) start_addr'0, int#(0..COUNT_TO) count'0 {
         int elem_addr, int _misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
 
         cur_addr_valid = true
@@ -229,13 +229,13 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     domain data
     // It's not possible to encode the backpressure when we have a dynamic MAX_IN_FLIGHT. Luckily, since this is for benchmarking, we simply 
     bool ready_for_lots_of_data = true
-    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
     bool offset_receiver_is_ready = ready_for_lots_of_data
     /*
     input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
     bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
-    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
     */
 
     when cur_addr_valid & in_flight_headroom >= MAX_BURST & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
@@ -243,7 +243,7 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
         int new_arlen
         when is_last {
             // The final burst doesn't require us to update the address. 
-            int#(FROM: 0, TO: MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
+            int#(0..MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
             new_arlen, final_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(final_burst_arlen)
             cur_addr_valid = false
         } else {
@@ -273,7 +273,7 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
     for int I in 0..NUM_PARALLEL_ELEMENTS {
-        elements[I] = rdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
+        elements[I] = rdata[I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH]
     }
 
     int chunk_length
@@ -315,7 +315,7 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     domain reset
     /// Set this at the beginning of a run, to initialize the run with this MAX_IN_FLIGHT value. MAY NOT BE CALLED WHILE READS ARE IN PROGRESS
-    action initialize_max_in_flight : int#(FROM: 0, TO: MAX_IN_FLIGHT_BOUND) max_in_flight {
+    action initialize_max_in_flight : int#(0..MAX_IN_FLIGHT_BOUND) max_in_flight {
         in_flight_headroom = max_in_flight
     }
 
@@ -364,16 +364,16 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     // axi interface
     output state bool                     arvalid'0
     input  bool                           arready'0
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
-    output state int#(FROM: 0, TO: 256)   arlen'0
-    output int#(FROM: 0, TO: 8)           arsize'0 = clog2#(V: AXI_WIDTH / 8)
+    state int#(0..pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
+    output int#(0..1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
+    output state int#(0..256)   arlen'0
+    output int#(0..8)           arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                        arburst'0 = 2'b01 // BURST_INC
     output bool[3]                        arprot'0 = 3'b000 // Unprivileged, Secure, Data Access
     output bool[4]                        arcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
-    output int#(FROM: 0, TO: 16)          arqos'0 = 0 // Lowest priority
+    output int#(0..16)          arqos'0 = 0 // Lowest priority
     output bool                           arlock'0 = false // NORMAL - No atomics
-    output int#(FROM: 0, TO: 16)          arregion'0 = 0 // Region 0
+    output int#(0..16)          arregion'0 = 0 // Region 0
     input  bool                           rvalid'0
     output state bool                     rready'0
     input  bool[AXI_WIDTH]                rdata'0
@@ -382,8 +382,8 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     input  bool                           rlast'0
 
     state bool cur_addr_valid
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
-    state int#(FROM: 0, TO: COUNT_TO) elements_remaining
+    state int#(0..pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
+    state int#(0..COUNT_TO) elements_remaining
 
     SlowStablePipelineCustom#(PIPELINE_DEPTH: 1) feedback_loop
     Tuple2 pack_feedback_loop
@@ -413,11 +413,11 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     gen int MAX_IN_FLIGHT_BOUND = pow2#(E: 16)
 
     /// Small register updated every cycle keeping live track of how many transfers are in flight. If < MAX_BURST then we can't request more bursts before 
-    state int#(FROM: 0, TO: MAX_IN_FLIGHT_BOUND) in_flight_headroom
+    state int#(0..MAX_IN_FLIGHT_BOUND) in_flight_headroom
 
     domain read_requests
     output bool may_request_new_read'0 = !cur_addr_valid
-    action request_new_read'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0 {
+    action request_new_read'0 : int#(0..pow2#(E: ADDR_WIDTH)) start_addr'0, int#(0..COUNT_TO) count'0 {
         int elem_addr, int _misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
 
         cur_addr_valid = true
@@ -439,13 +439,13 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     domain data
     // It's not possible to encode the backpressure when we have a dynamic MAX_IN_FLIGHT. Luckily, since this is for benchmarking, we simply 
     bool ready_for_lots_of_data = true
-    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
 
     bool offset_receiver_is_ready = ready_for_lots_of_data
     /*
     input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
     bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
-    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
     */
 
     when cur_addr_valid & in_flight_headroom >= MAX_BURST & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
@@ -453,7 +453,7 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
         int new_arlen
         when is_last {
             // The final burst doesn't require us to update the address. 
-            int#(FROM: 0, TO: MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
+            int#(0..MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
             new_arlen, final_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(final_burst_arlen)
             cur_addr_valid = false
         } else {
@@ -483,7 +483,7 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
     for int I in 0..NUM_PARALLEL_ELEMENTS {
-        elements[I] = rdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
+        elements[I] = rdata[I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH]
     }
 
     int chunk_length
@@ -525,7 +525,7 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     domain reset
     /// Set this at the beginning of a run, to initialize the run with this MAX_IN_FLIGHT value. MAY NOT BE CALLED WHILE READS ARE IN PROGRESS
-    action initialize_max_in_flight : int#(FROM: 0, TO: MAX_IN_FLIGHT_BOUND) max_in_flight {
+    action initialize_max_in_flight : int#(0..MAX_IN_FLIGHT_BOUND) max_in_flight {
         in_flight_headroom = max_in_flight
     }
 
@@ -571,15 +571,15 @@ module axi3_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     domain axi3
     // axi interface
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
+    state int#(0..pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
     output state bool                         arvalid'0
     input  bool                               arready'0
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
-    output int#(FROM: 0, TO: 8)               arsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output int#(0..1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
+    output int#(0..8)               arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                            arburst'0 = 2'b01 // BURST_INC
     output bool[4]                            arcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
     output bool[3]                            arprot'0 = 3'b000 // Unprivileged, Secure, Data Access
-    output state int#(FROM: 0, TO: 16)        arlen'0
+    output state int#(0..16)        arlen'0
     output bool[2]                            arlock'0 = 2'b00 // NORMAL - No atomics
     input  bool                               rvalid'0
     output state bool                         rready'0
@@ -589,8 +589,8 @@ module axi3_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     bool[2] _rresp =                          rresp
 
     state bool cur_addr_valid
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
-    state int#(FROM: 0, TO: COUNT_TO) elements_remaining
+    state int#(0..pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
+    state int#(0..COUNT_TO) elements_remaining
     state ExtraDataT stored_extra_data
 
     SlowStablePipelineCustom#(PIPELINE_DEPTH: 1) feedback_loop
@@ -619,11 +619,11 @@ module axi3_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     FWFT#(DEPTH: 256) command_fifo
 
     /// Small register updated every cycle keeping live track of how many transfers are in flight. If < MAX_BURST then we can't request more bursts before 
-    state int#(FROM: 0, TO: MAX_IN_FLIGHT+1) in_flight_headroom
+    state int#(0..MAX_IN_FLIGHT+1) in_flight_headroom
 
     domain read_requests
     output bool may_request_new_read'0 = !cur_addr_valid
-    action request_new_read'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0, ExtraDataT extra_data'0 {
+    action request_new_read'0 : int#(0..pow2#(E: ADDR_WIDTH)) start_addr'0, int#(0..COUNT_TO) count'0, ExtraDataT extra_data'0 {
         int elem_addr, int _misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
 
         cur_addr_valid = true
@@ -658,14 +658,14 @@ module axi3_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
         offset_receiver_is_ready = true
     }
 
-    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0, ExtraDataT extra_data_out'0
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0, ExtraDataT extra_data_out'0
 
     when cur_addr_valid & enough_in_flight_headroom & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
         int final_align
         int new_arlen
         when is_last {
             // The final burst doesn't require us to update the address. 
-            int#(FROM: 0, TO: MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
+            int#(0..MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
             new_arlen, final_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(final_burst_arlen)
             cur_addr_valid = false
         } else {
@@ -696,7 +696,7 @@ module axi3_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
     for int I in 0..NUM_PARALLEL_ELEMENTS {
-        elements[I] = rdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
+        elements[I] = rdata[I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH]
     }
 
     int chunk_length
@@ -835,18 +835,18 @@ module axi4_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     domain axi4
     // axi interface
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
+    state int#(0..pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) araddr_transfer
     output state bool                         arvalid'0
     input  bool                               arready'0
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
-    output state int#(FROM: 0, TO: 256)       arlen'0
-    output int#(FROM: 0, TO: 8)               arsize'0 = clog2#(V: AXI_WIDTH / 8)
+    output int#(0..1 << ADDR_WIDTH) araddr'0 = araddr_transfer << clog2#(V: AXI_WIDTH / 8)
+    output state int#(0..256)       arlen'0
+    output int#(0..8)               arsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                            arburst'0 = 2'b01 // BURST_INC
     output bool[3]                            arprot'0 = 3'b000 // Unprivileged, Secure, Data Access
     output bool[4]                            arcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
-    output int#(FROM: 0, TO: 16)              arqos'0 = 0 // Lowest priority
+    output int#(0..16)              arqos'0 = 0 // Lowest priority
     output bool                               arlock'0 = false // NORMAL - No atomics
-    output int#(FROM: 0, TO: 16)              arregion'0 = 0 // Region 0
+    output int#(0..16)              arregion'0 = 0 // Region 0
     input  bool                               rvalid'0
     output state bool                         rready'0
     input  bool[AXI_WIDTH]                    rdata'0
@@ -855,8 +855,8 @@ module axi4_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     bool[2] _rresp =                          rresp
 
     state bool cur_addr_valid
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
-    state int#(FROM: 0, TO: COUNT_TO) elements_remaining
+    state int#(0..pow2#(E: ADDR_WIDTH) / ADDR_ALIGN) cur_addr
+    state int#(0..COUNT_TO) elements_remaining
     state ExtraDataT stored_extra_data
 
     SlowStablePipelineCustom#(PIPELINE_DEPTH: 1) feedback_loop
@@ -885,11 +885,11 @@ module axi4_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     FWFT#(DEPTH: 256) command_fifo
 
     /// Small register updated every cycle keeping live track of how many transfers are in flight. If < MAX_BURST then we can't request more bursts before 
-    state int#(FROM: 0, TO: MAX_IN_FLIGHT+1) in_flight_headroom
+    state int#(0..MAX_IN_FLIGHT+1) in_flight_headroom
 
     domain read_requests
     output bool may_request_new_read'0 = !cur_addr_valid
-    action request_new_read'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0, int#(FROM: 0, TO: COUNT_TO) count'0, ExtraDataT extra_data'0 {
+    action request_new_read'0 : int#(0..pow2#(E: ADDR_WIDTH)) start_addr'0, int#(0..COUNT_TO) count'0, ExtraDataT extra_data'0 {
         int elem_addr, int _misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ADDR_ALIGN))(start_addr)
 
         cur_addr_valid = true
@@ -924,14 +924,14 @@ module axi4_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
         offset_receiver_is_ready = true
     }
 
-    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0, ExtraDataT extra_data_out'0
+    trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0, ExtraDataT extra_data_out'0
 
     when cur_addr_valid & enough_in_flight_headroom & offset_receiver_is_ready & !arvalid & command_fifo.may_push & feedback_loop.pipeline_stable {
         int final_align
         int new_arlen
         when is_last {
             // The final burst doesn't require us to update the address. 
-            int#(FROM: 0, TO: MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
+            int#(0..MAX_BURST_ELEMENTS) final_burst_arlen = IntNarrow#(FROM: 0, TO: MAX_BURST_ELEMENTS)(arlen_remaining)
             new_arlen, final_align = BitwiseIntSplit#(LOWER_BITS: clog2#(V: NUM_PARALLEL_ELEMENTS))(final_burst_arlen)
             cur_addr_valid = false
         } else {
@@ -962,7 +962,7 @@ module axi4_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
 
     bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements
     for int I in 0..NUM_PARALLEL_ELEMENTS {
-        elements[I] = rdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH]
+        elements[I] = rdata[I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH]
     }
 
     int chunk_length
@@ -1039,15 +1039,15 @@ module axi4_realigning_burst_reader #(T, ExtraDataT, int AXI_WIDTH, int ADDR_WID
     domain axi4_read
     output bool                     arvalid = parent.arvalid
     input  bool                     arready
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH)         araddr  = parent.araddr
-    output int#(FROM: 0, TO: 256)   arlen   = parent.arlen
-    output int#(FROM: 0, TO: 8)     arsize  = parent.arsize
+    output int#(0..1 << ADDR_WIDTH)         araddr  = parent.araddr
+    output int#(0..256)   arlen   = parent.arlen
+    output int#(0..8)     arsize  = parent.arsize
     output bool[2]                  arburst = parent.arburst
     output bool[3]                  arprot = parent.arprot
     output bool[4]                  arcache = parent.arcache
-    output int#(FROM: 0, TO: 16)    arqos = parent.arqos
+    output int#(0..16)    arqos = parent.arqos
     output bool                     arlock = parent.arlock
-    output int#(FROM: 0, TO: 16)    arregion = parent.arregion
+    output int#(0..16)    arregion = parent.arregion
     input  bool                     rvalid
     output bool                     rready  = parent.rready
     input  bool[AXI_WIDTH]          rdata
@@ -1059,12 +1059,12 @@ module axi4_realigning_burst_reader #(T, ExtraDataT, int AXI_WIDTH, int ADDR_WID
     parent.rresp   = rresp
     parent.rlast   = rlast
 
-    //input int#(FROM: 0, TO: 2048) max_in_flight
+    //input int#(0..2048) max_in_flight
     //parent.max_in_flight = max_in_flight
 
     domain requests
     output bool may_request_new_read = parent.may_request_new_read
-    action request_new_read : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr, int#(FROM: 1, TO: COUNT_TO) count, ExtraDataT extra_data {
+    action request_new_read : int#(0..pow2#(E: ADDR_WIDTH)) start_addr, int#(1..COUNT_TO) count, ExtraDataT extra_data {
         parent.request_new_read(start_addr, count * NUM_ELEMENTS_PER_VALUE, extra_data)
     }
 
@@ -1075,10 +1075,10 @@ module axi4_realigning_burst_reader #(T, ExtraDataT, int AXI_WIDTH, int ADDR_WID
     trigger value_valid'0: T value'0, bool last'0, ExtraDataT extra_data_out'0
 
     state bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE-1] stored_elements
-    state int#(FROM: 0, TO: NUM_ELEMENTS_PER_VALUE) cur_element_store_align
-    when parent.chunk_valid : bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset, bool last, ExtraDataT extra_data {
+    state int#(0..NUM_ELEMENTS_PER_VALUE) cur_element_store_align
+    when parent.chunk_valid : bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset, bool last, ExtraDataT extra_data {
         bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] elements_extended
-        elements_extended[:NUM_PARALLEL_ELEMENTS] = elements
+        elements_extended[..NUM_PARALLEL_ELEMENTS] = elements
         bool[ELEMENT_BITWIDTH][NUM_ELEMENTS_PER_VALUE] rotated_elements = RotateRight(elements_extended, cur_element_store_align - chunk_offset mod NUM_ELEMENTS_PER_VALUE)
         bool[NUM_ELEMENTS_PER_VALUE] rotated_strobe = MakeStrobe(chunk_length, cur_element_store_align)
 
@@ -1089,14 +1089,14 @@ module axi4_realigning_burst_reader #(T, ExtraDataT, int AXI_WIDTH, int ADDR_WID
             gen int MUXES_START_FROM = NUM_ELEMENTS_PER_VALUE - NUM_PARALLEL_ELEMENTS
             for int ELEM_I in 0..NUM_ELEMENTS_PER_VALUE {
                 if ELEM_I < MUXES_START_FROM {
-                    resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = stored_elements[ELEM_I]
+                    resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH] = stored_elements[ELEM_I]
                 } else if ELEM_I == NUM_ELEMENTS_PER_VALUE - 1 {
-                    resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = rotated_elements[ELEM_I]
+                    resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH] = rotated_elements[ELEM_I]
                 } else {
                     when cur_element_store_align > ELEM_I {
-                        resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = stored_elements[ELEM_I]
+                        resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH] = stored_elements[ELEM_I]
                     } else {
-                        resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = rotated_elements[ELEM_I]
+                        resulting_value_bits[ELEM_I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH] = rotated_elements[ELEM_I]
                     }
                 }
             }
@@ -1176,7 +1176,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ADDR_WIDTH, int NUM_PARAL
     gen int ELEMENT_BYTES = AXI_WIDTH / NUM_PARALLEL_ELEMENTS / 8
     assert#(C: pow2#(E: clog2#(V: ELEMENT_BYTES)) == ELEMENT_BYTES)
 
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / ELEMENT_BYTES) current_addr
+    state int#(0..pow2#(E: ADDR_WIDTH) / ELEMENT_BYTES) current_addr
     state int current_command_final_align
     state bool current_addr_valid
     state bool current_command_chunk_end
@@ -1212,7 +1212,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ADDR_WIDTH, int NUM_PARAL
     domain addr_output_channel
     // start_offset is inclusive. 1 -> 0111
     // end_offset is also inclusive. 3 -> 1110
-    trigger push_burst'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) awaddr'0, int#(FROM: 0, TO: MAX_BURST) awlen'0, int start_offset'0, int end_offset'0, bool is_last'0, bool is_empty_burst'0
+    trigger push_burst'0 : int#(0..pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) awaddr'0, int#(0..MAX_BURST) awlen'0, int start_offset'0, int end_offset'0, bool is_last'0, bool is_empty_burst'0
 
     action may_push_burst'0 {
         when current_addr_valid & feedback_loop.pipeline_stable {
@@ -1257,7 +1257,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ADDR_WIDTH, int NUM_PARAL
 
     domain addresses
     trigger may_push_address'-ADDR_MAY_PUSH_LATENCY
-    action push_address'0 : int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) new_addr'0 {
+    action push_address'0 : int#(0..pow2#(E: ADDR_WIDTH)) new_addr'0 {
         int element_aligned_addr, int _addr_misalign = BitwiseIntSplit#(LOWER_BITS: clog2#(V: ELEMENT_BYTES))(new_addr)
         assert_runtime(_addr_misalign == 0)
         addr_fifo.push(element_aligned_addr)
@@ -1268,11 +1268,11 @@ module write_burst_address_manager#(int AXI_WIDTH, int ADDR_WIDTH, int NUM_PARAL
     }
 
     domain elements
-    action push_elements : int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elements, bool is_last_elem -> int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset {
+    action push_elements : int#(0..NUM_PARALLEL_ELEMENTS+1) num_elements, bool is_last_elem -> int#(0..NUM_PARALLEL_ELEMENTS) fifo_offset {
         fifo_offset = burst_splitter.push_elements(num_elements, is_last_elem)
     }
 
-    when burst_splitter.output_command : bool end_of_burst, bool is_last_burst, int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) final_align, bool burst_is_empty {
+    when burst_splitter.output_command : bool end_of_burst, bool is_last_burst, int#(0..MAX_ELEMENTS_IN_BURST) final_align, bool burst_is_empty {
         reg bool[] command = pack_command.pack(end_of_burst, is_last_burst, final_align, burst_is_empty)
         command_fifo.push(command)
     }
@@ -1312,7 +1312,7 @@ module write_burst_address_manager#(int AXI_WIDTH, int ADDR_WIDTH, int NUM_PARAL
 
 /// This module takes in the new adresses, and counts up for every set of elements that comes in. 
 module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENTS, int ADDR_QUEUE_SIZE) {
-    state int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) current_align
+    state int#(0..MAX_ELEMENTS_IN_BURST) current_align
     state bool current_align_valid
     state bool current_burst_is_empty
 
@@ -1322,18 +1322,18 @@ module burst_write_splitter#(int MAX_ELEMENTS_IN_BURST, int NUM_PARALLEL_ELEMENT
     bool _ = align_queue.may_push
 
     domain aligns_fifo
-    action push_new_align'0 : int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) new_starting_align'0 {
+    action push_new_align'0 : int#(0..MAX_ELEMENTS_IN_BURST) new_starting_align'0 {
         align_queue.push(new_starting_align)
     }
 
     domain burst_queue
-    trigger output_command : bool end_of_burst, bool is_last_burst, int#(FROM: 0, TO: MAX_ELEMENTS_IN_BURST) final_align, bool burst_is_empty
+    trigger output_command : bool end_of_burst, bool is_last_burst, int#(0..MAX_ELEMENTS_IN_BURST) final_align, bool burst_is_empty
 
     domain elements
     bool new_addr_requested = false
     /// fifo_offset refers to the alignment at which this set of elements should start. It's used by the push side of the data FIFOs. 
     /// It should be combined with `num_elements` to make the fifo push strobe. (Using MakeStrobe)
-    action push_elements : int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elements, bool is_last -> int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset {
+    action push_elements : int#(0..NUM_PARALLEL_ELEMENTS+1) num_elements, bool is_last -> int#(0..NUM_PARALLEL_ELEMENTS) fifo_offset {
         assert_runtime(current_align_valid)
 
         fifo_offset = current_align mod NUM_PARALLEL_ELEMENTS
@@ -1383,7 +1383,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
     bool do_rst = false
 
     // FIFO State
-    state int#(FROM: 0, TO: MAX_BURST) transfers_remaining
+    state int#(0..MAX_BURST) transfers_remaining
     state bool pop_strobe_valid
     state bool[NUM_PARALLEL_ELEMENTS] pop_strobe
     state int stored_end_offset
@@ -1395,7 +1395,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
     bool[NUM_PARALLEL_ELEMENTS] push_strobe'BARREL_SHIFT_PIPELINE_STAGES
     bool[NUM_PARALLEL_ELEMENTS] may_pushes
     reg reg output bool may_push'-MAY_PUSH_LATENCY = &may_pushes
-    action push'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] write_v'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) num_elems'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset'0 {
+    action push'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] write_v'0, int#(0..NUM_PARALLEL_ELEMENTS+1) num_elems'0, int#(0..NUM_PARALLEL_ELEMENTS) fifo_offset'0 {
         push_elements = RotateRight(write_v, fifo_offset)
         push_strobe = MakeStrobe(num_elems, fifo_offset)
     } else {
@@ -1433,7 +1433,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
         may_pushes[I] = fifo.may_push
 
         when fifo.pop_available: bool[ELEMENT_BITWIDTH] pop_data {
-            wdata[I * ELEMENT_BITWIDTH +: ELEMENT_BITWIDTH] = pop_data
+            wdata[I * ELEMENT_BITWIDTH +.. ELEMENT_BITWIDTH] = pop_data
             pop_available[I] = true
         }
         when do_commit_pop & pop_strobe[I] {
@@ -1462,7 +1462,7 @@ module burst_write_fifo_manager#(int AXI_WIDTH, int NUM_PARALLEL_ELEMENTS, int M
             wlast = false
         }
     }
-    action write_burst : int#(FROM: 0, TO: MAX_BURST) transfer_awlen, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) start_offset, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) end_offset {
+    action write_burst : int#(0..MAX_BURST) transfer_awlen, int#(0..NUM_PARALLEL_ELEMENTS) start_offset, int#(0..NUM_PARALLEL_ELEMENTS) end_offset {
         pop_strobe_valid = true
         transfers_remaining = transfer_awlen
         stored_end_offset = end_offset
@@ -1548,16 +1548,16 @@ module axi4_burst_writer #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int MA
     domain axi4
     output state bool                     awvalid'0
     input  bool                           awready'0
-    state int#(FROM: 0, TO: pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) awaddr_transfer
-    output int#(FROM: 0, TO: 1 << ADDR_WIDTH) awaddr'0 = awaddr_transfer << clog2#(V: AXI_WIDTH / 8)
-    output int#(FROM: 0, TO: 256)         awlen'0
-    output int#(FROM: 0, TO: 8)           awsize'0 = clog2#(V: AXI_WIDTH / 8)
+    state int#(0..pow2#(E: ADDR_WIDTH) / (AXI_WIDTH / 8)) awaddr_transfer
+    output int#(0..1 << ADDR_WIDTH) awaddr'0 = awaddr_transfer << clog2#(V: AXI_WIDTH / 8)
+    output int#(0..256)         awlen'0
+    output int#(0..8)           awsize'0 = clog2#(V: AXI_WIDTH / 8)
     output bool[2]                        awburst'0 = 2'b01 // BURST
     output bool[4]                        awcache'0 = 4'b0010 // Not bufferable, but can be broken up (into 128-bit, or other)
     output bool[3]                        awprot'0 = 3'b000 // Unprivileged, Secure, Data Access
-    output int#(FROM: 0, TO: 16)          awqos'0 = 0 // Lowest priority
+    output int#(0..16)          awqos'0 = 0 // Lowest priority
     output bool                           awlock'0 = false // NORMAL - No atomics
-    output int#(FROM: 0, TO: 16)          awregion'0 = 0 // Region 0
+    output int#(0..16)          awregion'0 = 0 // Region 0
 
     output bool                     wvalid'0 = fifo_manager.wvalid
     input  bool                     wready'0
@@ -1580,7 +1580,7 @@ module axi4_burst_writer #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int MA
         may_request_new_write()
     }
 
-    action request_new_write'0 : int #(FROM: 0, TO: pow2#(E: ADDR_WIDTH)) start_addr'0 {
+    action request_new_write'0 : int#(0..pow2#(E: ADDR_WIDTH)) start_addr'0 {
         addr_manager.push_address(start_addr)
     }
 
@@ -1635,11 +1635,11 @@ module axi4_burst_writer #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_ALIGN, int MA
     domain data
     output bool may_write'-MAY_PUSH_LATENCY = fifo_manager.may_push
     // Add some forced pipeline stages on the write signal, such that a write address that's been submitted is ready by the time the data arrives. 
-    action write'-3: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'1, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0 {
+    action write'-3: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'1, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0 {
         // Two pipeline stages here
         reg int chunk_length_d = chunk_length
         reg bool last_d = last
-        reg int#(FROM: 0, TO: NUM_PARALLEL_ELEMENTS) fifo_offset = addr_manager.push_elements(chunk_length_d, last_d)
+        reg int#(0..NUM_PARALLEL_ELEMENTS) fifo_offset = addr_manager.push_elements(chunk_length_d, last_d)
         fifo_manager.push(elements, chunk_length_d, fifo_offset - chunk_offset mod NUM_PARALLEL_ELEMENTS)
     }
 

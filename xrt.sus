@@ -24,7 +24,7 @@ module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
 
     domain axi4
     // AXI signals
-    input int#(FROM: 0, TO: 1 << ADDR_WIDTH) awaddr
+    input int#(0..1 << ADDR_WIDTH) awaddr
     input bool awvalid
     output bool awready = false
     input bool[AXI_WIDTH] wdata
@@ -34,7 +34,7 @@ module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     output bool[2] bresp
     output bool bvalid = false
     input bool bready
-    input int#(FROM: 0, TO: 1 << ADDR_WIDTH) araddr
+    input int#(0..1 << ADDR_WIDTH) araddr
     input bool arvalid
     output bool arready = false
     output bool[AXI_WIDTH] rdata
@@ -86,7 +86,7 @@ module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
             int write_idx = IntNarrow#(FROM: FIRST_REG, TO: FIRST_REG + NUM_INPUT_REGS)(stored_addr) - FIRST_REG
             for int strbi in 0..AXI_WIDTH / 8 {
                 when wstrb[strbi] {
-                    input_regs[write_idx][strbi*8 +: 8] = wdata[strbi*8 +: 8]
+                    input_regs[write_idx][strbi*8 +.. 8] = wdata[strbi*8 +.. 8]
                 }
             }
             last_bresp = RESP_OKAY
@@ -104,8 +104,8 @@ module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
     rresp = last_rresp
 
     bool[32][NUM_INPUT_REGS + NUM_OUTPUT_REGS] regs_read_multiplexer
-    regs_read_multiplexer[:NUM_INPUT_REGS] = input_regs
-    regs_read_multiplexer[NUM_INPUT_REGS:] = stored_output_regs
+    regs_read_multiplexer[..NUM_INPUT_REGS] = input_regs
+    regs_read_multiplexer[NUM_INPUT_REGS..] = stored_output_regs
 
     arready = !last_rdata_valid & !do_reset // Force low on reset
     rvalid = last_rdata_valid // Already low by reset
@@ -121,7 +121,7 @@ module xrt_ctrl_slave #(int NUM_INPUT_REGS, int NUM_OUTPUT_REGS, int ADDR_WIDTH,
             last_rdata[1] = reg_ctrl_ap_done
             last_rdata[2] = reg_ctrl_ap_idle
             last_rdata[3] = reg_ctrl_ap_ready
-            last_rdata[4:] = 28'h0000000
+            last_rdata[4..] = 28'h0000000
             when reg_ctrl_ap_done {
                 reg_ctrl_ap_idle = true
             }
