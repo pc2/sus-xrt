@@ -152,7 +152,6 @@ module combined_axi_ctrl_plus_reader {
         data_state = STM_IDLE
         outstream_tvalid = false
         reader.rst()
-        writer.rst()
         ctrl.rst()
     }
 }
@@ -330,7 +329,6 @@ module combined_axi_ctrl_reader_writer {
         addr_state = STM_IDLE
         data_state = STM_IDLE
         reader.rst()
-        writer.rst()
         ctrl.rst()
     }
 }

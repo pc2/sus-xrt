@@ -10,7 +10,9 @@ module axis_master_fifo_example {
     output bool[sizeof#(T: type float)] axis_tdata
 
     axis_master_fifo#(DEPTH: 32) my_fifo
-    my_fifo.aresetn = aresetn
+    when !aresetn {
+        my_fifo.rst()
+    }
     my_fifo.tready = axis_tready
     axis_tvalid = my_fifo.tvalid
     axis_tdata = my_fifo.tdata

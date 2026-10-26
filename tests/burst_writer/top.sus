@@ -201,7 +201,6 @@ module bench_burst_writer_axi4#(int AXI_WIDTH) {
         cycles_since_reset = 0
         num_repeats_remaining = 0
         num_left_to_transfer_valid = false
-        reader.rst()
         writer.rst()
         ctrl.rst()
         queued_transfers.rst()
