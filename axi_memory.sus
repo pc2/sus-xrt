@@ -234,7 +234,7 @@ module axi3_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     bool offset_receiver_is_ready = ready_for_lots_of_data
     /*
     input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
-    bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+    next(-MAX_IN_FLIGHT) bool offset_receiver_is_ready = ready_for_lots_of_data
     trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
     */
 
@@ -444,7 +444,7 @@ module axi4_burst_reader_benchmarker #(int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     bool offset_receiver_is_ready = ready_for_lots_of_data
     /*
     input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
-    bool offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+    next(-MAX_IN_FLIGHT) bool offset_receiver_is_ready = ready_for_lots_of_data
     trigger chunk_valid'0: bool[ELEMENT_BITWIDTH][NUM_PARALLEL_ELEMENTS] elements'0, int#(0..NUM_PARALLEL_ELEMENTS+1) chunk_length'0, int#(0..NUM_PARALLEL_ELEMENTS) chunk_offset'0, bool last'0
     */
 
@@ -653,7 +653,7 @@ module axi3_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
     bool offset_receiver_is_ready
     if MAX_IN_FLIGHT != 0 {
-        offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+        next(-MAX_IN_FLIGHT) offset_receiver_is_ready = ready_for_lots_of_data
     } else {
         offset_receiver_is_ready = true
     }
@@ -919,7 +919,7 @@ module axi4_burst_reader #(ExtraDataT, int AXI_WIDTH, int ADDR_WIDTH, int ADDR_A
     input bool ready_for_lots_of_data'-MAX_IN_FLIGHT
     bool offset_receiver_is_ready
     if MAX_IN_FLIGHT != 0 {
-        offset_receiver_is_ready = LatencyOffset#(OFFSET: MAX_IN_FLIGHT)(ready_for_lots_of_data)
+        next(-MAX_IN_FLIGHT) offset_receiver_is_ready = ready_for_lots_of_data
     } else {
         offset_receiver_is_ready = true
     }
@@ -1147,12 +1147,7 @@ module SlowStablePipelineCustom#(T, int PIPELINE_DEPTH) {
 
     domain data
     input T pipeline_in'PIPELINE_DEPTH
-    output T pipeline_out'0
-    if PIPELINE_DEPTH == 0 {
-        pipeline_out = pipeline_in
-    } else {
-        pipeline_out = LatencyOffset#(OFFSET: -PIPELINE_DEPTH)(pipeline_in)
-    }
+    next(PIPELINE_DEPTH) output T pipeline_out'0 = pipeline_in
 
     domain reset
     action rst {
