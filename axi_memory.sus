@@ -108,17 +108,13 @@ module axi4_writer_tie_off#(int AXI_WIDTH, int ADDR_WIDTH) {
 }
 
 /// MakeMask(3) = [true, true, true, false, false, ...]
-module MakeMask#(int SIZE) {
-    interface MakeMask : int#(0..SIZE + 1) up_to -> bool[SIZE] bits
-
+module MakeMask#(int SIZE) : int#(0..SIZE + 1) up_to -> bool[SIZE] bits {
     for int I in 0..SIZE {
         bits[I] = up_to > I
     }
 }
 
-module MakeStrobe #(int STROBE_WIDTH) {
-    interface MakeStrobe : int#(0..STROBE_WIDTH+1) chunk_length'0, int#(0..STROBE_WIDTH) chunk_offset'0 -> bool[STROBE_WIDTH] strobe
-
+module MakeStrobe #(int STROBE_WIDTH) : int#(0..STROBE_WIDTH+1) chunk_length'0, int#(0..STROBE_WIDTH) chunk_offset'0 -> bool[STROBE_WIDTH] strobe {
     strobe = RotateRight(MakeMask(chunk_length), chunk_offset)
 }
 
